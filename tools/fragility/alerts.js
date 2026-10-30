@@ -14,6 +14,21 @@ export function stickyZone(score, zones, prev, hysteresis) {
   return null;
 }
 
+// Price levels: which side of each level the price is on, with a buffer so a
+// price sitting on a level doesn't ring over and over. sides: { level: 'above' | 'below' }
+// from last time. Returns the new sides and the levels crossed since then.
+export function levelCrossings(price, levels, prevSides, bufferPct) {
+  const sides = {}, crossed = [];
+  levels.forEach(function (L) {
+    const prev = prevSides[L];
+    let side = price >= L * (1 + bufferPct / 100) ? 'above' : price <= L * (1 - bufferPct / 100) ? 'below' : prev;
+    if (!side) side = price >= L ? 'above' : 'below';
+    sides[L] = side;
+    if (prev && prev !== side) crossed.push({ level: L, dir: side === 'above' ? 'up' : 'down' });
+  });
+  return { sides: sides, crossed: crossed };
+}
+
 // Returns { from, to } when the zone changed since the last call, else null.
 export function checkZoneChange(result, cfg) {
   if (result.score == null) return null;

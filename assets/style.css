@@ -264,6 +264,12 @@ details summary { cursor: pointer; }
 .verdict.win { border-left-color: var(--calm); }
 .verdict.lose { border-left-color: var(--primed); }
 .verdict.even { border-left-color: var(--accent); }
+.verdict.steady { border-left-color: var(--calm); }
+.verdict.watch { border-left-color: var(--building); }
+.verdict.unstable { border-left-color: var(--primed); }
+.o-steady { color: var(--calm); }
+.o-watch { color: var(--building); }
+.o-unstable { color: var(--primed); }
 .chart .grid { stroke: var(--line); stroke-width: 1; }
 .chart .gap { stroke: none; opacity: .28; }
 .chart .gap.earn { fill: var(--calm); }

@@ -8,4 +8,7 @@ export const MM_CONFIG = {
   spikePts: 10,   // last 24h moving this far above what options price = unusually wild day
   ivMovePts: 5,   // implied vol change over 24h worth calling out
   shockPts: 5,    // "if implied vol jumps this many points" scenario
+  // Phone alerts (jobs/monitor.mjs): dealers start / stop losing.
+  alertAssets: ['ETH'],
+  flipBufferPts: 1, // once losing, stay losing until the gap is this far back inside ±gapPts
 };

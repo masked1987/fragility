@@ -2,9 +2,10 @@
 // Step 1: implied vs realized volatility with a plain-English reading.
 // Step 2: the same in dollars a day, time decay against re-hedging, by expiry group.
 // Step 3: vega, what dealers make or lose if implied vol jumps.
+// Step 4: one overall verdict at the top, joining all of it with Fragility.
 import { MM_CONFIG as CFG } from './config.js';
 import { collectMM } from './collect.js';
-import { readMM, readShock, vegaSide, usd, signedUsd } from './read.js';
+import { readMM, readOverall, readShock, vegaSide, usd, signedUsd } from './read.js';
 import { dailyMove } from './model.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 
@@ -59,12 +60,16 @@ export function mount(el) {
 
   function readingHtml(d) {
     const r = readMM(d, d.gamma, d.asset, CFG, FRAGILITY.gamma.neutralRatio);
-    return '<section class="card verdict ' + r.tone + '">' +
+    const o = readOverall(d, d.gamma, d.fragility, CFG, FRAGILITY.gamma.neutralRatio);
+    const fr = d.fragility;
+    const pill = fr ? '<a href="#fragility" class="plain"><span class="pill ' + fr.zone.toLowerCase() + '">' + fr.score.toFixed(0) + ' ' + fr.zone + '</span></a> ' : '';
+    return '<section class="card verdict ' + o.level + '">' +
       '<div class="label">' + esc(d.asset) + ' market makers</div>' +
+      '<p class="small verdict-urgency">' + pill + '<b class="o-' + o.level + '">Overall: ' + esc(o.name.toLowerCase()) + '.</b> ' + esc(o.reason) + '</p>' +
       '<p class="verdict-head">' + esc(r.headline) + '</p>' +
       '<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
-      '<p class="muted small">Worked out automatically from Deribit options and Gate prices. Context, not a trade signal.</p>' +
+      '<p class="muted small">Worked out automatically from Deribit options, Gate prices and the Fragility score. Context, not a trade signal.</p>' +
     '</section>';
   }
 
@@ -144,6 +149,9 @@ export function mount(el) {
       'so big expiries and options close to the price dominate. Options expiring within a day only count until they expire.</p>' +
       '<p class="small">Dealers can be short some expiries and long others. If they sold short-dated options and own longer-dated ones, ' +
       'they can collect decay and still earn from re-hedging at the same time; the table shows which expiry is doing what.</p>' +
+      '<p class="small">The overall line at the top adds up pressure: dealers losing on the moves or in dollars, their hedging chasing moves, ' +
+      'a vol move costing them more than a day of decay, and Fragility leverage building or stretched. Dealers being well paid or hedging against moves counts the other way. ' +
+      'Steady, on watch, or unstable, with the main reasons named.</p>' +
       '<p class="small">Vega is how much an option\'s price changes when implied vol moves 1 point. Long-dated options have the most of it, ' +
       'so whoever holds the quarterlies gains when fear rises and loses when it eases, even if the price itself doesn\'t move.</p></details></section>';
   }

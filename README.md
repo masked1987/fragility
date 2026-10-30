@@ -52,6 +52,7 @@ test/live.mjs              node test/live.mjs  -> prints live scores
 test/flow.mjs              node test/flow.mjs  -> prints live liquidation clusters
 test/mm.mjs                node test/mm.mjs    -> prints the live Market Maker reading and dollars
 test/carry.mjs             node test/carry.mjs -> offline checks of the dollar maths (made-up chains)
+test/alerts.mjs            node test/alerts.mjs -> offline checks of the overall verdict and alert logic
 ```
 
 ## Run locally
@@ -64,9 +65,16 @@ then open http://localhost:8000 (ES modules don't load from `file://`).
 ## Log and phone alerts
 
 `.github/workflows/monitor.yml` runs `jobs/monitor.mjs` every 15 minutes on
-GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when a zone changes
-(3-point buffer so it doesn't flap; each change rings 3 times, a minute apart) and appends an hourly row to `log.csv` on
-the `data` branch. The Fragility tab charts that log and shows how big the
+GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
+
+- a Fragility zone changes (3-point buffer so it doesn't flap; rings 3 times, a minute apart);
+- ETH dealers start losing on the Market Maker tab (implied − realized below −5 points;
+  rings 3 times), and once when they stop (1-point buffer);
+- ETH crosses a key level, 2,250 / 2,200 / 2,170 (must close 0.15% past it; rings once).
+  Levels live in `tools/fragility/config.js` (`levels`); dealer settings in
+  `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`).
+
+It also appends an hourly row to `log.csv` on the `data` branch. The Fragility tab charts that log and shows how big the
 next-day moves were after each zone.
 
 Setup: install the ntfy app, subscribe to a hard-to-guess topic name, and save

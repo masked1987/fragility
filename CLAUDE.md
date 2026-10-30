@@ -29,7 +29,9 @@ the file layout. Tabs, in order:
   Bump `V` in `assets/app.js` and both `?v=` in `index.html` on every fragility
   change, or phones keep old files for up to 10 minutes.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
-  write the topic name into the repo). Zone changes ring 3 times, a minute apart.
+  write the topic name into the repo). Zone changes ring 3 times, a minute apart;
+  so does "ETH dealers now losing". "No longer losing" and key-level crossings
+  (ETH 2,250 / 2,200 / 2,170, in `tools/fragility/config.js`) ring once.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
@@ -44,7 +46,10 @@ the file layout. Tabs, in order:
   (`shared/gamma.js`). Keep any new Greek on the same convention and say so.
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
-  `node test/carry.mjs` is offline (made-up option chains) and must pass.
+  `node test/carry.mjs` and `node test/alerts.mjs` are offline and must pass.
+- To try `jobs/monitor.mjs` without ringing the phone: copy `state.json` and
+  `log.csv` from the `data` branch into a scratch folder, and run it with a
+  `--import` preload that replaces `fetch` for `https://ntfy.sh/` (prints instead).
 
 ## Market Maker plan
 
@@ -93,7 +98,19 @@ How much dealers collect per day from time decay against what re-hedging costs.
   Vol line shows on fear rising/easing days, or when 24h DVOL change × vegaW
   is more than one day of time decay. Card: ±5-point scenario, last 24h, table.
 
-### Step 4: wrap-up (optional, ask first; next)
-- One combined verdict at the top joining steps 1–3 with Fragility urgency.
-- Phone alert when dealers flip from winning to losing (in `jobs/monitor.mjs`).
-- ETH key-level alerts (2,250 / 2,200 / 2,170 were offered once).
+### Step 4: wrap-up (done)
+- Overall verdict at the top of the reading card: `readOverall()` in `read.js`
+  adds pressure points (dealers losing +2, losing dollars +1, short gamma near
+  spot +1, a vol move costing > 1 day of decay +1, Fragility Building +1 /
+  Primed +2; well paid −1, long gamma −1). ≥4 unstable, 2–3 on watch, else
+  steady, naming the main reasons. Shows the Fragility pill like Forced Flow.
+- Alerts in `jobs/monitor.mjs`: ETH dealers start / stop losing (`dealerSide()`,
+  1-point buffer), and ETH key levels (`levelCrossings()` in
+  `tools/fragility/alerts.js`, 0.15% buffer). State lives in `state.json` on
+  the `data` branch (`dealers`, `levels`); a one-time "alerts are on" message
+  confirms the setup (`welcomedMM`).
+- Step 1 ("losing" = option sellers in general) and step 2 (Deribit dealers'
+  dollars on the long-calls/short-puts assumption) can disagree, because dealers
+  own the quarterlies. `readCarry()` then says so in words; keep that.
+
+The Market Maker plan is complete.

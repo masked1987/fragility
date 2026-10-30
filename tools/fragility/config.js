@@ -22,6 +22,10 @@ export const CONFIG = {
   ],
   hysteresis: 3,
 
+  // Phone alert when the price crosses one of these (jobs/monitor.mjs). Edit freely.
+  levels: { ETH: [2250, 2200, 2170] },
+  levelBufferPct: 0.15, // must close this far past a level to count, so it doesn't flap
+
   funding: { fullLow: -15, calmLow: 0, calmHigh: 10, fullHigh: 35 },  // APR
   basis: { fullLow: -5, calmLow: 3, calmHigh: 10, fullHigh: 25, targetDays: 90, minDays: 7 }, // APR
   oiLevel: { calmBelowPct: 50, minHistoryDays: 7 },  // percentile of last 30 days
