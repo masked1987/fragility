@@ -66,6 +66,23 @@ body {
 .tabs a.active { background: var(--card); color: var(--text); font-weight: 600; }
 
 .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+.pane[hidden] { display: none; }
+
+.pane.full { position: relative; }
+.embed-frame { display: block; width: 100%; height: var(--avail-h, 85vh); border: 0; }
+.embed-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+  opacity: .85;
+}
 
 .card {
   background: var(--card);

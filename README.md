@@ -28,7 +28,8 @@ that has it (Binance, Bybit, then Gate).
 ## Layout
 
 ```
-index.html, assets/        tab shell (add a tool in assets/app.js)
+index.html, assets/        tab shell (add a tool in assets/app.js; tabs stay loaded)
+tools/embed.js             embeds another Pages site as a tab (Gamma Detrite)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/
