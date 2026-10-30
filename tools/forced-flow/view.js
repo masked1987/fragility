@@ -2,7 +2,6 @@
 import { FLOW_CONFIG as CFG } from './config.js';
 import { collectFlow } from './collect.js';
 import { readFlow } from './read.js';
-import { load, save } from '../../shared/storage.js';
 
 const ZONE_CLASS = { Calm: 'calm', Building: 'building', Primed: 'primed' };
 
@@ -19,7 +18,7 @@ function pct(x) { return (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(1) + '%'; 
 
 export function mount(el) {
   const data = {};
-  let selected = load('flow.asset', CFG.assets[0]);
+  let selected = CFG.assets[0];
   let loading = false;
 
   el.innerHTML =
@@ -37,7 +36,6 @@ export function mount(el) {
     const b = e.target.closest('button[data-asset]');
     if (!b) return;
     selected = b.getAttribute('data-asset');
-    save('flow.asset', selected);
     render();
     if (stale()) refresh();
   });

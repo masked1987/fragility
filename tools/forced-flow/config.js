@@ -1,6 +1,6 @@
 // Tunable assumptions for the Forced Flow map.
 export const FLOW_CONFIG = {
-  assets: ['BTC', 'ETH'],
+  assets: ['ETH', 'BTC'], // first one opens by default
   refreshMinutes: 5,
 
   // Price ladder: bins of binPct around spot, out to +/- rangePct.

@@ -5,7 +5,7 @@
 // APR = annualised percent.
 
 export const CONFIG = {
-  assets: ['BTC', 'ETH'],
+  assets: ['ETH', 'BTC'],              // first one opens by default
   refreshMinutes: 5,
   siteUrl: 'https://masked1987.github.io/fragility/',
   // Written by the scheduled job (jobs/monitor.mjs) to the `data` branch.

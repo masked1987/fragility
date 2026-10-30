@@ -3,7 +3,6 @@ import { CONFIG } from './config.js';
 import { collect } from './collect.js';
 import { evaluate } from './score.js';
 import { checkZoneChange, emitZoneChange, onZoneChange } from './alerts.js';
-import { load, save } from '../../shared/storage.js';
 import { loadHistory, renderHistory } from './history.js';
 
 const COLORS = { funding: '#5b8def', basis: '#a77bdb', oiLevel: '#3fb8af', oiChange: '#7fc97f', gamma: '#e8a33d' };
@@ -28,7 +27,7 @@ onZoneChange(function (c) {
 
 export function mount(el) {
   let results = {};
-  let selected = load('fragility.asset', CONFIG.assets[0]);
+  let selected = CONFIG.assets[0];
   let loading = false;
   let lastChange = null;
   let history = null;      // rows from the scheduled job's log
@@ -51,7 +50,6 @@ export function mount(el) {
     const b = e.target.closest('button[data-asset]');
     if (!b) return;
     selected = b.getAttribute('data-asset');
-    save('fragility.asset', selected);
     render();
   });
   refreshBtn.addEventListener('click', refresh);
