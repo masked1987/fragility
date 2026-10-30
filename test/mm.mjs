@@ -1,0 +1,14 @@
+// Run: node test/mm.mjs  — prints the live Market Maker reading.
+import { collectMM } from '../tools/market-maker/collect.js';
+import { readMM } from '../tools/market-maker/read.js';
+import { MM_CONFIG } from '../tools/market-maker/config.js';
+import { CONFIG } from '../tools/fragility/config.js';
+
+for (const asset of MM_CONFIG.assets) {
+  const a = await collectMM(asset, MM_CONFIG);
+  console.log(`\n${asset} ${a.price}  IV now ${a.ivNow.toFixed(1)} (${a.ivChange24h.toFixed(1)} 24h, ${a.ivPct}th pct)  IV 7d avg ${a.ivWeek.toFixed(1)}  RV 7d ${a.rvWeek.toFixed(1)}  RV 24h ${a.rvDay.toFixed(1)}  gamma ${a.gamma == null ? 'n/a' : a.gamma.toFixed(2)}  points ${a.points.length}`);
+  const r = readMM(a, a.gamma, asset, MM_CONFIG, CONFIG.gamma.neutralRatio);
+  console.log(`  [${r.tone}] ${r.headline}`);
+  for (const l of r.lines) console.log('   - ' + l);
+  console.log('   > ' + r.action);
+}

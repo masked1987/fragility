@@ -56,3 +56,9 @@ export async function options(asset) {
   }).filter(function (o) { return o.expiry && o.oi > 0 && o.iv > 0 && o.strike > 0; });
   return { spot: res[1], options: list };
 }
+
+// DVOL: Deribit's implied volatility index (annualised %, 30 days ahead), hourly.
+export async function dvol(asset, startMs, endMs) {
+  const r = await pub('/get_volatility_index_data?currency=' + asset + '&start_timestamp=' + startMs + '&end_timestamp=' + endMs + '&resolution=3600');
+  return r.data.map(function (d) { return { t: d[0], iv: d[4] }; });
+}

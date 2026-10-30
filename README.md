@@ -1,6 +1,6 @@
 # Fragility Score (BTC / ETH)
 
-Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker (soon).
+Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker.
 
 How primed the market is for a liquidation cascade: 0–100, in three zones
 (Calm < 35, Building 35–59, Primed ≥ 60). Not a trade signal.
@@ -36,6 +36,8 @@ tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dea
   config.js                leverage mix and ladder settings
   model.js                 pure liquidation model (runs in Node)
   read.js                  plain-English reading at the top of the tab (runs in Node)
+tools/market-maker/        Market Maker tab: implied vs realized volatility (Deribit DVOL vs Gate hourly prices)
+  model.js, read.js        pure calculation and plain-English reading (run in Node)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/
@@ -46,6 +48,7 @@ tools/fragility/
   view.js                  the tab UI
 test/live.mjs              node test/live.mjs  -> prints live scores
 test/flow.mjs              node test/flow.mjs  -> prints live liquidation clusters
+test/mm.mjs                node test/mm.mjs    -> prints the live Market Maker reading
 ```
 
 ## Run locally

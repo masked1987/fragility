@@ -259,3 +259,17 @@ details summary { cursor: pointer; }
 .verdict-lines { margin: 0 0 10px; padding-left: 18px; }
 .verdict-lines li { margin: 3px 0; }
 .verdict-action { margin: 0 0 8px; }
+
+/* Market Maker: reading tones and the implied vs realized chart */
+.verdict.win { border-left-color: var(--calm); }
+.verdict.lose { border-left-color: var(--primed); }
+.verdict.even { border-left-color: var(--accent); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .gap { stroke: none; opacity: .28; }
+.chart .gap.earn { fill: var(--calm); }
+.chart .gap.lose { fill: var(--primed); }
+.chart .vl { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.chart .vl.iv { stroke: var(--accent); }
+.chart .vl.rv { stroke: var(--flip); }
+.legend .ln.iv { border-top-color: var(--accent); }
+.legend .ln.rv { border-top-color: var(--flip); }
