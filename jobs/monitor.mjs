@@ -16,6 +16,8 @@ const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
 const LOG = join(DIR, 'log.csv');
 const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
+const ZONE_REPEATS = 3;           // a zone change rings this many times...
+const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
 const firstRun = !existsSync(STATE);
@@ -68,16 +70,21 @@ function zoneMessage(asset, from, to, r) {
     body: `${asset} fragility ${up ? 'rose' : 'fell'} to ${to}: ${r.score.toFixed(0)}/100\n` + top.join('\n'),
     priority: to === 'Primed' ? 5 : up ? 4 : 3,
     tags: to === 'Primed' ? 'rotating_light' : up ? 'warning' : 'arrow_down',
+    repeats: ZONE_REPEATS,
   };
 }
 
+// Repeats are handed to ntfy now with a delivery time (At), so the job doesn't wait.
 async function send(p) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) { console.log('NTFY_TOPIC not set, not sending:', p.title); return; }
-  const res = await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
-    method: 'POST',
-    body: p.body,
-    headers: { Title: p.title, Priority: String(p.priority), Tags: p.tags, Click: CONFIG.siteUrl + '#fragility' },
-  });
-  console.log('push', res.status, p.title);
+  const n = p.repeats || 1;
+  const now = Math.floor(Date.now() / 1000);
+  for (let k = 0; k < n; k++) {
+    const title = n > 1 ? `${p.title} [${k + 1}/${n}]` : p.title;
+    const headers = { Title: title, Priority: String(p.priority), Tags: p.tags, Click: CONFIG.siteUrl + '#fragility' };
+    if (k > 0) headers.At = String(now + k * REPEAT_GAP_S);
+    const res = await fetch('https://ntfy.sh/' + encodeURIComponent(topic), { method: 'POST', body: p.body, headers });
+    console.log('push', res.status, title);
+  }
 }

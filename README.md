@@ -58,7 +58,7 @@ then open http://localhost:8000 (ES modules don't load from `file://`).
 
 `.github/workflows/monitor.yml` runs `jobs/monitor.mjs` every 15 minutes on
 GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when a zone changes
-(3-point buffer so it doesn't flap) and appends an hourly row to `log.csv` on
+(3-point buffer so it doesn't flap; each change rings 3 times, a minute apart) and appends an hourly row to `log.csv` on
 the `data` branch. The Fragility tab charts that log and shows how big the
 next-day moves were after each zone.
 
