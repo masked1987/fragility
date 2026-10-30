@@ -64,8 +64,22 @@ assert.equal(expiryGroup(e(2027, 0, 29)), 'monthly');    // last Fri of Jan
 assert.equal(expiryGroup(e(2027, 2, 26)), 'quarterly');  // last Fri of Mar
 assert.equal(expiryGroup(e(2027, 2, 19)), 'weekly');     // Fri 19 Mar
 
-// 9. Groups add up to the total.
+// 9. Vega: dealers short a put lose when implied vol rises, long a call gain.
+const v = carry([opt('C', 2000, 30, 0.6, 1000)], S, now, 40).total;
+const bump = (call(S, 2000, 30 / 365, 0.61) - call(S, 2000, 30 / 365, 0.6)) * 1000;
+near(v.vega, bump, 0.01); // matches repricing the call 1 point higher, within 1%
+assert.ok(carry([opt('P', 2000, 30, 0.6, 1000)], S, now, 40).total.vega < 0, 'short put: negative vega');
+near(carry([opt('C', 2000, 30, 0.6, 1000), opt('P', 2000, 30, 0.6, 1000)], S, now, 40).total.vega, 0, 1e-9);
+// A 30-day option moves 1:1 with 30-day vol; a 7.5-day one twice as much; a 120-day one half.
+near(v.vegaW, v.vega, 1e-9);
+let w = carry([opt('C', 2000, 7.5, 0.6, 1000)], S, now, 40).total;
+near(w.vegaW, 2 * w.vega, 1e-9);
+w = carry([opt('C', 2000, 120, 0.6, 1000)], S, now, 40).total;
+near(w.vegaW, 0.5 * w.vega, 1e-9);
+
+// 10. Groups add up to the total.
 c = carry([opt('P', 2000, 1, 0.6, 500), opt('C', 2100, 7, 0.55, 800), opt('P', 1800, 28, 0.65, 900)], S, now, 50);
 near(c.groups.reduce(function (s, g) { return s + g.net; }, 0), c.total.net, 1e-9);
+near(c.groups.reduce(function (s, g) { return s + g.vegaW; }, 0), c.total.vegaW, 1e-9);
 
 console.log('carry: all checks passed');

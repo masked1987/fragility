@@ -78,15 +78,22 @@ How much dealers collect per day from time decay against what re-hedging costs.
   Dealers are often short short-dated and long quarterlies, so decay and
   re-hedging can both be positive; the table and "How this works" explain it.
 
-### Step 3: vega, the risk of implied vol jumping (next)
+### Step 3: vega, the risk of implied vol jumping (done)
 - Net dealer vega in dollars per 1 vol point (Black-Scholes vega × OI, same sign
   convention), total and by expiry group.
 - Scenario line in plain words: "If fear pushes implied vol up 5 points,
   dealers lose about $Z" (and the reverse).
 - Reading card: add a line when 24h IV change × vega is large; tie to
   "Fear is rising / easing" lines from step 1.
+- Built in `carry()` as `vega` (flat, every expiry +1 point) and `vegaW` (per
+  1 point of DVOL; each expiry moves √(30/days) points, a day at least). The tab
+  uses `vegaW`: short-dated vol really does jump more. Under the convention
+  dealers are usually net long vega (they hold the quarterlies), so they gain
+  when fear rises; step 1's old "costs option sellers" wording was dropped.
+  Vol line shows on fear rising/easing days, or when 24h DVOL change × vegaW
+  is more than one day of time decay. Card: ±5-point scenario, last 24h, table.
 
-### Step 4: wrap-up (optional, ask first)
+### Step 4: wrap-up (optional, ask first; next)
 - One combined verdict at the top joining steps 1–3 with Fragility urgency.
 - Phone alert when dealers flip from winning to losing (in `jobs/monitor.mjs`).
 - ETH key-level alerts (2,250 / 2,200 / 2,170 were offered once).

@@ -28,6 +28,41 @@ export function readCarry(c) {
     (big && Math.abs(big.net) >= 0.5 * Math.abs(t.net) && Math.abs(t.net) > 0 ? ', biggest share from ' + big.key + ' options.' : '.');
 }
 
+// Who gains when implied vol moves, in words: "Dealers own more volatility than
+// they sold (mostly quarterly options)". c = carry() from model.js.
+export function vegaSide(c) {
+  const t = c.total;
+  const big = c.groups.filter(function (g) { return g.vegaW * t.vegaW > 0; })
+    .sort(function (a, b) { return Math.abs(b.vegaW) - Math.abs(a.vegaW); })[0];
+  return 'Dealers ' + (t.vegaW >= 0 ? 'own more volatility than they sold' : 'sold more volatility than they own') +
+    (big ? ' (mostly ' + big.key + ' options)' : '');
+}
+
+// "If fear pushes implied vol up 5 points, dealers make about $1.9M; if it eases 5 points, they lose about $1.9M."
+export function readShock(c, pts) {
+  const up = c.total.vegaW * pts;
+  return 'If fear pushes implied vol up ' + pts + ' points, dealers ' + (up >= 0 ? 'make' : 'lose') + ' about ' + usd(up) +
+    '; if it eases ' + pts + ' points, they ' + (up >= 0 ? 'lose' : 'make') + ' about ' + usd(up) + '.';
+}
+
+// The last 24h of implied vol change, in dealers' dollars when the option chain is in.
+// Shown when it's a fear rising / easing day, or when the move cost or made dealers
+// more than a day of time decay.
+function readVolMove(a, cfg) {
+  const dv = a.ivChange24h, c = a.carry;
+  const rising = dv >= cfg.ivMovePts, easing = dv <= -cfg.ivMovePts;
+  const head = rising ? 'Fear is rising: implied vol up ' + dv.toFixed(1) + ' points in a day'
+    : easing ? 'Fear is easing: implied vol down ' + Math.abs(dv).toFixed(1) + ' points in a day'
+    : 'Implied vol ' + (dv >= 0 ? 'up ' : 'down ') + Math.abs(dv).toFixed(1) + ' points in 24h';
+  if (!c) return rising || easing ? head + '.' : null;
+  const hit = dv * c.total.vegaW;
+  if (Math.abs(hit) < 1e3) return rising || easing ? head + '.' : null;
+  const days = c.total.theta > 0 ? Math.abs(hit) / c.total.theta : 0;
+  if (!rising && !easing && days < 1) return null;
+  return head + '. ' + vegaSide(c) + ', so that ' + (hit >= 0 ? 'made' : 'cost') + ' them ~' + usd(hit) +
+    (days >= 1 ? ', about ' + Math.round(days) + ' day' + (Math.round(days) === 1 ? '' : 's') + ' of time decay.' : '.');
+}
+
 // gamma: dealer net/gross gamma ratio near spot (from Deribit options), or null.
 export function readMM(a, gamma, asset, cfg, neutral) {
   const gap = a.ivWeek - a.rvWeek;
@@ -56,10 +91,10 @@ export function readMM(a, gamma, asset, cfg, neutral) {
     a.ivPct >= 70 ? 'on the high side for the last 30 days' : a.ivPct <= 30 ? 'on the low side for the last 30 days' : 'middle of the last 30 days') + ').');
   if (a.rvDay != null && a.rvDay - a.ivNow >= cfg.spikePts) lines.push('Last 24h was unusually wild: ' + asset + ' moved at a ' + d(a.rvDay) + ' a day pace.');
   else if (a.rvDay != null) lines.push('Last 24h ' + asset + ' moved at a ' + d(a.rvDay) + ' a day pace.');
-  if (a.ivChange24h >= cfg.ivMovePts) lines.push('Fear is rising: implied vol up ' + a.ivChange24h.toFixed(1) + ' points in a day, which costs option sellers (vega).');
-  if (a.ivChange24h <= -cfg.ivMovePts) lines.push('Fear is easing: implied vol down ' + Math.abs(a.ivChange24h).toFixed(1) + ' points in a day.');
   const money = readCarry(a.carry);
   if (money) lines.push(money);
+  const vol = readVolMove(a, cfg);
+  if (vol) lines.push(vol);
   if (gamma != null) {
     const g = Math.round(gamma * 100) / 100;
     if (Math.abs(g) < neutral) lines.push('Dealer gamma near the price is about neutral, so their hedging has little effect either way.');

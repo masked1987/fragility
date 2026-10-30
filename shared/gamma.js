@@ -14,6 +14,14 @@ export function bsGamma(S, K, T, iv) {
   return Math.exp(-0.5 * d1 * d1) / SQRT_2PI / (S * v);
 }
 
+// Dollars an option gains per 1 point (0.01) rise in implied vol, per coin.
+export function bsVega(S, K, T, iv) {
+  if (T <= 0 || iv <= 0) return 0;
+  const v = iv * Math.sqrt(T);
+  const d1 = (Math.log(S / K) + 0.5 * iv * iv * T) / v;
+  return S * Math.exp(-0.5 * d1 * d1) / SQRT_2PI * Math.sqrt(T) * 0.01;
+}
+
 // USD of delta dealers must trade per 1% move, if spot were `spot`.
 export function gex(options, spot, now) {
   let calls = 0, puts = 0;

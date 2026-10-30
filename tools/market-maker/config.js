@@ -7,4 +7,5 @@ export const MM_CONFIG = {
   gapPts: 5,      // implied − realized beyond ±this (vol points) = clearly winning or losing
   spikePts: 10,   // last 24h moving this far above what options price = unusually wild day
   ivMovePts: 5,   // implied vol change over 24h worth calling out
+  shockPts: 5,    // "if implied vol jumps this many points" scenario
 };

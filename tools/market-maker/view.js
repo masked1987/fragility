@@ -1,9 +1,10 @@
 // Market Maker tab: are option dealers being paid enough for the moves they hedge?
 // Step 1: implied vs realized volatility with a plain-English reading.
 // Step 2: the same in dollars a day, time decay against re-hedging, by expiry group.
+// Step 3: vega, what dealers make or lose if implied vol jumps.
 import { MM_CONFIG as CFG } from './config.js';
 import { collectMM } from './collect.js';
-import { readMM, usd, signedUsd } from './read.js';
+import { readMM, readShock, vegaSide, usd, signedUsd } from './read.js';
 import { dailyMove } from './model.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 
@@ -52,7 +53,7 @@ export function mount(el) {
       bodyEl.innerHTML = '<section class="card"><p>Could not load: ' + esc(d.error) + '</p></section>';
       return;
     }
-    bodyEl.innerHTML = readingHtml(d) + dollarsHtml(d) + chartHtml(d) + notesHtml();
+    bodyEl.innerHTML = readingHtml(d) + dollarsHtml(d) + vegaHtml(d) + chartHtml(d) + notesHtml();
     drawChart(bodyEl.querySelector('.chart'), d);
   }
 
@@ -83,11 +84,36 @@ export function mount(el) {
       '<div class="tiles">' +
         tile('Time decay', '~' + usd(t.theta), t.theta >= 0 ? 'collected a day' : 'paid a day') +
         tile('Re-hedging', '~' + usd(t.hedge), t.hedge <= 0 ? 'costs a day' : 'earned a day') +
-        tile('Net', '~' + signedUsd(t.net), t.net >= 0 ? 'dealers make a day' : 'dealers lose a day', tone(t.net)) +
+        tile('Net', signedUsd(t.net), t.net >= 0 ? 'dealers make a day' : 'dealers lose a day', tone(t.net)) +
       '</div>' +
       '<table class="stats"><thead><tr><th>Expiry</th><th>Decay</th><th>Re-hedging</th><th>Net</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p class="muted small">From the dealers\' side: + is money in, − is money out. Re-hedging is priced at last ' + CFG.rvDays + ' days\' pace ' +
         '(' + day(d.rvWeek) + ' a day). Deribit options only; assumes dealers bought the calls and sold the puts customers trade, as for gamma everywhere on this site.</p>' +
+    '</section>';
+  }
+
+  // What a jump in implied vol does to dealers: +/− the scenario, and the last 24h.
+  function vegaHtml(d) {
+    const c = d.carry;
+    if (!c) return '';
+    const pts = CFG.shockPts, up = c.total.vegaW * pts, hit = c.total.vegaW * d.ivChange24h;
+    const tone = function (v) { return v >= 0 ? 'cash-in' : 'cash-out'; };
+    const tile = function (label, v, sub) {
+      return '<div class="tile"><div class="label">' + label + '</div><div class="tile-num ' + tone(v) + '">' + signedUsd(v) + '</div><div class="muted small">' + sub + '</div></div>';
+    };
+    const rows = c.groups.filter(function (g) { return g.vegaW; }).map(function (g) {
+      return '<tr><td>' + g.label + '</td><td>' + signedUsd(g.vegaW) + '</td><td class="' + tone(g.vegaW * pts) + '">' + signedUsd(g.vegaW * pts) + '</td></tr>';
+    }).join('');
+    return '<section class="card"><h3>' + esc(d.asset) + ' dealers if implied vol jumps</h3>' +
+      '<p class="small" style="margin:0 0 10px">' + esc(readShock(c, pts)) + ' ' + esc(vegaSide(c)) + '.</p>' +
+      '<div class="tiles">' +
+        tile('Vol +' + pts + ' pts', up, up >= 0 ? 'dealers make' : 'dealers lose') +
+        tile('Vol −' + pts + ' pts', -up, up >= 0 ? 'dealers lose' : 'dealers make') +
+        tile('Last 24h', hit, 'vol ' + (d.ivChange24h >= 0 ? '+' : '−') + Math.abs(d.ivChange24h).toFixed(1) + ' pts') +
+      '</div>' +
+      '<table class="stats"><thead><tr><th>Expiry</th><th>Per 1 point</th><th>If +' + pts + ' points</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="muted small">Points of 30-day implied vol (DVOL). Short-dated vol jumps more than long-dated, so a week out counts about 2× and the quarterly about ½–¾×. ' +
+        'Same dealer assumption as above: they bought the calls and sold the puts customers trade.</p>' +
     '</section>';
   }
 
@@ -117,7 +143,9 @@ export function mount(el) {
       'and the re-hedging bill from how much the coin actually moved last week. Both scale with gamma (how fast the hedge has to change), ' +
       'so big expiries and options close to the price dominate. Options expiring within a day only count until they expire.</p>' +
       '<p class="small">Dealers can be short some expiries and long others. If they sold short-dated options and own longer-dated ones, ' +
-      'they can collect decay and still earn from re-hedging at the same time; the table shows which expiry is doing what.</p></details></section>';
+      'they can collect decay and still earn from re-hedging at the same time; the table shows which expiry is doing what.</p>' +
+      '<p class="small">Vega is how much an option\'s price changes when implied vol moves 1 point. Long-dated options have the most of it, ' +
+      'so whoever holds the quarterlies gains when fear rises and loses when it eases, even if the price itself doesn\'t move.</p></details></section>';
   }
 
   function drawChart(box, d) {

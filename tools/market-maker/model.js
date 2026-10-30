@@ -3,7 +3,7 @@
 // Implied: Deribit DVOL, what options price in for the next 30 days (annualised %).
 // Realized: how much the coin actually moved, from hourly log returns,
 // annualised for a market that trades around the clock.
-import { bsGamma } from '../../shared/gamma.js';
+import { bsGamma, bsVega } from '../../shared/gamma.js';
 
 const HOURS_PER_YEAR = 24 * 365;
 const YEAR_MS = 365 * 864e5;
@@ -76,12 +76,16 @@ export function expiryGroup(expiry) {
 //   hedge  = +½·Γ$·σ²realized/365 (what re-hedging makes at the realized pace)
 // signed for the dealer, so a short option gives +theta and −hedge.
 // Options that expire within a day only count until they expire.
+// vega: dealers' dollars per 1 point rise in implied vol on every expiry, same
+// sign convention (positive = dealers gain when implied vol rises).
+// vegaW: the same per 1 point of 30-day implied vol (DVOL). Short-dated vol moves
+// more than long-dated, so each expiry moves √(30 / days) points (a day at least).
 // rv: realized vol as annualised %, e.g. step 1's 7-day figure.
 export function carry(options, spot, now, rv) {
   const r2 = (rv / 100) * (rv / 100);
   const by = {};
-  GROUPS.forEach(function (g) { by[g.key] = { key: g.key, label: g.label, theta: 0, hedge: 0, net: 0, gamma: 0 }; });
-  const total = { theta: 0, hedge: 0, net: 0, gamma: 0 };
+  GROUPS.forEach(function (g) { by[g.key] = { key: g.key, label: g.label, theta: 0, hedge: 0, net: 0, gamma: 0, vega: 0, vegaW: 0 }; });
+  const total = { theta: 0, hedge: 0, net: 0, gamma: 0, vega: 0, vegaW: 0 };
   for (let i = 0; i < options.length; i++) {
     const o = options[i];
     const T = (o.expiry - now) / YEAR_MS;
@@ -90,8 +94,10 @@ export function carry(options, spot, now, rv) {
     const life = Math.min(1, T * 365);
     const theta = -0.5 * g * o.iv * o.iv / 365 * life;
     const hedge = 0.5 * g * r2 / 365 * life;
+    const vega = (o.type === 'C' ? 1 : -1) * bsVega(spot, o.strike, T, o.iv) * o.oi;
+    const vegaW = vega * Math.sqrt(30 / Math.max(T * 365, 1));
     [by[expiryGroup(o.expiry)], total].forEach(function (b) {
-      b.theta += theta; b.hedge += hedge; b.net += theta + hedge; b.gamma += g;
+      b.theta += theta; b.hedge += hedge; b.net += theta + hedge; b.gamma += g; b.vega += vega; b.vegaW += vegaW;
     });
   }
   return { total: total, groups: GROUPS.map(function (g) { return by[g.key]; }) };

@@ -1,6 +1,6 @@
 // Run: node test/mm.mjs  — prints the live Market Maker reading.
 import { collectMM } from '../tools/market-maker/collect.js';
-import { readMM, signedUsd } from '../tools/market-maker/read.js';
+import { readMM, readShock, signedUsd } from '../tools/market-maker/read.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
 import { CONFIG } from '../tools/fragility/config.js';
 
@@ -12,6 +12,7 @@ for (const asset of MM_CONFIG.assets) {
   for (const l of r.lines) console.log('   - ' + l);
   console.log('   > ' + r.action);
   if (a.carry) for (const g of [...a.carry.groups, { label: 'Total', ...a.carry.total }]) {
-    console.log(`   ${g.label.padEnd(10)} decay ${signedUsd(g.theta).padStart(7)}  re-hedging ${signedUsd(g.hedge).padStart(7)}  net ${signedUsd(g.net).padStart(7)}  (dollar gamma ${signedUsd(g.gamma)})`);
+    console.log(`   ${g.label.padEnd(10)} decay ${signedUsd(g.theta).padStart(7)}  re-hedging ${signedUsd(g.hedge).padStart(7)}  net ${signedUsd(g.net).padStart(7)}  (dollar gamma ${signedUsd(g.gamma)})  vega/pt ${signedUsd(g.vega).padStart(7)} per DVOL pt ${signedUsd(g.vegaW).padStart(7)}`);
   }
+  if (a.carry) console.log('   ' + readShock(a.carry, MM_CONFIG.shockPts));
 }

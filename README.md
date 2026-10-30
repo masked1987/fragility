@@ -37,7 +37,8 @@ tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dea
   model.js                 pure liquidation model (runs in Node)
   read.js                  plain-English reading at the top of the tab (runs in Node)
 tools/market-maker/        Market Maker tab: implied vs realized volatility (Deribit DVOL vs Gate hourly prices),
-                           and dealers' time decay vs re-hedging in dollars a day, by expiry group
+                           dealers' time decay vs re-hedging in dollars a day, and what a jump in
+                           implied vol makes or costs them (vega), by expiry group
   model.js, read.js        pure calculation and plain-English reading (run in Node)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
