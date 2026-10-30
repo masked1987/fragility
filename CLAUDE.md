@@ -14,7 +14,8 @@ the file layout. Tabs, in order:
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
-4. **Market Maker**: implied vs realized volatility (step 1 of the plan below).
+4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done).
+5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
 
 ## How the owner works
 
@@ -46,7 +47,8 @@ the file layout. Tabs, in order:
   (`shared/gamma.js`). Keep any new Greek on the same convention and say so.
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
-  `node test/carry.mjs` and `node test/alerts.mjs` are offline and must pass.
+  `node test/carry.mjs`, `node test/alerts.mjs` and `node test/plan.mjs` are
+  offline and must pass. `node test/playbook.mjs` prints the live Playbook.
 - To try `jobs/monitor.mjs` without ringing the phone: copy `state.json` and
   `log.csv` from the `data` branch into a scratch folder, and run it with a
   `--import` preload that replaces `fetch` for `https://ntfy.sh/` (prints instead).
@@ -114,3 +116,22 @@ How much dealers collect per day from time decay against what re-hedging costs.
   own the quarterlies. `readCarry()` then says so in words; keep that.
 
 The Market Maker plan is complete.
+
+## Playbook tab
+
+Asked for after the Market Maker plan: "create a strategy from all our tools",
+first as a written page, then as this tab. `tools/playbook/`.
+- `collect.js` reuses `collectFlow` and `collectMM` (shared HTTP cache); `plan.js`
+  is pure. Modes, first match wins: Cascade risk (Primed, MM unstable, or a
+  loaded cluster while not Calm), Squeeze up/down (crowded side + its cluster
+  within 5% + price not on the wrong side of the flip), Trend (>0.5% below the
+  flip, or dealers losing), Range (>0.5% above the flip), else No edge.
+- Triggers: alert levels and round numbers (ETH 50, BTC 500), at least 0.15 of
+  a day's implied move away, never on the wrong side of the flip. A level
+  crossed in the last 4 hourly closes is "just broken" (plan shows Triggered).
+- Stop ½ day's move past the trigger; targets are liquidation clusters and the
+  biggest long-gamma strike within 2 days' moves, else ½ / ¾ of a day's move.
+  These come from a 41-day check (Sep–Oct 2026): ½-move stops survived 79% of
+  good days, 0.8× 91%; ½ / ¾ / 1× targets reached 79% / 59% / 43%.
+- Not backtested on the Fragility log yet (it started late Oct 2026). Once it
+  has a month or more, offer to check which modes actually worked.

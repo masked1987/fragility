@@ -285,3 +285,38 @@ details summary { cursor: pointer; }
 .tile-num { font-size: 18px; font-weight: 700; margin: 2px 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cash-in { color: var(--calm); }
 .cash-out { color: var(--primed); }
+
+/* Playbook: mode colours, decision cards, size inputs */
+.pill.pb-primed { background: var(--primed); }
+.pill.pb-building { background: var(--building); }
+.pill.pb-accent { background: var(--accent); }
+.pill.pb-calm { background: var(--calm); }
+.pill.pb-muted { background: var(--muted); }
+.verdict.pb-primed { border-left-color: var(--primed); }
+.verdict.pb-building { border-left-color: var(--building); }
+.verdict.pb-accent { border-left-color: var(--accent); }
+.verdict.pb-calm { border-left-color: var(--calm); }
+.verdict.pb-muted { border-left-color: var(--muted); }
+.pb-h { margin: 18px 0 0; }
+.pb-plan { border-left: 4px solid var(--line); }
+.pb-plan.down { border-left-color: var(--primed); }
+.pb-plan.up { border-left-color: var(--calm); }
+.pb-plan.both { border-left-color: var(--accent); }
+.pb-plan.wait { border-left-color: var(--muted); }
+.pb-plan:not(.pref) { opacity: .92; }
+.pb-plan.pref { box-shadow: 0 0 0 1px var(--accent) inset; }
+.pb-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.pb-top h3 { margin: 0; }
+.pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.pref { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.chip.trig { border-color: var(--building); color: var(--building); font-weight: 600; }
+.pb-status { margin: 0 0 10px; color: var(--muted); }
+.pb-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; margin: 0 0 6px; font-size: 14px; }
+.pb-dl dt { color: var(--muted); }
+.pb-dl dd { margin: 0; min-width: 0; }
+.pb-tg { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.num { font-variant-numeric: tabular-nums; }
+.pb-calc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.pb-calc label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.pb-calc input { width: 100%; font: inherit; font-size: 16px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
