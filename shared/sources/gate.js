@@ -23,3 +23,28 @@ export async function perp(asset) {
     oiHist: hist.slice(0, -1),
   };
 }
+
+// Last 30 days, hourly: price range, open interest, taker split, liquidations.
+export async function hourly(asset) {
+  const c = asset + '_USDT';
+  const res = await Promise.all([
+    getJson(BASE + '/contract_stats?contract=' + c + '&interval=1h&limit=720'),
+    getJson(BASE + '/candlesticks?contract=' + c + '&interval=1h&limit=720'),
+  ]);
+  const candles = {};
+  res[1].forEach(function (k) { candles[k.t] = k; });
+  return res[0].filter(function (s) { return candles[s.time] && s.mark_price > 0; }).map(function (s) {
+    const k = candles[s.time];
+    const taker = s.long_taker_size + s.short_taker_size;
+    return {
+      t: s.time * 1000,
+      price: (+k.h + +k.l + +k.c) / 3,
+      high: +k.h,
+      low: +k.l,
+      oiCoins: s.open_interest_usd / s.mark_price,
+      buyShare: taker > 0 ? s.long_taker_size / taker : 0.5,
+      longLiqUsd: +s.long_liq_usd || 0,
+      shortLiqUsd: +s.short_liq_usd || 0,
+    };
+  });
+}

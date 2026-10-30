@@ -1,5 +1,7 @@
 # Fragility Score (BTC / ETH)
 
+Tabs: Fragility, Gamma Detrite (embedded), Forced Flow, Market Maker (soon).
+
 How primed the market is for a liquidation cascade: 0–100, in three zones
 (Calm < 35, Building 35–59, Primed ≥ 60). Not a trade signal.
 
@@ -30,6 +32,9 @@ that has it (Binance, Bybit, then Gate).
 ```
 index.html, assets/        tab shell (add a tool in assets/app.js; tabs stay loaded)
 tools/embed.js             embeds another Pages site as a tab (Gamma Detrite)
+tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dealer gamma
+  config.js                leverage mix and ladder settings
+  model.js                 pure liquidation model (runs in Node)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/
@@ -39,6 +44,7 @@ tools/fragility/
   alerts.js                zone-change detection with hysteresis
   view.js                  the tab UI
 test/live.mjs              node test/live.mjs  -> prints live scores
+test/flow.mjs              node test/flow.mjs  -> prints live liquidation clusters
 ```
 
 ## Run locally
