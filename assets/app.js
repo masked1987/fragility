@@ -2,10 +2,10 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=6';
+const V = '?v=7';
 const TOOLS = [
-  { id: 'fragility', title: 'Fragility', load: function () { return import('../tools/fragility/view.js' + V); } },
   { id: 'gamma', title: 'Gamma Detrite', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
+  { id: 'fragility', title: 'Fragility', load: function () { return import('../tools/fragility/view.js' + V); } },
   { id: 'flow', title: 'Forced Flow', load: function () { return import('../tools/forced-flow/view.js' + V); } },
   { id: 'mm', title: 'Market Maker', load: function () { return import('../tools/placeholder.js' + V); } },
 ];

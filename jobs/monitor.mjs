@@ -77,7 +77,7 @@ async function send(p) {
   const res = await fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
     method: 'POST',
     body: p.body,
-    headers: { Title: p.title, Priority: String(p.priority), Tags: p.tags, Click: CONFIG.siteUrl },
+    headers: { Title: p.title, Priority: String(p.priority), Tags: p.tags, Click: CONFIG.siteUrl + '#fragility' },
   });
   console.log('push', res.status, p.title);
 }

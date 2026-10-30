@@ -1,6 +1,6 @@
 # Fragility Score (BTC / ETH)
 
-Tabs: Fragility, Gamma Detrite (embedded), Forced Flow, Market Maker (soon).
+Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker (soon).
 
 How primed the market is for a liquidation cascade: 0–100, in three zones
 (Calm < 35, Building 35–59, Primed ≥ 60). Not a trade signal.
