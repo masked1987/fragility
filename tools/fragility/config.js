@@ -26,5 +26,5 @@ export const CONFIG = {
   basis: { fullLow: -5, calmLow: 3, calmHigh: 10, fullHigh: 25, targetDays: 90, minDays: 7 }, // APR
   oiLevel: { calmBelowPct: 50, minHistoryDays: 7 },  // percentile of last 30 days
   oiChange: { fullPct: 8 },                           // 24h growth in coins
-  gamma: { calmRatio: 0.3, fullRatio: -0.3 },         // net / gross GEX
+  gamma: { calmRatio: 0.3, fullRatio: -0.3, neutralRatio: 0.05 }, // net / gross GEX; within ±neutral reads as neutral
 };

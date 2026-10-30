@@ -80,21 +80,18 @@ body {
 .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
 .pane[hidden] { display: none; }
 
-.pane.full { position: relative; }
-.embed-frame { display: block; width: 100%; height: var(--avail-h, 85vh); border: 0; }
-.embed-open {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  padding: 6px 10px;
-  border-radius: 8px;
+.embed-frame { display: block; width: 100%; height: calc(var(--avail-h, 85vh) - 32px); border: 0; }
+/* Slim bar under the frame so the link never covers the embedded page. */
+.embed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 32px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line);
   background: var(--card);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-  opacity: .85;
 }
+.embed-open { color: var(--muted); font-size: 12px; text-decoration: none; }
 
 .card {
   background: var(--card);

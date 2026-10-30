@@ -131,7 +131,10 @@ export function renderHistory(el, all, asset, zones) {
     return;
   }
   const days = (rows[rows.length - 1].t - rows[0].t) / DAY;
-  el.innerHTML = '<p class="muted small">' + rows.length + ' hourly readings over ' + (days < 1 ? Math.round(days * 24) + ' hours' : days.toFixed(1) + ' days') + '.</p>' +
+  const hours = Math.max(1, Math.round(days * 24));
+  const span = rows.length < 2 ? '1 hourly reading so far'
+    : rows.length + ' hourly readings over ' + (days < 1 ? hours + (hours === 1 ? ' hour' : ' hours') : days.toFixed(1) + ' days');
+  el.innerHTML = '<p class="muted small">' + span + '.</p>' +
     '<div class="chart"></div>' + statsHtml(rows, zones);
   drawChart(el.querySelector('.chart'), rows, zones);
 }

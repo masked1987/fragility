@@ -94,14 +94,17 @@ function gammaInput(data, cfg) {
   const g = gex(o.options, o.spot, data.time);
   if (!(g.gross > 0)) return null;
   const ratio = g.net / g.gross;
+  const shown = Math.round(ratio * 100) / 100 || 0; // label agrees with the ratio printed next to it
   const c = cfg.gamma;
   const flip = gammaFlip(o.options, o.spot, data.time);
   const flipText = flip ? ' · flip ≈ ' + Math.round(flip).toLocaleString('en-US') + (o.spot > flip ? ' (spot above)' : ' (spot below)') : '';
+  const netM = Math.abs(g.net) / 1e6;
+  const side = Math.abs(shown) < c.neutralRatio ? 'dealers near neutral: hedging has little effect'
+    : shown > 0 ? 'dealers long gamma: hedging dampens' : 'dealers short gamma: hedging amplifies';
   return {
     score: clamp((c.calmRatio - ratio) / (c.calmRatio - c.fullRatio) * 100),
-    value: (g.net >= 0 ? '+' : '−') + '$' + (Math.abs(g.net) / 1e6).toFixed(0) + 'M per 1%',
-    note: (ratio >= 0 ? 'dealers long gamma: hedging dampens' : 'dealers short gamma: hedging amplifies') +
-      ' · net/gross ' + ratio.toFixed(2) + flipText,
+    value: (g.net >= 0 ? '+' : '−') + '$' + netM.toFixed(netM < 10 ? 1 : 0) + 'M per 1%',
+    note: side + ' · net/gross ' + shown.toFixed(2) + flipText,
     gamma: { net: g.net, gross: g.gross, ratio: ratio, flip: flip, spot: o.spot },
   };
 }

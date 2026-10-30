@@ -67,3 +67,25 @@ the same name as the repo secret `NTFY_TOPIC` (Settings, Secrets and variables,
 Actions). GitHub's servers are in the US, so the job uses Gate, OKX and Deribit
 (Binance and Bybit block it). GitHub pauses scheduled jobs in public repos after
 60 days without commits and emails you; re-enable from the Actions tab.
+
+### On-time alerts (optional)
+
+GitHub treats `schedule` as best effort: on quiet repos it can run hours late
+(gamma-detrite's 15-minute job has run every 4–7 hours). To run on time, have a
+free outside scheduler start the job. The GitHub schedule stays as a backup;
+extra runs are harmless (one runs at a time, the log is still hourly).
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → Generate.
+   Repository access: only `fragility`. Permissions: Actions → Read and write.
+   Pick the longest expiry you're comfortable with and note the date.
+2. At [cron-job.org](https://cron-job.org) (free account) create a job:
+   - URL: `https://api.github.com/repos/masked1987/fragility/actions/workflows/monitor.yml/dispatches`
+   - Schedule: every 15 minutes
+   - Advanced → Request method: `POST`
+   - Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`
+   - Body: `{"ref":"main"}`
+3. Save and use "Test run": GitHub answers `204`, and a new run appears under
+   Actions within a few seconds.
+
+When the token expires the calls fail with `401`; generate a new one and paste
+it into the job.
