@@ -44,6 +44,7 @@ the file layout. Tabs, in order:
   (`shared/gamma.js`). Keep any new Greek on the same convention and say so.
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
+  `node test/carry.mjs` is offline (made-up option chains) and must pass.
 
 ## Market Maker plan
 
@@ -56,7 +57,7 @@ prices. Reading: dealers winning / balanced / losing over the last 7 days
 (gap ±5 vol points), plus 24h IV change, wild-day flag, 30-day IV percentile,
 dealer gamma near spot. 30-day chart, gap shaded green/red.
 
-### Step 2: theta vs gamma in dollars (next)
+### Step 2: theta vs gamma in dollars (done)
 How much dealers collect per day from time decay against what re-hedging costs.
 - From the Deribit option chain already fetched (`deribit.options`): per option
   Black-Scholes gamma (`bsGamma`) and theta; sum with the dealer sign convention.
@@ -70,8 +71,14 @@ How much dealers collect per day from time decay against what re-hedging costs.
   since big monthly/quarterly expiries dominate.
 - Check: when implied > realized the net must be positive for short-gamma dealers;
   sanity-test with made-up chains in Node before wiring the UI.
+- Built as `carry()` in `tools/market-maker/model.js`: per option, its own mark IV
+  for decay, step 1's 7-day realized for re-hedging; options expiring within a day
+  count only until expiry. Groups: dailies (non-Friday), weeklies (Friday),
+  monthly (last Friday), quarterly (last Friday of Mar/Jun/Sep/Dec).
+  Dealers are often short short-dated and long quarterlies, so decay and
+  re-hedging can both be positive; the table and "How this works" explain it.
 
-### Step 3: vega, the risk of implied vol jumping
+### Step 3: vega, the risk of implied vol jumping (next)
 - Net dealer vega in dollars per 1 vol point (Black-Scholes vega × OI, same sign
   convention), total and by expiry group.
 - Scenario line in plain words: "If fear pushes implied vol up 5 points,

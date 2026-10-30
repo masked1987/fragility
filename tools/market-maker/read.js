@@ -8,6 +8,26 @@ import { dailyMove } from './model.js';
 function d(v) { return '±' + dailyMove(v).toFixed(1) + '%'; }
 function pts(v) { return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1); }
 
+// Rounded dollars: $840, $12k, $1.3M.
+export function usd(v) {
+  v = Math.abs(v);
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'k';
+  return '$' + v.toFixed(0);
+}
+export function signedUsd(v) { return (v >= 0 ? '+' : '−') + usd(v); }
+
+// One line on the dollars, or null. c = carry() from model.js.
+export function readCarry(c) {
+  if (!c) return null;
+  const t = c.total;
+  const big = c.groups.slice().sort(function (a, b) { return Math.abs(b.net) - Math.abs(a.net); })[0];
+  return 'In dollars: dealers ' + (t.theta >= 0 ? 'collect ~' + usd(t.theta) + ' a day from time decay' : 'pay ~' + usd(t.theta) + ' a day in time decay') +
+    ' and ' + (t.hedge <= 0 ? 'spend ~' + usd(t.hedge) + ' re-hedging' : 'make ~' + usd(t.hedge) + ' from re-hedging') +
+    ', so they ' + (t.net >= 0 ? 'make' : 'lose') + ' ~' + usd(t.net) + ' a day at last week\'s pace' +
+    (big && Math.abs(big.net) >= 0.5 * Math.abs(t.net) && Math.abs(t.net) > 0 ? ', biggest share from ' + big.key + ' options.' : '.');
+}
+
 // gamma: dealer net/gross gamma ratio near spot (from Deribit options), or null.
 export function readMM(a, gamma, asset, cfg, neutral) {
   const gap = a.ivWeek - a.rvWeek;
@@ -38,6 +58,8 @@ export function readMM(a, gamma, asset, cfg, neutral) {
   else if (a.rvDay != null) lines.push('Last 24h ' + asset + ' moved at a ' + d(a.rvDay) + ' a day pace.');
   if (a.ivChange24h >= cfg.ivMovePts) lines.push('Fear is rising: implied vol up ' + a.ivChange24h.toFixed(1) + ' points in a day, which costs option sellers (vega).');
   if (a.ivChange24h <= -cfg.ivMovePts) lines.push('Fear is easing: implied vol down ' + Math.abs(a.ivChange24h).toFixed(1) + ' points in a day.');
+  const money = readCarry(a.carry);
+  if (money) lines.push(money);
   if (gamma != null) {
     const g = Math.round(gamma * 100) / 100;
     if (Math.abs(g) < neutral) lines.push('Dealer gamma near the price is about neutral, so their hedging has little effect either way.');

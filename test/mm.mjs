@@ -1,6 +1,6 @@
 // Run: node test/mm.mjs  — prints the live Market Maker reading.
 import { collectMM } from '../tools/market-maker/collect.js';
-import { readMM } from '../tools/market-maker/read.js';
+import { readMM, signedUsd } from '../tools/market-maker/read.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
 import { CONFIG } from '../tools/fragility/config.js';
 
@@ -11,4 +11,7 @@ for (const asset of MM_CONFIG.assets) {
   console.log(`  [${r.tone}] ${r.headline}`);
   for (const l of r.lines) console.log('   - ' + l);
   console.log('   > ' + r.action);
+  if (a.carry) for (const g of [...a.carry.groups, { label: 'Total', ...a.carry.total }]) {
+    console.log(`   ${g.label.padEnd(10)} decay ${signedUsd(g.theta).padStart(7)}  re-hedging ${signedUsd(g.hedge).padStart(7)}  net ${signedUsd(g.net).padStart(7)}  (dollar gamma ${signedUsd(g.gamma)})`);
+  }
 }

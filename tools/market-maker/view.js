@@ -1,8 +1,9 @@
 // Market Maker tab: are option dealers being paid enough for the moves they hedge?
 // Step 1: implied vs realized volatility with a plain-English reading.
+// Step 2: the same in dollars a day, time decay against re-hedging, by expiry group.
 import { MM_CONFIG as CFG } from './config.js';
 import { collectMM } from './collect.js';
-import { readMM } from './read.js';
+import { readMM, usd, signedUsd } from './read.js';
 import { dailyMove } from './model.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 
@@ -51,7 +52,7 @@ export function mount(el) {
       bodyEl.innerHTML = '<section class="card"><p>Could not load: ' + esc(d.error) + '</p></section>';
       return;
     }
-    bodyEl.innerHTML = readingHtml(d) + chartHtml(d) + notesHtml();
+    bodyEl.innerHTML = readingHtml(d) + dollarsHtml(d) + chartHtml(d) + notesHtml();
     drawChart(bodyEl.querySelector('.chart'), d);
   }
 
@@ -63,6 +64,30 @@ export function mount(el) {
       '<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
       '<p class="muted small">Worked out automatically from Deribit options and Gate prices. Context, not a trade signal.</p>' +
+    '</section>';
+  }
+
+  // Three tiles (decay, re-hedging, net) and the split by expiry group. Dealer's side, per day.
+  function dollarsHtml(d) {
+    const c = d.carry;
+    if (!c) return '';
+    const t = c.total;
+    const tone = function (v) { return v >= 0 ? 'cash-in' : 'cash-out'; };
+    const tile = function (label, num, sub, cls) {
+      return '<div class="tile"><div class="label">' + label + '</div><div class="tile-num ' + (cls || '') + '">' + num + '</div><div class="muted small">' + sub + '</div></div>';
+    };
+    const rows = c.groups.filter(function (g) { return g.theta || g.hedge; }).map(function (g) {
+      return '<tr><td>' + g.label + '</td><td>' + signedUsd(g.theta) + '</td><td>' + signedUsd(g.hedge) + '</td><td class="' + tone(g.net) + '">' + signedUsd(g.net) + '</td></tr>';
+    }).join('');
+    return '<section class="card"><h3>' + esc(d.asset) + ' dealers in dollars, per day</h3>' +
+      '<div class="tiles">' +
+        tile('Time decay', '~' + usd(t.theta), t.theta >= 0 ? 'collected a day' : 'paid a day') +
+        tile('Re-hedging', '~' + usd(t.hedge), t.hedge <= 0 ? 'costs a day' : 'earned a day') +
+        tile('Net', '~' + signedUsd(t.net), t.net >= 0 ? 'dealers make a day' : 'dealers lose a day', tone(t.net)) +
+      '</div>' +
+      '<table class="stats"><thead><tr><th>Expiry</th><th>Decay</th><th>Re-hedging</th><th>Net</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="muted small">From the dealers\' side: + is money in, − is money out. Re-hedging is priced at last ' + CFG.rvDays + ' days\' pace ' +
+        '(' + day(d.rvWeek) + ' a day). Deribit options only; assumes dealers bought the calls and sold the puts customers trade, as for gamma everywhere on this site.</p>' +
     '</section>';
   }
 
@@ -87,7 +112,12 @@ export function mount(el) {
       'if it moves more, the re-hedging wins and they lose.</p>' +
       '<p class="small">Implied is Deribit\'s DVOL index: the volatility options price in for the next 30 days. ' +
       'Realized is worked out from hourly Gate prices over the last ' + CFG.rvDays + ' days. The reading compares the average implied over that same week ' +
-      'with what actually happened. A gap under ' + CFG.gapPts + ' points counts as balanced.</p></details></section>';
+      'with what actually happened. A gap under ' + CFG.gapPts + ' points counts as balanced.</p>' +
+      '<p class="small">The dollar figures go option by option through Deribit\'s open interest. Each option\'s time decay comes from its own implied vol, ' +
+      'and the re-hedging bill from how much the coin actually moved last week. Both scale with gamma (how fast the hedge has to change), ' +
+      'so big expiries and options close to the price dominate. Options expiring within a day only count until they expire.</p>' +
+      '<p class="small">Dealers can be short some expiries and long others. If they sold short-dated options and own longer-dated ones, ' +
+      'they can collect decay and still earn from re-hedging at the same time; the table shows which expiry is doing what.</p></details></section>';
   }
 
   function drawChart(box, d) {

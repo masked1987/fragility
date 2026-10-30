@@ -36,7 +36,8 @@ tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dea
   config.js                leverage mix and ladder settings
   model.js                 pure liquidation model (runs in Node)
   read.js                  plain-English reading at the top of the tab (runs in Node)
-tools/market-maker/        Market Maker tab: implied vs realized volatility (Deribit DVOL vs Gate hourly prices)
+tools/market-maker/        Market Maker tab: implied vs realized volatility (Deribit DVOL vs Gate hourly prices),
+                           and dealers' time decay vs re-hedging in dollars a day, by expiry group
   model.js, read.js        pure calculation and plain-English reading (run in Node)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
@@ -48,7 +49,8 @@ tools/fragility/
   view.js                  the tab UI
 test/live.mjs              node test/live.mjs  -> prints live scores
 test/flow.mjs              node test/flow.mjs  -> prints live liquidation clusters
-test/mm.mjs                node test/mm.mjs    -> prints the live Market Maker reading
+test/mm.mjs                node test/mm.mjs    -> prints the live Market Maker reading and dollars
+test/carry.mjs             node test/carry.mjs -> offline checks of the dollar maths (made-up chains)
 ```
 
 ## Run locally
