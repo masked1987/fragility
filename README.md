@@ -48,8 +48,16 @@ python3 -m http.server 8000
 ```
 then open http://localhost:8000 (ES modules don't load from `file://`).
 
-## Alerts later
+## Log and phone alerts
 
-`collect` + `evaluate` + `checkZoneChange` run in Node 18+, so a scheduled job
-(e.g. GitHub Actions cron) can run them and send a push via ntfy.sh or Telegram.
-Store the last zone in the repo or a gist, since the job has no localStorage.
+`.github/workflows/monitor.yml` runs `jobs/monitor.mjs` every 15 minutes on
+GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when a zone changes
+(3-point buffer so it doesn't flap) and appends an hourly row to `log.csv` on
+the `data` branch. The Fragility tab charts that log and shows how big the
+next-day moves were after each zone.
+
+Setup: install the ntfy app, subscribe to a hard-to-guess topic name, and save
+the same name as the repo secret `NTFY_TOPIC` (Settings, Secrets and variables,
+Actions). GitHub's servers are in the US, so the job uses Gate, OKX and Deribit
+(Binance and Bybit block it). GitHub pauses scheduled jobs in public repos after
+60 days without commits and emails you; re-enable from the Actions tab.

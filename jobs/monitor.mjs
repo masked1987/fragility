@@ -49,7 +49,9 @@ for (const asset of CONFIG.assets) {
   }
 }
 
-if (firstRun && summary.length) {
+// Confirms the phone setup: sent once, on the first run that has a topic.
+if (!state.welcomed && process.env.NTFY_TOPIC && summary.length) {
+  state.welcomed = true;
   pushes.push({ title: 'Fragility alerts are on', body: 'You will get a message here when a zone changes.\nNow: ' + summary.join(' · '), priority: 3, tags: 'white_check_mark' });
 }
 
