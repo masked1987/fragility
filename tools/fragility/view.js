@@ -4,6 +4,7 @@ import { collect } from './collect.js';
 import { evaluate } from './score.js';
 import { checkZoneChange, emitZoneChange, onZoneChange } from './alerts.js';
 import { load, save } from '../../shared/storage.js';
+import { loadHistory, renderHistory } from './history.js';
 
 const COLORS = { funding: '#5b8def', basis: '#a77bdb', oiLevel: '#3fb8af', oiChange: '#7fc97f', gamma: '#e8a33d' };
 const ZONE_CLASS = { Calm: 'calm', Building: 'building', Primed: 'primed' };
@@ -30,6 +31,8 @@ export function mount(el) {
   let selected = load('fragility.asset', CONFIG.assets[0]);
   let loading = false;
   let lastChange = null;
+  let history = null;      // rows from the scheduled job's log
+  let historyError = null;
 
   el.innerHTML =
     '<div class="row between">' +
@@ -72,7 +75,13 @@ export function mount(el) {
       : '';
     const r = results[selected];
     if (!r) return;
-    bodyEl.innerHTML = r.score == null ? '<section class="card"><p>No data sources reachable right now.</p></section>' + sourcesHtml(r) : scoreHtml(r) + breakdownHtml(r) + sourcesHtml(r);
+    const historyCard = '<section class="card"><h3>' + esc(selected) + ' history</h3><div id="fx-history"></div></section>';
+    bodyEl.innerHTML = r.score == null
+      ? '<section class="card"><p>No data sources reachable right now.</p></section>' + historyCard + sourcesHtml(r)
+      : scoreHtml(r) + breakdownHtml(r) + historyCard + sourcesHtml(r);
+    const histEl = bodyEl.querySelector('#fx-history');
+    if (history) renderHistory(histEl, history, selected, CONFIG.zones);
+    else histEl.innerHTML = '<p class="muted small">' + (historyError ? 'Log not available: ' + esc(historyError) : 'Loading log…') + '</p>';
   }
 
   function scoreHtml(r) {
@@ -136,6 +145,8 @@ export function mount(el) {
     refreshBtn.disabled = true;
     refreshBtn.textContent = 'Loading…';
     try {
+      loadHistory(CONFIG.historyUrl).then(function (rows) { history = rows; historyError = null; render(); })
+        .catch(function (e) { historyError = e.message; render(); });
       const all = await Promise.all(CONFIG.assets.map(function (a) {
         return collect(a).then(function (d) { return evaluate(d, CONFIG); });
       }));

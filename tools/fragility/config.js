@@ -7,6 +7,9 @@
 export const CONFIG = {
   assets: ['BTC', 'ETH'],
   refreshMinutes: 5,
+  siteUrl: 'https://masked1987.github.io/fragility/',
+  // Written by the scheduled job (jobs/monitor.mjs) to the `data` branch.
+  historyUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/log.csv',
 
   // Points out of 100. Missing inputs are dropped and the rest re-weighted.
   weights: { funding: 25, basis: 15, oiLevel: 15, oiChange: 15, gamma: 30 },

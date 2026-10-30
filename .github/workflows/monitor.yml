@@ -1,0 +1,44 @@
+name: Fragility log and alerts
+
+on:
+  schedule:
+    # Every 15 minutes, off the round minutes that GitHub delays most.
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fragility-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: data
+          path: store
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Score, alert, log
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node jobs/monitor.mjs store
+
+      - name: Save log
+        working-directory: store
+        run: |
+          git config user.name "fragility-bot"
+          git config user.email "fragility-bot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -q -m "log $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q origin HEAD:data

@@ -187,3 +187,19 @@ h2, h3 { margin: 0 0 10px; font-size: 16px; }
   .big { font-size: 46px; }
   .sources { columns: 1; }
 }
+
+.chart { position: relative; margin: 6px 0 12px; touch-action: pan-y; }
+.chart svg { display: block; }
+.chart .band.calm { fill: var(--calm-soft); }
+.chart .band.building { fill: var(--building-soft); }
+.chart .band.primed { fill: var(--primed-soft); }
+.chart .band-label { fill: var(--muted); font-size: 10px; font-weight: 600; }
+.chart .axis { fill: var(--muted); font-size: 10px; }
+.chart .line { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { fill: var(--text); stroke: var(--card); stroke-width: 2; }
+.chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .tip { min-height: 20px; margin-top: 4px; font-size: 13px; }
+
+.stats { width: 100%; border-collapse: collapse; font-size: 13px; }
+.stats th { text-align: left; font-weight: 600; color: var(--muted); padding: 4px 6px 6px 0; }
+.stats td { padding: 6px 6px 6px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
