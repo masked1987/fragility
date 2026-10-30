@@ -35,6 +35,7 @@ tools/embed.js             embeds another Pages site as a tab (Gamma Detrite)
 tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dealer gamma
   config.js                leverage mix and ladder settings
   model.js                 pure liquidation model (runs in Node)
+  read.js                  plain-English reading at the top of the tab (runs in Node)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/

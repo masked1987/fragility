@@ -24,4 +24,7 @@ export const FLOW_CONFIG = {
 
   // A cluster counts as "big" at this share of the largest on its side.
   bigClusterShare: 0.4,
+
+  // Plain-English reading: a cluster within closePct is "close", beyond farPct is "far".
+  read: { closePct: 2, farPct: 5 },
 };

@@ -1,6 +1,7 @@
 // Forced Flow tab: estimated liquidation clusters and dealer gamma on one ladder.
 import { FLOW_CONFIG as CFG } from './config.js';
 import { collectFlow } from './collect.js';
+import { readFlow } from './read.js';
 import { load, save } from '../../shared/storage.js';
 
 const ZONE_CLASS = { Calm: 'calm', Building: 'building', Primed: 'primed' };
@@ -57,7 +58,7 @@ export function mount(el) {
       bodyEl.innerHTML = '<section class="card"><p>Could not load: ' + esc(d.error) + '</p></section>';
       return;
     }
-    bodyEl.innerHTML = summaryHtml(d) + mapHtml(d) + notesHtml(d);
+    bodyEl.innerHTML = readingHtml(d) + summaryHtml(d) + mapHtml(d) + notesHtml(d);
     drawLadder(bodyEl.querySelector('.ladder'), d);
   }
 
@@ -74,6 +75,21 @@ export function mount(el) {
         '<b>~' + usd(c.usd) + '</b></div>' +
         '<div class="small muted">' + (c.largest ? 'Largest' : 'Nearest big') + ' ' + kind + ' cluster</div>' + effect + '</li>';
     }).join('');
+  }
+
+  function readingHtml(d) {
+    const r = readFlow(d, CFG.read);
+    const urg = r.urgency
+      ? '<p class="small verdict-urgency"><a href="#fragility" class="plain"><span class="pill ' + ZONE_CLASS[r.urgency.zone] + '">' +
+        r.urgency.score.toFixed(0) + ' ' + r.urgency.zone + '</span></a> ' + esc(r.urgency.text) + '</p>'
+      : '';
+    return '<section class="card verdict ' + r.tone + '">' +
+      '<div class="label">' + esc(d.asset) + ' reading</div>' +
+      '<p class="verdict-head">' + esc(r.headline) + '</p>' + urg +
+      '<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
+      '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
+      '<p class="muted small">Worked out automatically from the estimates below. Context, not a trade signal.</p>' +
+    '</section>';
   }
 
   function summaryHtml(d) {

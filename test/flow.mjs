@@ -1,6 +1,7 @@
 // Run: node test/flow.mjs  — prints the live Forced Flow estimate.
 import { collectFlow } from '../tools/forced-flow/collect.js';
 import { FLOW_CONFIG } from '../tools/forced-flow/config.js';
+import { readFlow } from '../tools/forced-flow/read.js';
 
 const M = x => '$' + (x / 1e6).toFixed(0) + 'M';
 for (const asset of FLOW_CONFIG.assets) {
@@ -13,4 +14,8 @@ for (const asset of FLOW_CONFIG.assets) {
   console.log(`  total in range: longs ${M(tot[0])} shorts ${M(tot[1])} | liq 24h (Gate): longs ${M(f.liq24.longUsd)} shorts ${M(f.liq24.shortUsd)}`);
   const top = [...f.bins].sort((a, b) => Math.abs(b.gamma) - Math.abs(a.gamma)).slice(0, 3);
   console.log('  top gamma strikes:', top.map(b => `${b.mid.toFixed(0)} ${M(b.gamma)}`).join(' | '));
+  const r = readFlow(f, FLOW_CONFIG.read);
+  console.log(`  READING [${r.tone}] ${r.headline}` + (r.urgency ? `  (${r.urgency.text})` : ''));
+  for (const l of r.lines) console.log('    - ' + l);
+  console.log('    > ' + r.action);
 }
