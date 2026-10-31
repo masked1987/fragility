@@ -320,3 +320,74 @@ details summary { cursor: pointer; }
 .pb-calc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
 .pb-calc label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
 .pb-calc input { width: 100%; font: inherit; font-size: 16px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+
+/* Tactics: GEX pivot + exhaustion */
+.verdict.tc-short { border-left-color: var(--primed); }
+.verdict.tc-long { border-left-color: var(--calm); }
+.verdict.tc-build { border-left-color: var(--building); }
+.verdict.tc-wait { border-left-color: var(--muted); }
+.pill.tc-st-ready { background: var(--accent); }
+.pill.tc-st-building { background: var(--building); }
+.pill.tc-st-waiting, .pill.tc-st-none { background: var(--muted); }
+.tc-checks { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 6px; }
+.tc-checks li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; }
+.tc-ic { font-weight: 700; text-align: center; }
+.tc-checks .ok .tc-ic { color: var(--calm); }
+.tc-checks .no .tc-ic { color: var(--primed); }
+.tc-checks .wait .tc-ic { color: var(--muted); }
+.tc-green { color: var(--calm); }
+.tc-red { color: var(--primed); }
+.tc-steps { padding-left: 18px; display: grid; gap: 6px; }
+.legend .ln.tc-pv { border-top: 2px dashed var(--g-pos); }
+.legend .ln.tc-va { border-top: 2px dashed var(--liq-long); }
+.legend .ln.tc-poc { border-top: 2px solid var(--flip); }
+.legend .ln.tc-calls { border-top-color: var(--calm); }
+.legend .ln.tc-puts { border-top-color: var(--primed); }
+.legend .ln.tc-price { border-top-color: var(--muted); }
+.chart .tc-row { stroke: var(--line); stroke-width: 1; stroke-dasharray: 1 4; }
+.chart .tc-b { opacity: .55; }
+.chart .tc-b.live { opacity: .95; }
+.chart .tc-b.pos { fill: var(--g-pos); }
+.chart .tc-b.neg { fill: var(--g-neg); }
+.chart .tc-px { fill: none; stroke: var(--text); stroke-width: 1.6; stroke-linejoin: round; }
+.chart .tc-pvband { fill: var(--g-pos); opacity: .12; }
+.tc-pvl { stroke: var(--g-pos); stroke-width: 1.6; stroke-dasharray: 5 3; }
+.tc-pvt, .tc-pvlt { fill: var(--g-pos); font-size: 10px; font-weight: 700; }
+.chart .tc-now { fill: var(--text); }
+.chart .tc-nowt { fill: var(--bg); font-size: 10px; font-weight: 700; }
+.chart .tc-dc { fill: none; stroke: var(--calm); stroke-width: 2; }
+.chart .tc-dp { fill: none; stroke: var(--primed); stroke-width: 2; }
+.chart .tc-dpx { fill: none; stroke: var(--muted); stroke-width: 1; opacity: .7; }
+.tc-scroll { overflow-x: auto; }
+.tc-heat { border-collapse: collapse; width: 100%; font-size: 11px; font-variant-numeric: tabular-nums; }
+.tc-heat th { color: var(--muted); font-weight: 600; padding: 3px 4px; text-align: right; white-space: nowrap; }
+.tc-heat th:first-child, .tc-heat td.tc-k { text-align: left; }
+.tc-heat td { padding: 3px 4px; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; }
+.tc-heat tr.tc-spot td { font-weight: 700; }
+.tc-heat tr[data-pivot] td.tc-k { color: var(--g-pos); }
+.tc-pvtag { font-size: 9px; font-weight: 700; color: var(--g-pos); text-transform: uppercase; }
+.tc-fp { margin: 6px 0 10px; touch-action: pan-y; }
+.tc-fp svg { display: block; }
+.tc-fp .axis { fill: var(--muted); font-size: 9px; }
+.tc-cell.pos { fill: var(--calm); }
+.tc-cell.neg { fill: var(--primed); }
+.tc-fpt { fill: var(--text); font-variant-numeric: tabular-nums; }
+.tc-imb-s { fill: var(--primed); font-weight: 700; }
+.tc-imb-b { fill: var(--calm); font-weight: 700; }
+.tc-wick { stroke: var(--muted); stroke-width: 1; }
+.tc-body.pos { fill: var(--calm); }
+.tc-body.neg { fill: var(--primed); }
+.tc-mk { font-size: 10px; }
+.tc-mk.neg { fill: var(--primed); }
+.tc-mk.pos { fill: var(--calm); }
+.tc-delta { font-size: 10px; font-weight: 700; }
+.tc-delta.pos { fill: var(--calm); }
+.tc-delta.neg { fill: var(--primed); }
+.tc-prof { fill: var(--liq-long); opacity: .35; }
+.tc-prof.va { opacity: .7; }
+.tc-val { stroke: var(--liq-long); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.tc-pocl { stroke: var(--flip); stroke-width: 1.2; }
+.tc-spotl { stroke: var(--text); stroke-width: 1; stroke-dasharray: 1 2; opacity: .6; }
+.tc-ll { font-size: 9px; font-weight: 700; }
+.tc-valt { fill: var(--liq-long); }
+.tc-poclt { fill: var(--flip); }

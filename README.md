@@ -1,6 +1,6 @@
 # Fragility Score (BTC / ETH)
 
-Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker, Playbook.
+Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker, Playbook, Tactics.
 
 How primed the market is for a liquidation cascade: 0–100, in three zones
 (Calm < 35, Building 35–59, Primed ≥ 60). Not a trade signal.
@@ -44,6 +44,9 @@ tools/playbook/            Playbook tab: picks a trading mode from the other tab
                            possible decisions (trigger, entry, stop, targets, size)
   config.js                thresholds and position-size defaults
   plan.js                  pure mode and level logic (runs in Node)
+tools/tactics/             Tactics tab: GEX pivot + order-flow exhaustion setup (from the owner's video)
+  sources.js               Deribit option and perpetual trades, Gate 1-minute candles
+  model.js, read.js        pure: gamma nodes, pivot, volume profile, premium drift, footprint, setup
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/
@@ -59,6 +62,8 @@ test/carry.mjs             node test/carry.mjs -> offline checks of the dollar m
 test/alerts.mjs            node test/alerts.mjs -> offline checks of the overall verdict and alert logic
 test/plan.mjs              node test/plan.mjs  -> offline checks of the Playbook modes and levels
 test/playbook.mjs          node test/playbook.mjs -> prints the live Playbook mode and decisions
+test/tactics.mjs           node test/tactics.mjs -> offline checks of the Tactics model (made-up trades)
+test/tactics-live.mjs      node test/tactics-live.mjs -> prints the live Tactics setup
 ```
 
 ## Run locally

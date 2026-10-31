@@ -16,6 +16,8 @@ the file layout. Tabs, in order:
    automatic plain-English reading card.
 4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done).
 5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
+6. **Tactics**: a separate intraday tactic, the GEX pivot + order-flow exhaustion
+   setup from the owner's video. Keep it independent of the Playbook.
 
 ## How the owner works
 
@@ -47,8 +49,11 @@ the file layout. Tabs, in order:
   (`shared/gamma.js`). Keep any new Greek on the same convention and say so.
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
-  `node test/carry.mjs`, `node test/alerts.mjs` and `node test/plan.mjs` are
-  offline and must pass. `node test/playbook.mjs` prints the live Playbook.
+  `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
+  `node test/tactics.mjs` are offline and must pass. `node test/playbook.mjs`
+  and `node test/tactics-live.mjs` print the live tabs.
+- Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
+  from a start time ran out of pages on BTC and silently dropped the newest trades.
 - To try `jobs/monitor.mjs` without ringing the phone: copy `state.json` and
   `log.csv` from the `data` branch into a scratch folder, and run it with a
   `--import` preload that replaces `fetch` for `https://ntfy.sh/` (prints instead).
@@ -135,3 +140,24 @@ first as a written page, then as this tab. `tools/playbook/`.
   good days, 0.8× 91%; ½ / ¾ / 1× targets reached 79% / 59% / 43%.
 - Not backtested on the Fragility log yet (it started late Oct 2026). Once it
   has a month or more, offer to check which modes actually worked.
+
+## Tactics tab
+
+From a screen recording the owner sent (TikTok, Aleks Rosme, "10/14 740 QQQ GEX +
+Buyers Exhaustion = 4.75R"). Asked for as its own tab after Playbook, "do not
+change anything" else. `tools/tactics/`, own data file `sources.js`.
+- Video screens → tab: Gamma 3D / Depth View heatmap → depth view table (strike ×
+  expiry, $M per 1%); Interval Map (GEX) → price line + node bubbles + cyan PIVOT
+  (bubble history is saved in localStorage while the tab is open; no free source
+  has intraday GEX history); Net Drift (Premium) → Deribit option trades, calls vs
+  puts premium bought/sold since 00:00 UTC; footprint → Deribit perpetual trades,
+  15-minute candles, sold × bought per row; volume profile + VAH → Gate 1-minute
+  candles, UTC-day session (yesterday's for the first 4 hours) instead of US RTH.
+- Setup (`setup()` in `model.js`): pivot = nearest node ≥ 50% of the biggest
+  within ±3%. Below the pivot = short side, above = long side. Ready = retest in
+  the last 3 candles + order-flow trigger (exhaustion or stepping in) + 2 of 3
+  (pivot at VAH/VAL within 0.35%, premium leaning, price on the right side of the
+  gamma flip). Stop 0.1% past the retest extreme; targets POC, far VA edge, big
+  nodes, ≥ 1R.
+- Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
+- Not backtested. No phone alerts for it yet (not asked).
