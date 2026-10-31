@@ -212,3 +212,29 @@ export function setup(st, cfg) {
     support: support,
   };
 }
+
+// The decision, by the video's rules only: SELL when all six hold at once,
+// otherwise HOLD. The video trades the short side only:
+//   1. the pivot is above the price and was just retested and rejected,
+//   2. buyers ran out at the retest (exhaustion),
+//   3. sellers stepped in,
+//   4. the pivot sits at the session value area high,
+//   5. option premium is put-heavy,
+//   6. price is below the gamma flip (under the gamma nodes; dealers add to drops).
+// s = setup() result.
+export function decide(s) {
+  if (!s || s.status === 'none') return { action: 'hold', met: 0, rules: [], noPivot: true };
+  const c = {};
+  s.checks.forEach(function (x) { c[x.key] = x; });
+  const short = s.side === 'short';
+  const rules = [
+    { key: 'retest', ok: short && c.level.ok === true },
+    { key: 'exhaustion', ok: short && c.flow.ok != null && c.flow.exhausted === true },
+    { key: 'sellers', ok: short && c.flow.ok != null && c.flow.stepping === true },
+    { key: 'vah', ok: short && c.va.ok === true },
+    { key: 'puts', ok: short && c.drift.ok === true },
+    { key: 'gamma', ok: short && c.gamma.ok === true },
+  ];
+  const met = rules.filter(function (r) { return r.ok; }).length;
+  return { action: met === rules.length ? 'sell' : 'hold', met: met, rules: rules, short: short };
+}

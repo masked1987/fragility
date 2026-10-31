@@ -1,6 +1,6 @@
 // Run: node test/tactics.mjs  — offline checks of the Tactics model with made-up data (no network).
 import assert from 'node:assert/strict';
-import { gexNodes, pickPivot, profile, drift, footprint, niceStep, signals, setup } from '../tools/tactics/model.js';
+import { gexNodes, pickPivot, profile, drift, footprint, niceStep, signals, setup, decide } from '../tools/tactics/model.js';
 import { TAC_CONFIG as cfg } from '../tools/tactics/config.js';
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, a + ' vs ' + b);
@@ -84,5 +84,30 @@ r = setup({ ...st, spot: 2256 }, cfg);
 assert.equal(r.side, 'long');
 // No pivot -> nothing to do.
 assert.equal(setup({ ...st, pivot: null }, cfg).status, 'none');
+
+// 6. The decision: SELL only when all six video rules hold, otherwise HOLD.
+let dd = decide(setup(st, cfg));
+assert.equal(dd.action, 'sell');
+assert.equal(dd.met, 6);
+// One rule missing is enough to hold: premium call-heavy...
+dd = decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg));
+assert.equal(dd.action, 'hold');
+assert.equal(dd.met, 5);
+assert.deepEqual(dd.rules.filter(r => !r.ok).map(r => r.key), ['puts']);
+// ...or the pivot not at the value area high (the "ready" status alone would still allow it).
+r = setup({ ...st, profile: { poc: 2232, vah: 2275, val: 2215 } }, cfg);
+assert.equal(r.status, 'ready');
+assert.equal(decide(r).action, 'hold');
+// Sellers in but no exhaustion at the high -> hold.
+const noEx = footprint(trades.map(x => x.price === 2250 ? { ...x, usd: x.dir > 0 ? 60e3 : x.usd } : x), 15 * 6e4, 2);
+dd = decide(setup({ ...st, candles: noEx }, cfg));
+assert.equal(dd.action, 'hold');
+assert.ok(dd.rules.find(x => x.key === 'exhaustion').ok === false);
+// Price above the pivot: the video's setup is a sell only -> hold, nothing met.
+dd = decide(setup({ ...st, spot: 2256 }, cfg));
+assert.equal(dd.action, 'hold');
+assert.equal(dd.met, 0);
+// No pivot at all -> hold.
+assert.equal(decide(setup({ ...st, pivot: null }, cfg)).action, 'hold');
 
 console.log('tactics: all checks passed');

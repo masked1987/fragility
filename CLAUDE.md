@@ -159,5 +159,10 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   (pivot at VAH/VAL within 0.35%, premium leaning, price on the right side of the
   gamma flip). Stop 0.1% past the retest extreme; targets POC, far VA edge, big
   nodes, ≥ 1R.
+- Decision card at the top (`decide()` in `model.js`), asked for as "same rules as
+  the video, hold or sell": SELL only when all 6 hold at once (short side; retest
+  rejected; buyers exhausted AND sellers in; pivot at VAH; put-heavy premium; below
+  the flip), otherwise HOLD with the rules met / missing. Stricter than "Ready",
+  which stays as the looser checklist and still tracks the long mirror image.
 - Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
-- Not backtested. No phone alerts for it yet (not asked).
+- Not backtested. No phone alerts for it: the owner said not yet.
