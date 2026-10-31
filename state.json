@@ -1,11 +1,22 @@
 {
   "zones": {
     "BTC": "Calm",
-    "ETH": "Building"
+    "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793394191182,
-    "ETH": 1793394191182
+    "BTC": 1793407400718,
+    "ETH": 1793407400718
   },
-  "welcomed": true
+  "welcomed": true,
+  "dealers": {
+    "ETH": "even"
+  },
+  "levels": {
+    "ETH": {
+      "2170": "above",
+      "2200": "above",
+      "2250": "below"
+    }
+  },
+  "welcomedMM": true
 }
