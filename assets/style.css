@@ -1,10 +1,15 @@
 :root {
-  --bg: #0f1216;
-  --card: #171b21;
-  --line: #262c35;
-  --text: #e6e9ee;
-  --muted: #8b95a3;
-  --accent: #5b8def;
+  --bg: #07090e;
+  --card: #10141c;
+  --line: #1f2733;
+  --text: #e9edf4;
+  --muted: #8a95a6;
+  --accent: #4d8bff;
+  /* The look: white fading into electric blue, glowing on near-black. */
+  --grad: linear-gradient(120deg, #ffffff 0%, #b9d4ff 30%, #4d8bff 68%, #2b4dff 100%);
+  --glow: rgba(61, 110, 255, .35);
+  --halo: rgba(43, 77, 255, .20);
+  --card-top: #141a25;
   --calm: #2fa37a;
   --building: #d99a2b;
   --primed: #e0524f;
@@ -22,11 +27,16 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f4f5f7;
+    --bg: #f2f5fb;
     --card: #ffffff;
-    --line: #e1e4e8;
-    --text: #1b1f24;
-    --muted: #66707c;
+    --line: #dde3ee;
+    --text: #141a26;
+    --muted: #5f6b7d;
+    --accent: #2f62f0;
+    --grad: linear-gradient(120deg, #0b1633 0%, #1d3fb8 45%, #2f62f0 75%, #5b8dff 100%);
+    --glow: rgba(47, 98, 240, .22);
+    --halo: rgba(47, 98, 240, .10);
+    --card-top: #f7f9ff;
     --calm-soft: #dcf2e9;
     --building-soft: #f8ecd2;
     --primed-soft: #f9dcdb;
@@ -249,11 +259,11 @@ details summary { cursor: pointer; }
 }
 
 /* Forced Flow: plain-English reading. Left edge colour follows the risky direction. */
-.verdict { border-left: 4px solid var(--muted); }
-.verdict.down { border-left-color: var(--liq-long); }
-.verdict.up { border-left-color: var(--liq-short); }
-.verdict.both { border-left-color: var(--primed); }
-.verdict.calm { border-left-color: var(--g-pos); }
+.verdict { --tone: var(--muted); }
+.verdict.down { --tone: var(--liq-long); }
+.verdict.up { --tone: var(--liq-short); }
+.verdict.both { --tone: var(--primed); }
+.verdict.calm { --tone: var(--g-pos); }
 .verdict-head { margin: 4px 0 6px; font-size: 18px; font-weight: 650; line-height: 1.3; }
 .verdict-urgency { margin: 0 0 8px; }
 .verdict-lines { margin: 0 0 10px; padding-left: 18px; }
@@ -261,12 +271,12 @@ details summary { cursor: pointer; }
 .verdict-action { margin: 0 0 8px; }
 
 /* Market Maker: reading tones and the implied vs realized chart */
-.verdict.win { border-left-color: var(--calm); }
-.verdict.lose { border-left-color: var(--primed); }
-.verdict.even { border-left-color: var(--accent); }
-.verdict.steady { border-left-color: var(--calm); }
-.verdict.watch { border-left-color: var(--building); }
-.verdict.unstable { border-left-color: var(--primed); }
+.verdict.win { --tone: var(--calm); }
+.verdict.lose { --tone: var(--primed); }
+.verdict.even { --tone: var(--accent); }
+.verdict.steady { --tone: var(--calm); }
+.verdict.watch { --tone: var(--building); }
+.verdict.unstable { --tone: var(--primed); }
 .o-steady { color: var(--calm); }
 .o-watch { color: var(--building); }
 .o-unstable { color: var(--primed); }
@@ -292,17 +302,17 @@ details summary { cursor: pointer; }
 .pill.pb-accent { background: var(--accent); }
 .pill.pb-calm { background: var(--calm); }
 .pill.pb-muted { background: var(--muted); }
-.verdict.pb-primed { border-left-color: var(--primed); }
-.verdict.pb-building { border-left-color: var(--building); }
-.verdict.pb-accent { border-left-color: var(--accent); }
-.verdict.pb-calm { border-left-color: var(--calm); }
-.verdict.pb-muted { border-left-color: var(--muted); }
+.verdict.pb-primed { --tone: var(--primed); }
+.verdict.pb-building { --tone: var(--building); }
+.verdict.pb-accent { --tone: var(--accent); }
+.verdict.pb-calm { --tone: var(--calm); }
+.verdict.pb-muted { --tone: var(--muted); }
 .pb-h { margin: 18px 0 0; }
-.pb-plan { border-left: 4px solid var(--line); }
-.pb-plan.down { border-left-color: var(--primed); }
-.pb-plan.up { border-left-color: var(--calm); }
-.pb-plan.both { border-left-color: var(--accent); }
-.pb-plan.wait { border-left-color: var(--muted); }
+.pb-plan { --tone: var(--line); }
+.pb-plan.down { --tone: var(--primed); }
+.pb-plan.up { --tone: var(--calm); }
+.pb-plan.both { --tone: var(--accent); }
+.pb-plan.wait { --tone: var(--muted); }
 .pb-plan:not(.pref) { opacity: .92; }
 .pb-plan.pref { box-shadow: 0 0 0 1px var(--accent) inset; }
 .pb-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -322,10 +332,10 @@ details summary { cursor: pointer; }
 .pb-calc input { width: 100%; font: inherit; font-size: 16px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
 
 /* Tactics: GEX pivot + exhaustion */
-.verdict.tc-short { border-left-color: var(--primed); }
-.verdict.tc-long { border-left-color: var(--calm); }
-.verdict.tc-build { border-left-color: var(--building); }
-.verdict.tc-wait { border-left-color: var(--muted); }
+.verdict.tc-short { --tone: var(--primed); }
+.verdict.tc-long { --tone: var(--calm); }
+.verdict.tc-build { --tone: var(--building); }
+.verdict.tc-wait { --tone: var(--muted); }
 .pill.tc-st-ready { background: var(--accent); }
 .pill.tc-st-building { background: var(--building); }
 .pill.tc-st-waiting, .pill.tc-st-none { background: var(--muted); }
@@ -391,11 +401,134 @@ details summary { cursor: pointer; }
 .tc-ll { font-size: 9px; font-weight: 700; }
 .tc-valt { fill: var(--liq-long); }
 .tc-poclt { fill: var(--flip); }
-.tc-dec { border-left: 4px solid var(--muted); }
-.tc-dec.sell { border-left-color: var(--primed); box-shadow: 0 0 0 1px var(--primed) inset; }
+.tc-dec { --tone: var(--muted); }
+.tc-dec.sell { --tone: var(--primed); box-shadow: 0 0 0 1px var(--primed) inset; }
 .tc-dec-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; margin-bottom: 10px; }
 .tc-dec-badge { font-size: 22px; font-weight: 800; letter-spacing: .04em; padding: 6px 12px; border-radius: 10px; color: #fff; background: var(--muted); }
 .tc-dec.sell .tc-dec-badge { background: var(--primed); }
-.tc-dec.buy { border-left-color: var(--calm); box-shadow: 0 0 0 1px var(--calm) inset; }
+.tc-dec.buy { --tone: var(--calm); box-shadow: 0 0 0 1px var(--calm) inset; }
 .tc-dec.buy .tc-dec-badge { background: var(--calm); }
 .tc-dec-head { margin: 2px 0 0; font-size: 16px; font-weight: 650; line-height: 1.3; }
+
+/* ---- Look: colours fading into each other (owner's request, Nov 2026) ----
+   Near-black page with a blue glow at the top, cards that fade from a lighter
+   top, gradient score numbers and active tab, coloured card edges that fade
+   into the card, and a gauge that blends green -> amber -> red. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 45% at 85% -5%, var(--halo), transparent 70%),
+    radial-gradient(70% 35% at 0% 0%, rgba(124, 92, 255, .10), transparent 70%);
+}
+
+.top {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 0;
+}
+.top::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 30%, #b9d4ff 50%, var(--accent) 70%, transparent);
+  opacity: .7;
+}
+.tabs a { position: relative; transition: color .2s; }
+.tabs a.active {
+  background: none;
+  background-image: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+.tabs a.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--grad);
+  box-shadow: 0 0 12px var(--glow);
+}
+
+.card {
+  background: linear-gradient(180deg, var(--card-top), var(--card) 140px);
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 10px 30px -18px var(--glow);
+}
+
+/* Coloured edge that fades into the card. */
+.verdict, .pb-plan, .tc-dec {
+  border-left: 4px solid var(--tone);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--tone) 16%, var(--card)) 0%, var(--card) 55%);
+}
+
+.big {
+  background-image: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--glow));
+}
+.big .of { -webkit-text-fill-color: var(--muted); }
+.mid-num {
+  background-image: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.label { color: color-mix(in srgb, var(--accent) 35%, var(--muted)); }
+
+/* Zone badge and pills: two tones of the same colour. */
+.zone {
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  box-shadow: 0 0 18px -6px currentColor;
+}
+.zone.calm { background: linear-gradient(135deg, color-mix(in srgb, var(--calm) 30%, var(--card)), var(--calm-soft)); }
+.zone.building { background: linear-gradient(135deg, color-mix(in srgb, var(--building) 30%, var(--card)), var(--building-soft)); }
+.zone.primed { background: linear-gradient(135deg, color-mix(in srgb, var(--primed) 30%, var(--card)), var(--primed-soft)); }
+.pill { background-image: linear-gradient(135deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 70%); }
+
+/* Gauge: one blended strip instead of three blocks. */
+.zones {
+  background: linear-gradient(90deg, var(--calm-soft) 0%, color-mix(in srgb, var(--calm) 35%, var(--calm-soft)) 25%,
+    color-mix(in srgb, var(--building) 40%, var(--building-soft)) 47%, color-mix(in srgb, var(--primed) 35%, var(--primed-soft)) 72%,
+    color-mix(in srgb, var(--primed) 55%, var(--primed-soft)) 100%);
+}
+.seg-zone.calm, .seg-zone.building, .seg-zone.primed { background: none; }
+.marker { background: #fff; box-shadow: 0 0 10px 2px var(--glow), 0 0 0 1px rgba(0, 0, 0, .35); }
+
+/* Score bars: a shine over each colour. */
+.stack div, .input .bar div { position: relative; }
+.stack div::after, .input .bar div::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .38));
+}
+.input .bar div { box-shadow: 0 0 10px -2px var(--glow); }
+
+/* Controls */
+.btn, .seg {
+  background: linear-gradient(180deg, var(--card-top), var(--card));
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+}
+.seg button.on {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, var(--card)), color-mix(in srgb, #7c5cff 18%, var(--card)));
+  box-shadow: 0 0 14px -4px var(--glow);
+}
+.tile { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 9%, var(--bg)), var(--bg)); }
+
+/* Tactics decision badge: HOLD grey, SELL red to pink, BUY green to cyan, glowing. */
+.tc-dec-badge { background: linear-gradient(135deg, #a3adbd, #626c7c); }
+.tc-dec.sell .tc-dec-badge { background: linear-gradient(135deg, #ff6a5e, #d6246e); box-shadow: 0 0 22px -4px #e0524f; }
+.tc-dec.buy .tc-dec-badge { background: linear-gradient(135deg, #3fe0a0, #11a3c4); box-shadow: 0 0 22px -4px #2fa37a; }
+.embed-bar { background: linear-gradient(180deg, var(--card-top), var(--card)); }
