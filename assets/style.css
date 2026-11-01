@@ -676,3 +676,34 @@ h2, h3 { font-size: 15px; line-height: 1.3; }
   .tabs a.active::after { left: 5px; right: 5px; }
   .look-btn { right: 7px; width: 28px; height: 28px; margin-top: -15px; }
 }
+
+/* ---- Motion (asked Nov 2026): quick, and only where something changes ----
+   One gliding underline for the active tab (moved by assets/app.js), a press
+   squeeze on every control, the style menu pops from its corner, and a style
+   change cross-fades. All off when the phone asks for reduced motion. */
+.tabs { position: relative; }
+.tabs a.active::after { display: none; }
+.tab-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--grad);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width;
+  transition: transform .32s cubic-bezier(.16, 1, .3, 1), width .32s cubic-bezier(.16, 1, .3, 1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .seg button, .tabs a, .look-menu button, .look-btn, .chip, summary {
+    transition: transform .14s cubic-bezier(.16, 1, .3, 1), color .18s ease-out, background-color .18s ease-out, border-color .18s ease-out;
+  }
+  .btn:active:not(:disabled), .seg button:active, .tabs a:active, .look-menu button:active { transform: scale(.95); }
+  .look-btn:active { transform: scale(.88); }
+  .look-menu:not([hidden]) { animation: look-in .2s cubic-bezier(.16, 1, .3, 1); transform-origin: calc(100% - 20px) -8px; }
+  @keyframes look-in { from { opacity: 0; transform: translateY(-6px) scale(.94); } }
+  details[open] > :not(summary) { animation: open-in .22s cubic-bezier(.16, 1, .3, 1); }
+  @keyframes open-in { from { opacity: 0; transform: translateY(-4px); } }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .38s; animation-timing-function: ease-out; }
+}
