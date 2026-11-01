@@ -13,9 +13,10 @@
   },
   "levels": {
     "ETH": {
-      "2170": "above",
-      "2200": "above",
-      "2250": "above"
+      "2180": "above",
+      "2220": "above",
+      "2280": "below",
+      "2300": "below"
     }
   },
   "welcomedMM": true,
@@ -25,5 +26,16 @@
       "action": "hold"
     }
   },
-  "welcomedTac": 2
+  "welcomedTac": 2,
+  "keyLevels": {
+    "ETH": {
+      "levels": [
+        2180,
+        2220,
+        2280,
+        2300
+      ],
+      "picked": 1793551001008
+    }
+  }
 }
