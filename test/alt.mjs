@@ -144,4 +144,27 @@ assert.equal(s[0].level, 2200);
 assert.equal(s[0].signal.target, 2500);
 assert.equal(decideAlt(c, sized, cfg).open.signal.target, 2500);
 
+// 10. Stopped at a level: re-enter only at the next huge level, by all the rules.
+//     Buy at 2,200 is stopped; price falls through 2,000 and buyers come back -> buy at 2,000.
+//     Then back over 2,200 and a dip through 2,200 again: allowed again only because price
+//     crossed another level (2,000) in between.
+const stopDown = [...dip, ...line(2240, 2160, 25), ...line(2160, 2050, 40), ...flat(2050, 30), ...line(2050, 1985, 25), ...flat(1985, 6), ...line(1985, 2060, 40), ...flat(2060, 10)];
+c = candles(stopDown);
+d = decideAlt(c, levels, cfg);
+let tk2 = d.setups.filter(x => x.taken);
+assert.deepEqual(tk2.map(x => x.level + ' ' + x.trade.result), ['2200 stopped', '2000 open']);
+//     Stopped and price bounces straight back over 2,200 without touching another level:
+//     WAIT, 2,200 is used, the next buy is at 2,000.
+c = candles([...dip, ...line(2240, 2160, 25), ...line(2160, 2230, 30), ...flat(2230, 40)]);
+d = decideAlt(c, levels, cfg);
+assert.equal(d.action, 'wait');
+assert.equal(d.stopped.level, 2200);
+assert.deepEqual(d.locked, [2200]);
+assert.equal(d.below, 2200);
+assert.equal(d.nextBuy, 2000);
+c = candles([...dip, ...line(2240, 2160, 25), ...line(2160, 2230, 30), ...flat(2230, 40), ...line(2230, 2185, 20), ...flat(2185, 6), ...line(2185, 2240, 30), ...flat(2240, 10)]);
+d = decideAlt(c, levels, cfg);
+assert.equal(d.setups.filter(x => x.taken).length, 1, 'a second dip through 2,200 is not traded');
+assert.ok(d.setups.some(x => x.used && x.level === 2200));
+
 console.log('alt: all checks passed');

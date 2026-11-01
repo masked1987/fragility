@@ -175,6 +175,9 @@ export function oncePerLevel(setups, c5, sides, cfg) {
       if (s.trade.result === 'target') wins.push({ side: s.side, level: g.target, from: s.level, at: s.trade.at });
     }
   });
+  // Levels still used at the end: no new trade there until price crosses another level
+  // (the owner: "if price hit my SL we only re-enter, by all our rules, at the next gamma level").
+  setups.locked = Object.keys(armed).filter(function (L) { return armed[L] === false; }).map(Number);
   return setups;
 }
 
@@ -197,6 +200,12 @@ export function decideAlt(c5, levels, cfg) {
       !setups.some(function (x) { return x.side === 'sell' && x.level === s.signal.target && x.t0 + 9e5 > s.trade.at && (x.taken || (x.state === 'waiting' && !x.used)); });
   }).pop();
   const sellReady = won && (!cfg.sides || cfg.sides.sell) ? { level: won.signal.target, from: won.level, at: won.trade.at, until: won.trade.at + after } : null;
+  // After a stop the level is used: the next buy can only come from a dip through
+  // another huge level. nextBuy = the nearest level at or under the price still open.
+  const locked = setups.locked || [];
+  const stopped = setups.filter(function (s) { return s.taken && s.side === 'buy' && s.trade.result === 'stopped' && locked.indexOf(s.level) >= 0; }).pop() || null;
+  const nextBuy = lv.filter(function (L) { return L <= spot && locked.indexOf(L) < 0; }).pop() || null;
   const action = open ? open.side : waiting ? 'watch' : 'wait';
-  return { action: action, open: open, waiting: waiting, setups: setups, ichimoku: now, spot: spot, below: below, above: above, sellReady: sellReady };
+  return { action: action, open: open, waiting: waiting, setups: setups, ichimoku: now, spot: spot, below: below, above: above, sellReady: sellReady,
+    locked: locked, stopped: stopped, nextBuy: nextBuy };
 }
