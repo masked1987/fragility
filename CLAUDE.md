@@ -448,6 +448,12 @@ The owner's own method, built from the version that tested best
   the 9 Jul 2025 trade +35R (without it −0.32R/buy); all other 0.705 versions lose
   (−0.11 to −1.04R). By level, after a 1% bounce: 0.62 +0.13R, 0.705 +0.50R,
   0.79 +0.88R; the tab's Ichimoku entry +0.74R.
+- "So what's the best version": `test/results/alt-best-2026-11-01.txt`. Tab's
+  Ichimoku entry + stop 0.5% under the low + skip dips deeper than 2%: 41 buys, 22%
+  hit, +1.20R (first 2y +1.46R, last year +0.58R), the only version still positive
+  without its best 2 trades (+0.11R). Stop room is jumpy (0.2% +0.50R, 0.3% +1.36R,
+  0.5% +1.03R, 0.7% +0.80R, 1% +0.63R): read as "some room helps", not an exact
+  number. Recommended to him; not applied (he said don't change until he says).
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
