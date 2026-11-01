@@ -425,6 +425,9 @@ The owner's own method, built from the version that tested best
   −0.47R; `hold4` (low holds 4 candles) 45, 7%, −0.58R (bought Oct 30's fake first
   dip ~2,204, stopped). Both worse than the tab's Ichimoku entry (+0.74R).
   Owner's decision: **"keep ichimoku entry"**. Don't re-offer the fib entry.
+  Asked "so the 4 candle rule is not working?": also tested buying at once after
+  the 4 candles (no fib): `up4now` 46 buys, 11% hit, −0.58R; `hold4now` 47, 9%,
+  −0.66R. up4now caught Oct 30's real low (in ~2,233, like the tab).
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in

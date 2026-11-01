@@ -63,7 +63,7 @@ function fourCandles(how, lowT, x) {
 
 // Dips through each huge level (price was above on 15-minute candles, one trades below),
 // with the low followed until the reversal is confirmed ('how'), then the 0.62 order.
-function fibSetups(i, how, cfg) {
+function fibSetups(i, how, cfg, now0) {
   const m = months[i], end = i + 1 < months.length ? months[i + 1] : now, lv = monthLevels[i];
   const a = idx(m - 2 * DAY), b = idx(end + 3 * DAY), part = c5.slice(a, b), c15 = to15(part), win = cfg.windowHours * 36e5;
   const out = [];
@@ -86,6 +86,12 @@ function fibSetups(i, how, cfg) {
           conf = how === 'ichi' ? !!(p && n && p.score < cfg.scoreBuy && n.score >= cfg.scoreBuy)
             : how === 'bounce1' ? x.c >= s.low * 1.01 : fourCandles(how, s.lowT, x);
           if (conf) { hi = Math.max(...c5.slice(s.lowK, k + 1).map(y => y.h)); s.confT = x.t; } // 0 = the top since the low
+          if (conf && now0) { // buy at once at that close (no fib pullback)
+            s.state = 'signal';
+            s.signal = { t: x.t + M5, entry: x.c, stop: s.low, target, rr: target ? (target - x.c) / (x.c - s.low) : null, hi };
+            endT = x.t;
+            break;
+          }
           continue;
         }
         const entry = hi - FIB * (hi - s.low);
@@ -140,6 +146,8 @@ const versions = {
   bounce1: ['Fib 0.62 after a 1% bounce', () => run(i => fibSetups(i, 'bounce1', cfg).concat(ups(i)), cfg)],
   up4: ['Fib 0.62 after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg).concat(ups(i)), cfg)],
   hold4: ['Fib 0.62 after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg).concat(ups(i)), cfg)],
+  up4now: ['Buy at once after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg, true).concat(ups(i)), cfg)],
+  hold4now: ['Buy at once after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg, true).concat(ups(i)), cfg)],
 };
 if (process.env.LIST) {
   versions[process.env.LIST][1]().forEach(t => console.log(new Date(t.signal.t).toISOString().slice(0, 16), Math.round(t.level), '-> ' + Math.round(t.target),
