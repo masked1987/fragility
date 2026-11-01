@@ -318,6 +318,13 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   only ichi-re on key levels was positive in the last 180 days (+0.34R). The
   Ichimoku score did catch his Oct 30 trade: in at ~2,200 at 02:14, stop 2,170.
   Best mechanical version is still the 0.5% bounce on key levels (+0.23R).
+  Same on 5-minute Ichimoku (5th arg `5`): much better than 1-minute, target hit
+  ~20% vs ~10%, shorter losing runs (~65 vs ~100); key levels about break-even
+  (ichi −0.06R, ichi-re +0.01R, ichiR +0.03R, ichiR-re +0.03R per trade), huge
+  levels still negative (−0.06 to −0.56R). On Oct 30 the 5-minute signal skipped
+  the fake first dip and bought ~2,213 at 03:10, stop 2,170. Owner said his stop
+  is always the lowest / highest price of the move, never from Ichimoku (the
+  test already does that: extreme since the cross, up to the entry).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
