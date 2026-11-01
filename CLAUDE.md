@@ -245,6 +245,21 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   the mirror image (price above the pivot; retest held; sellers exhausted AND buyers
   in; pivot at VAL; call-heavy premium; above the flip). The card says BUY is not
   from the video. Rule keys: retest, exhaustion, stepping, edge, premium, gamma.
+- **Both sides at once** (asked Nov 2026 "what if it looks for sells and should
+  look for buys at the same time"; before, one pivot = the nearest big node, and
+  the side followed the price, so a BUY at a big node below was never checked
+  while price sat under a pivot above). `pickPivots()` gives the nearest big node
+  above (SELL rules) and at/below (BUY rules) from the same qualifying nodes;
+  `buildTac()` runs `setup()` for each and `decideBoth()` combines them: the side
+  that is 6/6, else the one with more rules met (tie: nearer pivot), plus
+  `sides: { sell, buy }` and `setup` (that side's levels). Same shape as before,
+  so the card, `sixOfSix()` alert and backtest read it unchanged; the alert
+  message and backtest use `decision.setup`. Both can't be 6/6 together (gamma
+  rule). Card: leading side open with its 6 rules and six dots, the other folded;
+  "nothing to watch" when a side has no big node. The looser "Tactic" checklist
+  card, interval map and plan still use the nearest pivot. The job log line
+  prints both sides (`sell 1/6 at 2280, buy none`). The 36-day backtest above was
+  run with the one-pivot version.
 - Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
 - Backtest (asked "test it on past data", 1 Nov 2026): `test/tactics-backtest.mjs`.
   Past option OI per strike is only free for the 1st of each month (Tardis free

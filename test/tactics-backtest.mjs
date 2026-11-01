@@ -152,7 +152,7 @@ for (const D of days) {
     if (dec.met === 5) near.push({ day: ymd(D), T, side: dec.side, missing: dec.rules.filter(r => !r.ok).map(r => r.key)[0] });
     const t = sixOfSix(dec, prev);
     prev = t.state;
-    if (t.fire) signals.push({ day: ymd(D), T, side: dec.action, spot, s: d.setup, out: outcome(d.setup, dec.action, T, minutes) });
+    if (t.fire) signals.push({ day: ymd(D), T, side: dec.action, spot, s: dec.setup || d.setup, out: outcome(dec.setup || d.setup, dec.action, T, minutes) });
   }
   console.log(`${ymd(D)}  options ${chain.length}  perp trades ${perp.length}  option trades ${optTr.length}  best ${Math.max(...dayMet)}/6  signals ${signals.filter(s => s.day === ymd(D)).length}`);
 }

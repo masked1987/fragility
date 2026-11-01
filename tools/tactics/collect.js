@@ -2,7 +2,7 @@
 import * as deribit from '../../shared/sources/deribit.js';
 import { gammaFlip } from '../../shared/gamma.js';
 import { optionTrades, perpTrades, minuteCandles } from './sources.js';
-import { gexNodes, gexGrid, pickPivot, profile, drift, footprint, niceStep, setup, decide } from './model.js';
+import { gexNodes, gexGrid, pickPivot, pickPivots, profile, drift, footprint, niceStep, setup, decideBoth } from './model.js';
 
 // The session the tab uses at time `now`: the UTC day; early in the day,
 // yesterday's full session.
@@ -47,6 +47,7 @@ export function buildTac(asset, now, data, cfg) {
 
   const nodes = gexNodes(chain.options, spot, now, cfg.nodeRangePct);
   const pivot = pickPivot(nodes, spot, cfg);
+  const pivots = pickPivots(nodes, spot, cfg); // nearest big node above (SELL rules) and below (BUY rules)
   const flip = gammaFlip(chain.options, spot, now);
   const sessionCandles = minutes.filter(function (c) { return c.t >= ses.from && (!ses.young || c.t < ses.today); });
   const prof = sessionCandles.length ? profile(sessionCandles, cfg.profileRows, cfg.valueArea) : null;
@@ -62,12 +63,15 @@ export function buildTac(asset, now, data, cfg) {
 
   const st = { spot: spot, pivot: pivot, flip: flip, nodes: nodes, profile: prof, drift: dr, candles: candles };
   const s = setup(st, cfg);
+  // The six video rules on both sides at once: SELL at the pivot above, BUY at the pivot below.
+  const sellS = pivots.above ? (pivots.above === pivot ? s : setup(Object.assign({}, st, { pivot: pivots.above }), cfg)) : null;
+  const buyS = pivots.below ? (pivots.below === pivot ? s : setup(Object.assign({}, st, { pivot: pivots.below }), cfg)) : null;
   return {
     asset: asset, fetched: now, spot: spot, session: ses,
-    nodes: nodes, pivot: pivot, flip: flip, grid: gexGrid(chain.options, spot, now, cfg),
+    nodes: nodes, pivot: pivot, pivots: pivots, flip: flip, grid: gexGrid(chain.options, spot, now, cfg),
     minutes: minutes, profile: prof, drift: dr, candles: candles, rowSize: rowSize,
     setup: s,
-    decision: decide(s), // the six video rules: the tab's BUY / SELL / HOLD card and the phone alert both read this
+    decision: decideBoth(sellS, buyS, spot), // both sides; the tab's BUY / SELL / HOLD card and the phone alert both read this
     missing: [],
   };
 }
