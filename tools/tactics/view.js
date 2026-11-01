@@ -6,6 +6,7 @@ import { TAC_CONFIG as CFG } from './config.js';
 import { collectTac } from './collect.js';
 import { readTac, checkLines, money } from './read.js';
 import { signals } from './model.js';
+import { headHtml, splitHead } from '../../shared/head.js';
 import { load, save } from '../../shared/storage.js';
 
 function esc(s) {
@@ -158,7 +159,7 @@ export function mount(el) {
     }
     return '<section class="card tc-dec ' + act + '">' +
       '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
-        '<div><div class="label">' + a + ' decision · video rules</div><p class="tc-dec-head">' + esc(head) + '</p></div></div>' +
+        '<div><div class="label">' + a + ' decision · video rules</div><p class="tc-dec-head">' + esc(splitHead(head).rest || head) + '</p></div></div>' +
       list + body +
       '<p class="muted small">The video\'s rules: sell when price fails at a gamma pivot overhead; buy is the mirror image (holds at a pivot underneath), ' +
       'not shown in the video. Hold means don\'t trade yet. Context, not a trade signal.</p>' +
@@ -172,7 +173,7 @@ export function mount(el) {
     return '<section class="card verdict tc-' + r.tone + '">' +
       '<div class="label">' + esc(d.asset) + ' tactic · GEX pivot + exhaustion</div>' +
       '<p class="small verdict-urgency"><span class="pill tc-st-' + s.status + '">' + STATUS[s.status] + '</span> ' + sideP + '</p>' +
-      '<p class="verdict-head">' + esc(r.headline) + '</p>' +
+      headHtml(r.headline) +
       (lines.length ? '<ul class="tc-checks small">' + lines.map(function (l) {
         return '<li class="' + l.state + '"><span class="tc-ic">' + ICON[l.state] + '</span><span><b>' + esc(l.name) + '.</b> ' + esc(l.text) + '</span></li>';
       }).join('') + '</ul>' : '') +
