@@ -409,6 +409,17 @@ The owner's own method, built from the version that tested best
   Ichimoku 70 = same as 80, 60 −0.49R, 90 +0.07R; wait 24/72 h no change.
   `cfg.stopBufferPct` exists (default 0). Owner then said "stop, don't modify
   anything yet" and asked about Fibonacci: wait for his rule before changing the tab.
+- **Fibonacci 0.62 entry** (1 Nov 2026, screen recording): after the cross of a huge
+  level and a "noticeable reverse" (2,169 on Oct 30), he draws the fib with 1 = the
+  low, 0 = the top of the bounce, entry at the grey 0.62 line (~2,203); asked for
+  the stop he said "at 62 where is still grey" (read as: entry 0.62, stop at the
+  low; the blue 0.79 is not used). `test/alt-fib.mjs` (LIST=ichi|bounce1), results
+  in `test/results/alt-fib-2026-11-01.txt`. Same footing as the tab (biggest target,
+  once per level, crosses up count for re-arming): tab entry 43 buys +0.74R; fib
+  0.62 after Ichimoku 80: 41, 10% hit, −0.15R (last year +1.10R on 11); after a 1%
+  bounce: 44, 9%, +0.13R, worst run 27. The fib entry misses the big runners (July
+  2025 never pulled back to 0.62) and pullbacks that reach 0.62 mostly go on to the
+  low. Oct 30: 0.62 ~2,203 never filled after the real low. Tab not changed.
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in
