@@ -285,6 +285,21 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   stopped, −2R), total 5 (2 targets, +0.3R; really 3 separate setups). No real
   difference; total gives a BUY pivot on more checks (2,174 vs 1,782). Both lose
   at the retest level: the stop 0.1% past the retest is hit first ~3 times in 4.
+- **Owner's own method** (explained Nov 2026): watch a big level (e.g. 2,200);
+  price crosses it, makes an extreme (~2,169), turns; enter on confirmation, stop
+  at the extreme, target the next big level; both sides. Confirmation = his
+  TradingView indicator "Wyichi AI 4.0" (WhaleTrade, protected source: Wyckoff +
+  Ichimoku, 0–100 "Global Institution Footprints" oscillator); asked for chart
+  screenshots of it to rebuild an approximation. `test/levels-reversal.mjs`
+  backtests it: levels = `pickLevels()` from each 1st-of-month chain (held for the
+  month, so e.g. Oct 2026 had no 2,200), Deribit 5-min candles for 3 years, Gate
+  taker buy/sell only the last ~180 days. Costs 0.1% round trip. Result (Nov 2023
+  –Nov 2026): entry on a 15-min close back over the level loses (−0.34R/trade;
+  −0.07R if the cross went ≥0.3% past). Entry on a 0.5% bounce off the extreme,
+  stop at the extreme: +0.23R/trade over 1,622 trades, +0.24R over 1,072 with
+  ≥0.3% depth, positive every year, but only ~13% reach the target (typical
+  ~10R), losing runs of 40–80 in a row, and the top 10 wins make most of the
+  profit. Order-flow entry: 37–64 trades in 6 months, too few to judge.
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
