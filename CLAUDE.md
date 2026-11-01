@@ -503,9 +503,14 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **Alt Tactics sells (only after a winning buy) + biggest-level target:
-  published 1 Nov 2026 (v=39)**, after he checked the preview ("publish it").
-  See the Alt Tactics section.
+- **State at the end of 1 Nov 2026 (second session), all live, v=42:** Alt
+  Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
+  version), target the biggest huge level, stop 0.4% under the low, dips up to 2%,
+  sells only after a winning buy, once per level (after a stop: next level only),
+  stop loss shown as a number (box + chart label). Owner: "for now done, we gonna
+  work tomorrow more". Nothing open or half-built; ask what he wants next.
+- Results page for him: https://claude.ai/artifact/VZhutbD1Hsgz8oj26Vs6o7 (target
+  test; made before the 0.4% stop, so its numbers are the older stop-at-the-low ones).
 - **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
   Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
   is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,
