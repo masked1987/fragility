@@ -11,6 +11,6 @@ export async function collectAlt(asset, cfg) {
   if (c5.length < 100) throw new Error('not enough price history from Gate');
   const spot = c5[c5.length - 1].c;
   const huge = pickHuge(chain.options, spot, now, cfg);
-  const dec = decideAlt(c5, huge.map(function (h) { return h.price; }), cfg);
+  const dec = decideAlt(c5, huge, cfg) // with open contracts: the target is the biggest level;
   return { asset: asset, fetched: now, spot: spot, huge: huge, candles: c5, decision: dec };
 }

@@ -371,41 +371,57 @@ The owner's own method, built from the version that tested best
 - Signal: the 5-minute Ichimoku score (`ichimoku()`, 20 points each: close >
   Tenkan, Tenkan > Kijun, above cloud, bullish cloud, lagging close up) crosses
   up through 80 — stand-in for his protected "Wyichi AI" indicator. Entry at
-  that close; target the next huge level up.
+  that close; target the biggest huge level up (see "Target rule" below).
 - Once per level (`oncePerLevel()`): a traded level is skipped until the trade
-  ends and price dips through another level. Buys only (sells unproven).
+  ends and price crosses another level (either side).
+- **Sells** (owner, new conversation 1 Nov 2026: "I look for sells only after
+  successful buy and vice versa"): a SELL is only taken at the level a buy just
+  reached as its target, with the spike over it starting within 48 h
+  (`afterWinHours`; the same 15-minute candle as the target hit counts). Mirror
+  mechanics: spike up through the level, the high is the stop (>3% over =
+  broken), 5-min score down through 20 (`scoreSell`), target the next huge level
+  down. Other spikes are marked `noWin` and ignored. "Vice versa": when a sell
+  reaches its target, that level is open for a buy again at once. Buys need
+  nothing first. `decideAlt()` adds `sellReady` (a buy's target hit, no sell
+  watched yet: card and level table say "a spike over it is a sell until …").
+  Cards say "Why a sell here" and "Unproven: 6 in the 3-year backtest, 0
+  reached target" (the exact rule in `test/levels-once.py`, huge70 5-min).
+  `cfg.sides` can switch a side off. An earlier mirror version (sells at any
+  spike) was rejected: "Nope, you got it wrong".
 - Card: BUY (signal ≤ 1 h old), OPEN (older trade still running, says buying
   late means a wider stop), WATCH (dipped, waiting for 80), WAIT (nearest huge
   levels). Then the Ichimoku checklist, the huge levels with their status, a
-  chart (since the dip when one is live, with the stop), and the backtest card
+  chart (since the dip / spike when one is live, with the stop), and the backtest card
   (43 trades, 26% hit, +0.47R, worst run 8). Size uses the Playbook account.
 - Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
   that window are known, so once-per-level starts fresh each load.
-- `node test/alt.mjs` is offline and must pass. No phone alert yet (offer it).
+- `node test/alt.mjs` is offline and must pass.
+- **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
+  "huge biggest level above, 100 points is too small". `pickTarget()` in
+  `model.js`, `cfg.target` 'next' (live) / 'biggest', `cfg.minTargetPct`. Owner
+  asked to test first: `node test/alt-backtest.mjs 36 .bt-cache` runs the tab's own
+  `findSetups` + `oncePerLevel` (Tardis 1st-of-month chains, Deribit 5-min), `LIST=next|biggest`
+  prints every trade; results in `test/results/alt-backtest-2026-11-01.txt`.
+  Buys: next 41 trades, 22% hit, +0.24R (the tab's own code; the card's 43 / 26% /
+  +0.47R came from the older test script), biggest 42, 14% hit, +0.78R, but 2024
+  all 11 lost, worst run 18, and two July 2025 trades (+19R, +35R) are the whole
+  profit (without them −0.53R/trade). ≥3% / ≥5% / ≥8% minimum changed little.
+  Sells after a winning buy: 7 (next) / 3 (biggest), all lost. Shown to him as an
+  artifact page (https://claude.ai/artifact/VZhutbD1Hsgz8oj26Vs6o7, ranking first).
+  He said **"yes switch to biggest level"**: `target: 'biggest'` in config; collect
+  passes the levels with their open contracts; the backtest card shows 42 / 14% /
+  +0.78R / worst run 18 and a "catch" box (two July 2025 trades made all of it).
+- No phone alert for Alt Tactics. Asked, the owner said "I did explain it to
+  you": he wants only zone, dealers and Tactics 6/6. Don't offer it again.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
 ## Where we stopped (handover, 1 Nov 2026, end of a long session)
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **Alt Tactics SELLS — open, owner said "Nope, you got it wrong, stop for now".**
-  He asked for "not only buys but also sells" with his rules. I built sells as
-  the mirror image (spike up through a huge level, stop at the high, 5-min
-  Ichimoku score down through 20, target the next huge level down, once per
-  level for either side, marked "unproven") and showed SELL / WATCH cards. He
-  rejected it before it was published. Live site = buy-only Alt Tactics. The
-  draft is kept as `drafts/alt-sells-draft.patch` (not applied). **Ask him how
-  his sells should work before building anything.** What he said earlier about
-  sells: "for sells I actually never looking so I need some different
-  calculations like that on video"; "usually after successful trade, e.g. a buy
-  hit TP, I am looking for sells but not sure what to do if price keeps
-  continuing". Backtest facts for the conversation (huge70, 5-min, once per
-  level): mirrored sells 32 trades, 6% hit, −0.74R/trade; buys + sells ±0R;
-  sells only at the level a buy just hit: 6 trades, all lost; on key levels
-  sells ~0 to +0.11R. Possibly he wants a different sell trigger (like the
-  video: rejection at a level overhead) or sells only after a buy target.
-- **Offered, not answered:** a phone alert for Alt Tactics (BUY, and maybe
-  WATCH) like Tactics 6/6. Don't build until he says yes.
+- **Alt Tactics sells (only after a winning buy) + biggest-level target:
+  published 1 Nov 2026 (v=39)**, after he checked the preview ("publish it").
+  See the Alt Tactics section.
 - **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
   Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
   is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,
