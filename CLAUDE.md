@@ -307,6 +307,17 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   (e.g. 2,200 → 2,500). His Oct 30 trade shows why: the mechanical entry bought
   2,203 at 00:30 after a first dip to 2,193 and was stopped when price went on to
   2,169; he waited for the real low. His timing / indicator is the edge.
+  His entry: the indicator crossing 80 "like RSI" on the 1-minute chart; "RSI
+  won't work, closest is Ichimoku". Tested on 1-min Deribit candles (3 years):
+  `ichi` = Ichimoku phase score (20 pts each: close > Tenkan, Tenkan > Kijun,
+  above cloud, bullish cloud, lagging close up; buy on cross up through 80, sell
+  down through 20), `ichiR` = close within the 26-bar range, `rsi` = RSI(14),
+  each first-signal and with up to 3 re-entries after a stop (`-re`). Over 3
+  years all lose after costs on every level set (key levels: ichi −0.56R,
+  ichi-re −0.20R, ichiR −0.41R, rsi ~0R; huge levels worse, −0.4 to −0.9R),
+  only ichi-re on key levels was positive in the last 180 days (+0.34R). The
+  Ichimoku score did catch his Oct 30 trade: in at ~2,200 at 02:14, stop 2,170.
+  Best mechanical version is still the 0.5% bounce on key levels (+0.23R).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs

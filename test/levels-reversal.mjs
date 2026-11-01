@@ -56,6 +56,39 @@ async function candles5() {
   }
   return out;
 }
+// 1-minute candles (the owner's entry chart), 3-day chunks (Deribit gives up to 5,000).
+async function candles1() {
+  const starts = [];
+  for (let a = START; a < now; a += 3 * DAY) starts.push(a);
+  const parts = new Array(starts.length);
+  let next = 0;
+  async function worker() {
+    while (next < starts.length) {
+      const idx = next++, a = starts[idx], b = Math.min(a + 3 * DAY, now);
+      parts[idx] = await Promise.resolve(cached('c1-' + a + '.json', async () => {
+        const j = await getJson(`https://www.deribit.com/api/v2/public/get_tradingview_chart_data?instrument_name=ETH-PERPETUAL&start_timestamp=${a}&end_timestamp=${b - 1}&resolution=1`);
+        const r = j.result;
+        return r.ticks.map((t, i) => ({ t, h: r.high[i], l: r.low[i], c: r.close[i] }));
+      })).catch(() => []);
+      parts[idx] = parts[idx].filter(c => c.t >= a && c.t < b && c.t + 6e4 <= now);
+    }
+  }
+  await Promise.all([1, 2, 3, 4].map(worker));
+  return parts.flat();
+}
+// RSI (Wilder) on closes.
+function rsi(closes, n) {
+  const out = new Array(closes.length).fill(null);
+  let g = 0, l = 0;
+  for (let i = 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0);
+    if (i <= n) { g += up / n; l += dn / n; if (i === n) out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); continue; }
+    g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n;
+    out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  }
+  return out;
+}
+
 function to15(c5) {
   const by = new Map();
   for (const c of c5) {
@@ -83,6 +116,72 @@ async function taker() {
 const c5 = await candles5();
 const c15 = to15(c5);
 const flowMap = await taker();
+const c1 = await candles1();
+const RSI_N = 14, RSI_UP = 80, RSI_DN = 20, REENTRIES = 3;
+const r1 = rsi(c1.map(c => c.c), RSI_N);
+// Ichimoku on 1-minute candles (the owner: "closest to it, use Ichimoku"; his indicator
+// "Wyichi AI" is protected but says Wyckoff + Ichimoku "phase", 0-100, he enters on 80).
+//   ichi  = phase score, 20 points per bullish condition: close > Tenkan(9), Tenkan >
+//           Kijun(26), close above the cloud, cloud bullish (Span A > Span B), lagging
+//           close above the close 26 bars back. 80+ = buyers in charge, 20- = sellers.
+//   ichiR = where the close sits in the Kijun range (26-bar low = 0, high = 100).
+function rolling(arr, n, better) {
+  const out = new Array(arr.length), dq = [];
+  for (let i = 0; i < arr.length; i++) {
+    while (dq.length && !better(arr[dq[dq.length - 1]], arr[i])) dq.pop();
+    dq.push(i);
+    if (dq[0] <= i - n) dq.shift();
+    out[i] = arr[dq[0]];
+  }
+  return out;
+}
+const H1 = c1.map(c => c.h), L1 = c1.map(c => c.l), C1 = c1.map(c => c.c);
+const hh = n => rolling(H1, n, (a, b) => a > b), ll = n => rolling(L1, n, (a, b) => a < b);
+const hh9 = hh(9), ll9 = ll(9), hh26 = hh(26), ll26 = ll(26), hh52 = hh(52), ll52 = ll(52);
+const ichi = new Array(c1.length).fill(null), ichiR = new Array(c1.length).fill(null);
+for (let i = 78; i < c1.length; i++) {
+  const ten = (hh9[i] + ll9[i]) / 2, kij = (hh26[i] + ll26[i]) / 2, j = i - 26;
+  const spanA = ((hh9[j] + ll9[j]) / 2 + (hh26[j] + ll26[j]) / 2) / 2, spanB = (hh52[j] + ll52[j]) / 2;
+  ichi[i] = 20 * ((C1[i] > ten) + (ten > kij) + (C1[i] > Math.max(spanA, spanB)) + (spanA > spanB) + (C1[i] > C1[j]));
+  ichiR[i] = hh26[i] > ll26[i] ? (C1[i] - ll26[i]) / (hh26[i] - ll26[i]) * 100 : 50;
+}
+const OSC = { rsi: r1, ichi: ichi, ichiR: ichiR };
+function idx1(t) { let lo = 0, hi = c1.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c1[m].t < t) lo = m + 1; else hi = m; } return lo; }
+// Outcome on 1-minute candles (entry is a 1-minute close).
+function outcome1(side, entryT, entry, stop, target) {
+  const buy = side === 'buy', risk = Math.abs(entry - stop);
+  let k = idx1(entryT);
+  for (; k < c1.length && c1[k].t < entryT + HOLD; k++) {
+    const c = c1[k];
+    if (buy ? c.l <= stop : c.h >= stop) return { result: 'stop', R: -1, mins: (c.t - entryT) / 6e4, at: c.t };
+    if (buy ? c.h >= target : c.l <= target) return { result: 'target', R: Math.abs(target - entry) / risk, mins: (c.t - entryT) / 6e4, at: c.t };
+  }
+  const last = c1[Math.min(c1.length - 1, k - 1)];
+  return { result: 'open', R: (buy ? last.c - entry : entry - last.c) / risk, mins: null, at: last.t };
+}
+// The owner's entry: after the cross, the 1-minute RSI crosses up through 80 (BUY) or
+// down through 20 (SELL); stop at the extreme since the cross. 'rsi' = first signal only;
+// 'rsi-re' = after a stop, wait for a new extreme and the next signal (up to REENTRIES more).
+function oscTrades(kind, side, L, target, t0) {
+  const r1 = OSC[kind], buy = side === 'buy', out = [];
+  let k = idx1(t0), ext = buy ? Infinity : -Infinity, attempt = 0, after = t0;
+  for (; k < c1.length && c1[k].t - t0 <= WINDOW; k++) {
+    const c = c1[k];
+    ext = buy ? Math.min(ext, c.l) : Math.max(ext, c.h);
+    if ((buy ? (L - ext) / L : (ext - L) / L) * 100 > DEPTH) break;
+    if (c.t < after || r1[k] == null || r1[k - 1] == null) continue;
+    const sig = buy ? r1[k - 1] < RSI_UP && r1[k] >= RSI_UP : r1[k - 1] > RSI_DN && r1[k] <= RSI_DN;
+    if (!sig) continue;
+    const entry = c.c, stop = ext;
+    if (!target || (buy ? !(entry > stop && entry < target) : !(entry < stop && entry > target))) continue;
+    const o = outcome1(side, c.t + 6e4, entry, stop, target);
+    out.push({ attempt, side, level: L, target, t0, T: c.t + 6e4, entry, stop, ext, rr: Math.abs(target - entry) / Math.abs(entry - stop), depth: Math.abs(ext - L) / L * 100, recent: t0 >= flowFrom, out: o });
+    if (o.result !== 'stop' || ++attempt > REENTRIES) break;
+    after = o.at + 6e4; // look for the next signal only after being stopped out
+  }
+  return out;
+}
+console.log(`1-minute candles ${c1.length}`);
 const flowFrom = Math.min(...flowMap.keys());
 console.log(`5-minute candles ${c5.length} (${ymd(c5[0].t)}–${ymd(c5.at(-1).t)}), 15-minute ${c15.length}, taker rows ${flowMap.size} from ${ymd(flowFrom)}`);
 
@@ -143,6 +242,10 @@ for (const blk of levelsBy) {
       // A cross: follow it until it confirms, breaks down or times out.
       setups++;
       const buy = side === 'buy', target = buy ? upNext : dnNext, t0 = c.t;
+      if (target) for (const kind of ['ichi', 'ichiR', 'rsi']) oscTrades(kind, side, L, target, t0).forEach((x, n) => {
+        if (n === 0) trades.push({ ...x, how: kind, buffer: 0 });
+        trades.push({ ...x, how: kind + '-re', buffer: 0 });
+      });
       let ext = buy ? c.l : c.h;
       const pending = { reclaim: true, bounce: true, flow: c.t >= flowFrom };
       let j = i, ended = false;
@@ -200,9 +303,9 @@ for (const minDepth of [0, 0.3]) {
   console.log(`\n######## crosses that went ${minDepth ? 'at least ' + minDepth + '%' : 'any distance'} past the level ########`);
   for (const scope of [['all', 'Whole period (' + ymd(START) + ' to now)', x => true], ['recent', 'Last ~180 days (when buy/sell volume exists)', x => x.recent]]) {
     console.log(`\n== ${scope[1]} ==`);
-    for (const how of ['reclaim', 'bounce', 'flow']) {
+    for (const how of ['ichi', 'ichi-re', 'ichiR', 'ichiR-re', 'rsi', 'rsi-re', 'reclaim', 'bounce', 'flow']) {
       if (how === 'flow' && scope[0] === 'all') continue;
-      for (const b of BUFFERS) {
+      for (const b of (/^(rsi|ichi)/.test(how) ? [0] : BUFFERS)) {
         const L = pool.filter(x => x.how === how && x.buffer === b && scope[2](x));
         console.log(`  ${how.padEnd(7)} stop ${b ? b + '% past' : 'at'} the extreme: ${fmt(stats(L))}`);
         for (const sd of ['buy', 'sell']) console.log(`      ${sd.padEnd(4)} ${fmt(stats(L.filter(x => x.side === sd)))}`);
