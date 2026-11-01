@@ -37,8 +37,9 @@ the file layout. Tabs, in order:
   "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH). Key gamma
   level alerts are OFF (`keyLevels.alerts: false`): after learning they are not
   part of the Tactics rules, the owner said "I don't need crossing alert gamma,
-  I will need just 6/6 alerts from tactics". Asked whether zone and dealer alerts
-  should also go; see the latest answer before changing them.
+  I will need just 6/6 alerts from tactics". Asked about the zone and dealer
+  alerts: "keep those two on". So the phone gets: zone changes, ETH dealers
+  losing / no longer losing, and Tactics 6/6.
 - Key gamma levels, picked automatically (alerts now off, see above; levels still
   picked for the Playbook). The owner watches the big, noticeable
   gamma strikes (2,200 / 2,300 / 2,500) and is "not strict to these levels", but
