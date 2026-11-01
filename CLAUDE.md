@@ -443,6 +443,11 @@ The owner's own method, built from the version that tested best
   2,603 → 3,200) is more than the whole profit: without it −0.30R/buy (the tab
   without its best: −0.07R). Other 0.79 versions lose (after Ichimoku −0.72R, after
   4 candles −0.64 to −0.79R, 6 rising candles +0.32R on 23).
+  Then "and 0.705" (`FIB=0.705`, `test/results/alt-fib705-2026-11-01.txt`): after
+  a 1% bounce 43 buys, 9% hit, +0.50R (first 2y +0.11R, last year +1.49R), 4 wins,
+  the 9 Jul 2025 trade +35R (without it −0.32R/buy); all other 0.705 versions lose
+  (−0.11 to −1.04R). By level, after a 1% bounce: 0.62 +0.13R, 0.705 +0.50R,
+  0.79 +0.88R; the tab's Ichimoku entry +0.74R.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back

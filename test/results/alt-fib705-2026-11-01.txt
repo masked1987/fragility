@@ -1,0 +1,72 @@
+Fibonacci entry at 0.705 (stop at the low, biggest target, once per level, 0.1% costs)
+The tab now: buy on the Ichimoku 80 close    43  14%  +0.74R  +31.81R    18 |  +1.14R (31) |  -0.31R (12) |  -0.55R
+Fib 0.705 after Ichimoku 80                   39   8%  -0.31R  -12.15R    33 |  -1.08R (28) |  +1.64R (11) |  -1.13R
+Fib 0.705 after a 1% bounce                   43   9%  +0.50R  +21.30R    26 |  +0.11R (31) |  +1.49R (12) |  -0.76R
+Fib 0.705 after 4 rising 15-min candles       40   5%  -0.72R  -28.96R    35 |  -1.01R (31) |  +0.27R ( 9) |  -1.16R
+Fib 0.705 after the low holds 4 candles       43   5%  -0.83R  -35.70R    36 |  -1.08R (31) |  -0.20R (12) |  -1.24R
+4 rising candles, fib drawn once, 0.705       40   5%  -0.38R  -15.02R    35 |  -0.72R (31) |  +0.80R ( 9) |  -1.21R
+Low holds 4 candles, fib drawn once, 0.705    43   5%  -0.53R  -22.62R    36 |  -0.80R (31) |  +0.19R (12) |  -1.31R
+Buy at once after 4 rising 15-min candles    46  11%  -0.58R  -26.49R    26 |  -0.70R (35) |  -0.19R (11) |  -0.83R
+Buy at once after the low holds 4 candles    47   9%  -0.66R  -31.12R    26 |  -0.69R (35) |  -0.58R (12) |  -0.93R
+
+candles before the fib                     buys  hit  per-buy   total  worst | first 2 years   | last year       | without best 2
+1 rising candles, then fib 0.705              43   2%  -0.99R  -42.56R    38 |  -1.29R (31) |  -0.21R (12) |  -1.30R
+2 rising candles, then fib 0.705              43   5%  -0.83R  -35.65R    36 |  -1.08R (31) |  -0.19R (12) |  -1.24R
+3 rising candles, then fib 0.705              43   7%  -0.36R  -15.37R    36 |  -1.06R (31) |  +1.46R (12) |  -1.10R
+4 rising candles, then fib 0.705              40   5%  -0.72R  -28.96R    35 |  -1.01R (31) |  +0.27R ( 9) |  -1.16R
+5 rising candles, then fib 0.705              32   6%  -0.60R  -19.33R    28 |  -0.95R (23) |  +0.29R ( 9) |  -1.15R
+6 rising candles, then fib 0.705              24  13%  -0.11R   -2.63R    18 |  -0.87R (17) |  +1.73R ( 7) |  -0.93R
+low holds 1 candles, then fib 0.705           43   2%  -1.04R  -44.56R    38 |  -1.34R (31) |  -0.26R (12) |  -1.35R
+low holds 2 candles, then fib 0.705           43   2%  -0.97R  -41.60R    38 |  -1.28R (31) |  -0.17R (12) |  -1.28R
+low holds 3 candles, then fib 0.705           43   5%  -0.84R  -36.22R    36 |  -1.10R (31) |  -0.19R (12) |  -1.25R
+low holds 4 candles, then fib 0.705           43   5%  -0.83R  -35.70R    36 |  -1.08R (31) |  -0.20R (12) |  -1.24R
+low holds 5 candles, then fib 0.705           42   7%  -0.34R  -14.44R    36 |  -1.05R (31) |  +1.66R (11) |  -1.10R
+low holds 6 candles, then fib 0.705           42   7%  -0.33R  -13.89R    36 |  -1.05R (31) |  +1.68R (11) |  -1.09R
+low holds 8 candles, then fib 0.705           42   7%  -0.32R  -13.59R    36 |  -1.04R (31) |  +1.69R (11) |  -1.08R
+low holds 10 candles, then fib 0.705          42   7%  -0.31R  -12.95R    36 |  -1.03R (31) |  +1.73R (11) |  -1.07R
+low holds 12 candles, then fib 0.705          41   7%  -0.29R  -11.82R    35 |  -1.03R (30) |  +1.73R (11) |  -1.07R
+
+-- every trade: 0.705 after a 1% bounce
+2023-11-01T13:30 1800 -> 1900 low 1793 top 1829 in 1804 stopped -1.17R
+2023-12-04T15:30 2200 -> 2300 low 2184 top 2278 in 2212 target  +3.13R
+2023-12-06T05:20 2300 -> 2500 low 2253 top 2314 in 2270 stopped -1.13R
+2023-12-11T18:00 2200 -> 2300 low 2187 top 2222 in 2197 stopped -1.21R
+2023-12-15T01:00 2300 -> 2500 low 2284 top 2335 in 2299 stopped -1.15R
+2023-12-17T02:50 2200 -> 2300 low 2199 top 2263 in 2218 stopped -1.12R
+2023-12-22T14:25 2300 -> 2500 low 2292 top 2324 in 2301 stopped -1.24R
+2023-12-29T16:50 2300 -> 2500 low 2295 top 2322 in 2302 stopped -1.29R
+2024-01-02T20:50 2400 -> 2500 low 2353 top 2383 in 2362 stopped -1.27R
+2024-01-10T21:30 2500 -> 3000 low 2496 top 2535 in 2508 stopped -1.22R
+2024-01-22T12:20 2400 -> 2500 low 2361 top 2389 in 2369 stopped -1.28R
+2024-02-02T14:00 2300 -> 2400 low 2269 top 2324 in 2285 stopped -1.14R
+2024-04-13T20:05 3000 -> 4000 low 2988 top 3103 in 3022 stopped -1.09R
+2024-06-11T08:10 3500 -> 5000 low 3498 top 3546 in 3512 stopped -1.24R
+2024-09-22T19:25 2600 -> 3000 low 2553 top 2593 in 2564 stopped -1.22R
+2024-10-02T18:50 2400 -> 3000 low 2397 top 2422 in 2404 stopped -1.32R
+2024-10-15T11:10 2600 -> 3000 low 2590 top 2623 in 2600 stopped -1.27R
+2024-10-30T20:10 2600 -> 3000 low 2599 top 2723 in 2635 stopped -1.07R
+2024-11-04T21:30 2400 -> 3000 low 2378 top 2423 in 2391 stopped -1.18R
+2025-01-09T13:35 3300 -> 4000 low 3207 top 3357 in 3251 stopped -1.07R
+2025-02-02T22:35 2800 -> 3800 low 2850 top 2907 in 2867 stopped -1.17R
+2025-03-02T14:15 2200 -> 2800 low 2142 top 2259 in 2177 stopped -1.06R
+2025-04-03T00:00 1800 -> 2000 low 1781 top 1801 in 1787 stopped -1.30R
+2025-06-06T00:00 2400 -> 3000 low 2392 top 2450 in 2409 stopped -1.14R
+2025-06-11T00:30 2800 -> 3000 low 2790 top 2836 in 2804 stopped -1.21R
+2025-06-20T22:45 2400 -> 3000 low 2367 top 2438 in 2388 stopped -1.11R
+2025-07-04T07:50 2500 -> 3200 low 2495 top 2639 in 2538 stopped -1.06R
+2025-07-02T22:45 2600 -> 3200 low 2586 top 2620 in 2596 stopped -1.26R
+2025-07-09T09:05 2600 -> 3200 low 2591 top 2649 in 2608 target  +34.58R
+2025-07-11T11:10 3000 -> 3200 low 2967 top 3042 in 2989 stopped -1.13R
+2025-08-01T22:20 3500 -> 4000 low 3490 top 3550 in 3508 stopped -1.20R
+2025-11-18T02:15 3000 -> 4000 low 2958 top 3047 in 2984 stopped -1.11R
+2026-02-01T08:15 2400 -> 3000 low 2391 top 2436 in 2404 stopped -1.18R
+2026-02-07T09:30 2000 -> 3000 low 1993 top 2042 in 2008 stopped -1.14R
+2026-03-06T15:45 2000 -> 2200 low 1972 top 1997 in 1979 stopped -1.26R
+2026-03-27T14:20 2000 -> 2200 low 1964 top 1988 in 1971 stopped -1.28R
+2026-04-08T18:55 2200 -> 2500 low 2187 top 2239 in 2202 stopped -1.14R
+2026-05-28T03:50 2000 -> 2500 low 1965 top 2012 in 1979 stopped -1.14R
+2026-07-02T00:00 1600 -> 1800 low 1590 top 1645 in 1606 target  +11.90R
+2026-07-02T23:00 1700 -> 1800 low 1685 top 1706 in 1691 target  +17.85R
+2026-07-06T05:25 1800 -> 2000 low 1748 top 1807 in 1765 stopped -1.10R
+2026-09-03T22:25 2500 -> 3200 low 2489 top 2530 in 2501 stopped -1.21R
+2026-10-30T01:20 2200 -> 2500 low 2193 top 2223 in 2202 stopped -1.24R
