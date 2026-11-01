@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { dealerSide, readOverall, readCarry } from '../tools/market-maker/read.js';
 import { levelCrossings } from '../tools/fragility/alerts.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
+import { pickLevels, needsRepick } from '../shared/levels.js';
+import { CONFIG } from '../tools/fragility/config.js';
 
 const cfg = { ...MM_CONFIG, gapPts: 5, flipBufferPts: 1 };
 
@@ -59,5 +61,33 @@ assert.match(readCarry(c(3e5), -8, cfg), /in general are losing/);
 assert.match(readCarry(c(-3e5), 8, cfg), /in general are winning/);
 assert.doesNotMatch(readCarry(c(3e5), 8, cfg), /in general/);
 assert.doesNotMatch(readCarry(c(3e5)), /in general/);
+
+// 5. Key levels picked from the option chain: 2 biggest strikes above and below.
+const T0 = Date.UTC(2026, 10, 1, 9), opt = (type, strike, oi) => ({ type, strike, oi, iv: 0.6, expiry: T0 + 5 * 864e5 });
+const chain = [
+  opt('C', 2300, 40000), opt('C', 2280, 30000), opt('C', 2260, 2000), opt('C', 2275, 25000), // 2,275 sits 0.2% from 2,280
+  opt('P', 2220, 8000), opt('P', 2180, 9000), opt('P', 2200, 1000), opt('P', 2240, 500),
+  opt('C', 2500, 99999),                                                                      // outside ±5%: ignored
+];
+const KL = CONFIG.keyLevels;
+let lv = pickLevels(chain, 2267, T0, KL);
+assert.deepEqual(lv.map(l => l.price), [2180, 2220, 2280, 2300]);
+assert.ok(lv.find(l => l.price === 2180).usd < 0 && lv.find(l => l.price === 2300).usd > 0); // puts negative, calls positive
+// The small side still gets levels: each side is measured against its own biggest.
+assert.equal(pickLevels(chain, 2267, T0, KL).filter(l => l.price < 2267).length, 2);
+// Not price-dependent: the same levels a little higher (only the split above/below moves).
+assert.deepEqual(pickLevels(chain, 2250, T0, KL).map(l => l.price), [2180, 2220, 2280, 2300]);
+assert.deepEqual(pickLevels([], 2267, T0, KL), []);
+// Expired options don't count.
+assert.deepEqual(pickLevels(chain.map(o => ({ ...o, expiry: T0 - 1 })), 2267, T0, KL), []);
+
+// 6. When to pick again: daily after 08:00 UTC, or when price runs past one side.
+const st = { levels: [2180, 2220, 2280, 2300], picked: Date.UTC(2026, 10, 1, 8, 7) };
+assert.equal(needsRepick(null, 2267, T0, 8), true);                              // nothing stored
+assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 1, 23), 8), false);         // same day
+assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 2, 7, 52), 8), false);      // next day, before 08:00 UTC
+assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 2, 8, 7), 8), true);        // next day, after the expiry
+assert.equal(needsRepick(st, 2310, Date.UTC(2026, 10, 1, 12), 8), true);          // above every level
+assert.equal(needsRepick(st, 2170, Date.UTC(2026, 10, 1, 12), 8), true);          // below every level
 
 console.log('alerts: all checks passed');

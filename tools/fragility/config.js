@@ -22,9 +22,15 @@ export const CONFIG = {
   ],
   hysteresis: 3,
 
-  // Phone alert when the price crosses one of these (jobs/monitor.mjs). Edit freely.
-  levels: { ETH: [2250, 2200, 2170] },
+  // Phone alert when the price crosses a key level (jobs/monitor.mjs). Levels are
+  // picked automatically (shared/levels.js): the strikes where dealers would hedge
+  // most, within ±rangePct of the price, perSide above and below, each at least
+  // minShare of the biggest on its side and minGapPct apart. Re-picked daily after Deribit's
+  // 08:00 UTC expiry, or sooner if the price runs past every level on one side.
+  keyLevels: { assets: ['ETH'], rangePct: 5, perSide: 2, minShare: 0.25, minGapPct: 0.5, repickHourUtc: 8 },
   levelBufferPct: 0.15, // must close this far past a level to count, so it doesn't flap
+  // The job saves the picked levels here; the Playbook reads them.
+  stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',
 
   funding: { fullLow: -15, calmLow: 0, calmHigh: 10, fullHigh: 35 },  // APR
   basis: { fullLow: -5, calmLow: 3, calmHigh: 10, fullHigh: 25, targetDays: 90, minDays: 7 }, // APR

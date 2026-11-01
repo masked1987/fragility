@@ -100,7 +100,7 @@ export function mount(el) {
       return;
     }
     bodyEl.innerHTML = readingHtml(d) + '<h3 class="pb-h">Possible decisions</h3>' + d.plan.plans.map(function (p) { return planHtml(p, d); }).join('') +
-      sizeHtml() + notesHtml();
+      sizeHtml() + notesHtml(d);
   }
 
   function readingHtml(d) {
@@ -210,7 +210,7 @@ export function mount(el) {
       '</div><p class="muted small">Size = dollars at risk ÷ stop distance. Saved on this phone only. Risk 0.5–1% a trade; two losing trades in a day, stop for the day.</p></section>';
   }
 
-  function notesHtml() {
+  function notesHtml(d) {
     return '<section class="card"><details><summary><b>How the mode is picked</b></summary>' +
       '<p class="small">Checked in this order, first match wins:</p><ul class="small">' +
       '<li><b>Cascade risk</b>: Fragility Primed, Market Maker "unstable", or a liquidation cluster within 2% that dealers would add to while leverage is building.</li>' +
@@ -218,7 +218,9 @@ export function mount(el) {
       '<li><b>Trend</b>: price more than ' + CFG.flipBandPct + '% below the gamma flip, or dealers losing on the moves.</li>' +
       '<li><b>Range</b>: price more than ' + CFG.flipBandPct + '% above the gamma flip.</li>' +
       '<li><b>No edge</b>: anything else, usually price sitting on the flip.</li></ul>' +
-      '<p class="small">Triggers are your alert levels and round numbers, and never on the wrong side of the flip. A level crossed in the last few hourly closes shows as Triggered. ' +
+      '<p class="small">Triggers are your phone alert levels and round numbers, and never on the wrong side of the flip. A level crossed in the last few hourly closes shows as Triggered. ' +
+      'Alert levels are picked automatically each day after the 08:00 UTC option expiry: the two strikes above and two below (within 5%) where dealers would hedge the most' +
+      (d.s.levels.length ? '. ' + esc(d.asset) + ' now: ' + d.s.levels.map(px).join(' / ') : '') + '. ' +
       'Stops are ½ of a day\'s implied move past the trigger: over the last 41 days that survived 79% of days that went the right way. ' +
       'Targets are liquidation clusters and dealers\' biggest long-gamma strikes within two days\' moves.</p>' +
       '<p class="small">Nothing here is backtested yet: the Fragility log only began in late October 2026. Paper-trade or use minimum size and note the mode on each trade.</p>' +

@@ -9,9 +9,28 @@ import { MM_CONFIG } from '../market-maker/config.js';
 import { readMM, readOverall } from '../market-maker/read.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 import { buildPlan } from './plan.js';
+import { getJson } from '../../shared/http.js';
+import * as deribit from '../../shared/sources/deribit.js';
+import { pickLevels } from '../../shared/levels.js';
+
+// The phone alert levels: the ones the alert job picked and saved (so this tab and
+// the alerts agree). If that file can't be read, pick them the same way now.
+async function alertLevels(asset) {
+  const KL = FRAGILITY.keyLevels;
+  if (KL.assets.indexOf(asset) < 0) return [];
+  try {
+    const st = await getJson(FRAGILITY.stateUrl);
+    const k = st && st.keyLevels && st.keyLevels[asset];
+    if (k && k.levels && k.levels.length) return k.levels;
+  } catch (e) { /* fall through */ }
+  try {
+    const c = await deribit.options(asset);
+    return pickLevels(c.options, c.spot, Date.now(), KL).map(function (l) { return l.price; });
+  } catch (e) { return []; }
+}
 
 export async function collectPlay(asset, cfg) {
-  const res = await Promise.allSettled([collectFlow(asset, FLOW_CONFIG), collectMM(asset, MM_CONFIG)]);
+  const res = await Promise.allSettled([collectFlow(asset, FLOW_CONFIG), collectMM(asset, MM_CONFIG), alertLevels(asset)]);
   if (res[0].status !== 'fulfilled') throw new Error('Forced Flow unavailable: ' + res[0].reason.message);
   if (res[1].status !== 'fulfilled') throw new Error('Market Maker unavailable: ' + res[1].reason.message);
   const f = res[0].value, mm = res[1].value;
@@ -37,7 +56,7 @@ export async function collectPlay(asset, cfg) {
     longs: f.clusters.longs,
     shorts: f.clusters.shorts,
     strikes: f.bins.map(function (b) { return { price: b.mid, gamma: b.gamma }; }),
-    levels: FRAGILITY.levels[asset] || [],
+    levels: res[2].status === 'fulfilled' ? res[2].value : [],
     closes: mm.points.slice(-4).map(function (p) { return p.price; }),
     mmHeadline: readMM(mm, mm.gamma, asset, MM_CONFIG, neutral).headline,
   };

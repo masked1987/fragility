@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { collect } from '../tools/fragility/collect.js';
 import { evaluate } from '../tools/fragility/score.js';
 import { stickyZone, levelCrossings } from '../tools/fragility/alerts.js';
+import { pickLevels, needsRepick } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
 import { readMM, readCarry, dealerSide } from '../tools/market-maker/read.js';
@@ -33,6 +34,7 @@ const firstRun = !existsSync(STATE);
 const state = firstRun ? { zones: {}, lastLog: {} } : JSON.parse(readFileSync(STATE, 'utf8'));
 state.dealers = state.dealers || {};
 state.levels = state.levels || {};
+state.keyLevels = state.keyLevels || {};
 state.tactics = state.tactics || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
@@ -57,12 +59,28 @@ for (const asset of CONFIG.assets) {
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
-  // Key levels: ring once when the price closes past one (first run only records sides).
-  const levels = CONFIG.levels[asset];
-  if (levels && price) {
+  // Key levels, picked automatically (shared/levels.js): ring once when the price
+  // closes past one. Crossings are checked against the stored levels first; then
+  // the levels are re-picked if due, keeping the sides of levels that stay (new
+  // ones only record a side, they don't ring).
+  const KL = CONFIG.keyLevels;
+  if (KL.assets.includes(asset) && price) {
+    const stored = state.keyLevels[asset] || null;
+    const levels = stored ? stored.levels : [];
     const lv = levelCrossings(price, levels, state.levels[asset] || {}, CONFIG.levelBufferPct);
-    state.levels[asset] = lv.sides;
     if (lv.crossed.length) pushes.push(levelMessage(asset, price, lv.crossed, levels, zone, r));
+    let sides = lv.sides;
+    if (needsRepick(stored, price, now, KL.repickHourUtc) && data.options) {
+      const picked = pickLevels(data.options.options, price, now, KL).map(l => l.price);
+      if (picked.length) {
+        const changed = !stored || picked.join() !== stored.levels.join();
+        state.keyLevels[asset] = { levels: picked, picked: now };
+        sides = levelCrossings(price, picked, sides, CONFIG.levelBufferPct).sides;
+        console.log(`${asset} key levels: ${picked.map(px).join(' / ')}${changed ? ' (new)' : ''}`);
+        if (changed) pushes.push(levelsMessage(asset, price, picked, stored));
+      }
+    }
+    state.levels[asset] = sides;
     mmSummary.push(`${asset} ${px(price)}`);
   }
 
@@ -114,7 +132,7 @@ if (!state.welcomed && process.env.NTFY_TOPIC && summary.length) {
 // Same for the dealer and level alerts added later.
 if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
   state.welcomedMM = true;
-  const lv = Object.entries(CONFIG.levels).map(([a, l]) => `${a} crosses ${l.map(px).join(' / ')}`).join(', ');
+  const lv = Object.entries(state.keyLevels).map(([a, k]) => `${a} crosses ${k.levels.map(px).join(' / ')}`).join(', ') || 'the price crosses a key level';
   pushes.push({ title: 'Dealer and level alerts are on', priority: 3, tags: 'white_check_mark', click: '#mm',
     body: `You will also get a message when ${MM_CONFIG.alertAssets.join(' or ')} dealers start losing (and when they stop), and when ${lv}.\nNow: ` + mmSummary.join(' · ') });
 }
@@ -158,6 +176,21 @@ function levelMessage(asset, price, crossed, levels, zone, r) {
     priority: 4,
     tags: down ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
     click: '#flow',
+  };
+}
+
+// Quiet note (no sound) when the alert levels change, so you know what's watched.
+function levelsMessage(asset, price, levels, before) {
+  const below = levels.filter(L => L < price).map(px), above = levels.filter(L => L > price).map(px);
+  return {
+    title: `${asset} alert levels: ${levels.map(px).join(' / ')}`,
+    body: `New ${asset} key levels for phone alerts (now ${px(price)}).\n` +
+      `Above: ${above.join(' / ') || 'none'}. Below: ${below.join(' / ') || 'none'}.\n` +
+      'Picked from the option strikes where dealers would hedge the most.' +
+      (before ? ` Before: ${before.levels.map(px).join(' / ')}.` : ''),
+    priority: 2,
+    tags: 'pushpin',
+    click: '#play',
   };
 }
 

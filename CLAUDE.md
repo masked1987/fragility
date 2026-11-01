@@ -34,8 +34,18 @@ the file layout. Tabs, in order:
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" and key-level crossings
-  (ETH 2,250 / 2,200 / 2,170, in `tools/fragility/config.js`) ring once, and
+  ring once, and
   so does "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH).
+- Key levels are picked automatically (asked for after the fixed 2,250 / 2,200 /
+  2,170): `pickLevels()` in `shared/levels.js`, per strike the dealer hedging per
+  1% with gamma taken AT the strike (so the ranking doesn't move with price), net
+  calls − puts; within ±5%, the 2 biggest above and 2 below, each side against its
+  own biggest (≥25%), ≥0.5% apart. `needsRepick()`: daily after 08:00 UTC (Deribit
+  expiry), or when the price is past every level on one side. Saved in `state.json`
+  (`keyLevels`, sides still in `levels`); crossings are checked against the saved
+  list before re-picking. A priority-2 (silent) push lists new levels. The Playbook
+  reads the saved list from `stateUrl` (falls back to picking live), so its
+  "your phone alert rings" note matches the alerts.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
