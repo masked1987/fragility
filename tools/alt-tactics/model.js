@@ -112,8 +112,9 @@ export function findSetups(c5, levels, cfg) {
         const a = ich[k - 1], b = ich[k];
         if (a && b && (buy ? a.score < cfg.scoreBuy && b.score >= cfg.scoreBuy : a.score > cfg.scoreSell && b.score <= cfg.scoreSell)) {
           s.state = 'signal';
-          const risk = Math.abs(x.c - s.ext);
-          s.signal = { t: x.t + bar, entry: x.c, stop: s.ext, target: s.target, rr: s.target && risk > 0 ? Math.abs(s.target - x.c) / risk : null };
+          // cfg.stopBufferPct: room past the extreme for the stop (0 = at the low / high).
+          const stop = s.ext * (1 + (buy ? -1 : 1) * (cfg.stopBufferPct || 0) / 100), risk = Math.abs(x.c - stop);
+          s.signal = { t: x.t + bar, entry: x.c, stop: stop, target: s.target, rr: s.target && risk > 0 ? Math.abs(s.target - x.c) / risk : null };
           endT = x.t;
           break;
         }

@@ -401,6 +401,14 @@ The owner's own method, built from the version that tested best
   `nextBuy` (nearest level under the price still open). WAIT card then says "The
   buy at ~2,200 was stopped ... used until price crosses another huge level" and
   points at `nextBuy`; levels table says "Bought, stopped: used until ...". v=40.
+- Tweak grid (asked "how about if change and tweak a rule a bit", 1 Nov 2026):
+  `GRID=1 node test/alt-backtest.mjs 36 .bt-cache`, one change at a time, buys
+  only, first 2 years vs last year (unseen). Base 43 buys +0.74R (first 2y +1.14R,
+  last year −0.31R). Stop 0.5% under the low +1.03R (last year +0.10R, without
+  best 2 ≈ 0R); dip ≤2% deep +1.01R (last year +0.32R); half at next level +0.28R;
+  Ichimoku 70 = same as 80, 60 −0.49R, 90 +0.07R; wait 24/72 h no change.
+  `cfg.stopBufferPct` exists (default 0). Owner then said "stop, don't modify
+  anything yet" and asked about Fibonacci: wait for his rule before changing the tab.
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in

@@ -8,7 +8,7 @@
 // ETH-PERPETUAL 5-minute candles. Costs 0.1% of the entry per round trip, in R.
 // Trades still open at the end of the data count at the last close.
 import { setCache, cached, chainAt, getJson, DAY } from './bt-data.mjs';
-import { pickHuge, findSetups, oncePerLevel } from '../tools/alt-tactics/model.js';
+import { pickHuge, findSetups, oncePerLevel, follow, pickTarget } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 
 const MONTHS = +(process.argv[2] || 36);
@@ -71,6 +71,7 @@ function run(cfg) {
     if (!lv.length) return;
     const a = Math.max(0, idx(m) - 100), b = idx(end + (cfg.windowHours + 1) * 36e5);
     const part = findSetups(c5.slice(a, b), lv, cfg).filter(s => s.t0 >= m && s.t0 < end);
+    part.forEach(s => { s.month = i; });
     setups.push(...part);
   });
   setups.sort((x, y) => x.t0 - y.t0);
@@ -81,6 +82,21 @@ function run(cfg) {
     if (s.trade.result === 'target') R = Math.abs(g.target - g.entry) / risk;
     else if (s.trade.result === 'stopped') R = -1;
     else R = (buy ? c5[c5.length - 1].c - g.entry : g.entry - c5[c5.length - 1].c) / risk;
+    // cfg.split: half the position at the next huge level, the rest to the target;
+    // 'be' also moves the rest's stop to the entry once the first half is taken.
+    if (cfg.split && buy) {
+      const nx = pickTarget(monthLevels[s.month], s.level, 1, { target: 'next' });
+      if (nx && nx < g.target && nx > g.entry) {
+        const h1 = follow({ t: g.t, stop: g.stop, target: nx }, c5);
+        const r1 = h1.result === 'target' ? (nx - g.entry) / risk : h1.result === 'stopped' ? -1 : (c5[c5.length - 1].c - g.entry) / risk;
+        let r2 = R;
+        if (cfg.split === 'be' && h1.result === 'target') {
+          const h2 = follow({ t: h1.at + M5, stop: g.entry, target: g.target }, c5);
+          r2 = h2.result === 'target' ? (g.target - g.entry) / risk : h2.result === 'stopped' ? 0 : (c5[c5.length - 1].c - g.entry) / risk;
+        }
+        R = (r1 + r2) / 2;
+      }
+    }
     return { side: s.side, level: s.level, target: g.target, T: g.t, entry: g.entry, stop: g.stop, rr: g.rr, result: s.trade.result, at: s.trade.at,
       net: R - FEE * g.entry / risk };
   });
@@ -105,6 +121,34 @@ function stats(L) {
 console.log(`Alt Tactics backtest, ETH ${new Date(months[0]).toISOString().slice(0, 7)} to now, huge levels ${Math.round(ALT_CONFIG.hugeShare * 100)}%, ` +
   `${ALT_CONFIG.candleMinutes}-min Ichimoku, once per level, 0.1% costs`);
 console.log('Levels per month: ' + months.map((m, i) => new Date(m).toISOString().slice(2, 7) + ' ' + monthLevels[i].map(x => Math.round(x.price)).join('/')).join(', '));
+// GRID=1: one tweak at a time from the tab's rules (buys), judged on the first two
+// years and checked on the last year, which the choice never sees.
+if (process.env.GRID) {
+  const SPLIT = Date.UTC(2025, 10, 1);
+  const avg = L => L.length ? L.reduce((a, t) => a + t.net, 0) / L.length : 0;
+  const f = x => (x >= 0 ? '+' : '') + x.toFixed(2);
+  const row = (name, v) => {
+    const t = run({ ...ALT_CONFIG, sides: { buy: true, sell: false }, ...v }).filter(x => x.side === 'buy');
+    let r = 0, worst = 0; t.forEach(x => { r = x.net < 0 ? r + 1 : 0; worst = Math.max(worst, r); });
+    const a = t.filter(x => x.T < SPLIT), b = t.filter(x => x.T >= SPLIT), top2 = t.slice().sort((x, y) => y.net - x.net).slice(2);
+    const hit = t.filter(x => x.result === 'target').length;
+    console.log(`${name.padEnd(34)} ${String(t.length).padStart(3)} ${String(Math.round(hit / t.length * 100)).padStart(3)}% ${f(avg(t)).padStart(6)}R ${f(t.reduce((s, x) => s + x.net, 0)).padStart(7)}R  run ${String(worst).padStart(2)} | ` +
+      `first 2y ${f(avg(a)).padStart(6)}R (${a.length}) | last year ${f(avg(b)).padStart(6)}R (${b.length}) | without best 2 ${f(avg(top2)).padStart(6)}R`);
+  };
+  console.log('tweak                              buys hit  per-buy  total   worst | first 2 years      | last year (unseen) | ');
+  const grid = (process.env.GRID === '1' ? [
+    ['the tab now (biggest level)', {}],
+    ['target: next level', { target: 'next' }],
+    ['half at next level, rest to biggest', { split: 'half' }],
+    ['  ... and stop to entry after half', { split: 'be' }],
+    ['Ichimoku 60', { scoreBuy: 60 }], ['Ichimoku 70', { scoreBuy: 70 }], ['Ichimoku 90', { scoreBuy: 90 }],
+    ['stop 0.2% under the low', { stopBufferPct: 0.2 }], ['stop 0.5% under the low', { stopBufferPct: 0.5 }], ['stop 1% under the low', { stopBufferPct: 1 }],
+    ['dip at most 1.5% deep', { maxDepthPct: 1.5 }], ['dip at most 2% deep', { maxDepthPct: 2 }], ['dip at most 5% deep', { maxDepthPct: 5 }],
+    ['wait at most 24 h for the signal', { windowHours: 24 }], ['wait at most 72 h', { windowHours: 72 }],
+  ] : JSON.parse(process.env.GRID));
+  grid.forEach(([n, v]) => row(n, v));
+  process.exit(0);
+}
 // LIST=next|biggest prints every trade of that target rule instead.
 if (process.env.LIST) {
   run({ ...ALT_CONFIG, target: process.env.LIST, minTargetPct: 0, sides: { buy: true, sell: true } }).forEach(t => console.log(
