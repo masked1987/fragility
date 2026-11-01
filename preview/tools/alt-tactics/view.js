@@ -88,12 +88,12 @@ export function mount(el) {
       body = '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(g.entry) + '</b> <span class="muted">(' + hhmm(g.t) + ', price now ' + num(d.spot) + ')</span></dd>' +
         '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">the ' + (buy ? 'lowest' : 'highest') + ' price of the ' + (buy ? 'dip' : 'spike') + ', ' + o.depth.toFixed(1) + '% ' + (buy ? 'under ' : 'over ') + px(o.level) + '</span></dd>' +
-        '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the next huge level ' + (buy ? 'up' : 'down') + (g.rr ? ', ' + g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
+        '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the biggest huge level ' + (buy ? 'up' : 'down') + (g.rr ? ', ' + g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
         '<dt>Size</dt><dd>' + sizeText(g.entry, g.stop) + '</dd></dl>' +
         (fresh ? '' : '<p class="small">Signal from ' + hhmm(g.t) + '. Entering now instead means a wider stop and less reward; the ' + (buy ? 'low' : 'high') + ' stays the stop either way.</p>') +
         (buy ? '' : whyHere(o.win)) + (buy ? '' : unproven) +
         '<p class="verdict-action"><b>What it means:</b> the ' + (buy ? 'dip through ' : 'spike over ') + px(o.level) + ' looks like a shake-out, not a real break. ' +
-        'If price goes ' + (buy ? 'back under ' : 'back over ') + num(g.stop) + ' the idea is wrong; ' + px(o.level) + ' is then used, and the next chance is at the next huge level.</p>';
+        'If price goes ' + (buy ? 'back under ' : 'back over ') + num(g.stop) + ' the idea is wrong; ' + px(o.level) + ' is then used, and the next chance is at another huge level.</p>';
     } else if (act === 'watch') {
       const w = dec.waiting, buy = w.side === 'buy', now = dec.ichimoku ? dec.ichimoku.score : null;
       head = 'Watch: ' + a + (buy ? ' dipped through ' : ' spiked over ') + px(w.level) + ', waiting for ' + (buy ? 'buyers' : 'sellers');
@@ -202,12 +202,14 @@ export function mount(el) {
   function backtestHtml() {
     const b = CFG.backtest;
     return '<section class="card"><h3>How it did on past data</h3>' +
-      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop at the low, target the next huge level, once per level, 0.1% costs):</p>' +
-      '<dl class="pb-dl"><dt>Trades</dt><dd>' + b.trades + ' (about 15 a year)</dd>' +
+      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop at the low, target the biggest huge level above, once per level, 0.1% costs):</p>' +
+      '<dl class="pb-dl"><dt>Trades</dt><dd>' + b.trades + ' (about 14 a year)</dd>' +
       '<dt>Reached target</dt><dd>' + b.hitPct + '%</dd>' +
       '<dt>Average</dt><dd><b>+' + b.avgR.toFixed(2) + 'R</b> per trade <span class="muted">(R = the stop distance)</span></dd>' +
       '<dt>By year</dt><dd>' + esc(b.years) + '</dd>' +
       '<dt>Worst run</dt><dd>' + b.worstRun + ' losses in a row</dd></dl>' +
+      '<p class="small al-warn"><b>The catch:</b> two trades (' + esc(b.best2) + ') made all of it. The other ' + (b.trades - 2) + ' buys lost about ' +
+        Math.abs(b.without2).toFixed(1) + 'R each. Aiming for the next level instead made +0.24R per trade, 22% reached target.</p>' +
       '<p class="small"><b>Sells</b> (only at the level a buy just reached as its target): ' + b.sell.trades + ' trades in 3 years, ' + b.sell.won +
         ' reached target. Too few to judge; the buys carry the method.</p>' +
       '<details class="tc-fold"><summary class="small"><b>The rules and the catch</b></summary><ol class="tc-steps small">' +
@@ -215,9 +217,9 @@ export function mount(el) {
         '<li>Price was above a level and trades below it (spikes count).</li>' +
         '<li>Stop: the lowest price since the dip. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
         '<li>Buy when the ' + CFG.candleMinutes + '-minute Ichimoku score crosses up through ' + CFG.scoreBuy + ' (stand-in for your indicator).</li>' +
-        '<li>Target: the next huge level up. One trade per level; a used level comes back after price crosses another one.</li>' +
+        '<li>Target: the biggest huge level above (most open contracts), not just the nearest. One trade per level; a used level comes back after price crosses another one.</li>' +
         '<li>Sells only after a buy reached its target, at that level, within ' + CFG.afterWinHours + ' h: a spike over it, stop at the high, score down through ' + CFG.scoreSell +
-          ', target the next huge level down. When a sell reaches its target, that level is open for a buy again.</li>' +
+          ', target the biggest huge level below. When a sell reaches its target, that level is open for a buy again.</li>' +
         '<li>The catch: few trades, and the 10 best make most of the profit. Levels came from monthly snapshots, so yours may differ. Stops can fill worse in fast markets.</li>' +
       '</ol></details></section>';
   }
