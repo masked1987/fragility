@@ -22,12 +22,13 @@ export const CONFIG = {
   ],
   hysteresis: 3,
 
-  // Phone alert when the price crosses a key level (jobs/monitor.mjs). Levels are
-  // picked automatically (shared/levels.js): the strikes with the most option
-  // hedging (calls + puts), within ±rangePct of the price, perSide above and below, each at least
-  // minShare of the biggest on its side and minGapPct apart. Re-picked daily after Deribit's
-  // 08:00 UTC expiry, or sooner if the price runs past every level on one side.
-  keyLevels: { assets: ['ETH'], rangePct: 5, perSide: 2, minShare: 0.25, minGapPct: 0.5, repickHourUtc: 8 },
+  // Phone alerts on the key gamma levels (jobs/monitor.mjs): one ring when the price
+  // closes past a level, a louder one if it then turns back through it within
+  // reversalHours. Levels are picked automatically (shared/levels.js): the `count`
+  // strikes with the most open calls + puts within ±rangePct, leaving out options
+  // that expire within minDays. Re-picked daily after Deribit's 08:00 UTC expiry,
+  // or sooner if the price runs past every level on one side.
+  keyLevels: { assets: ['ETH'], rangePct: 15, count: 5, minDays: 2, minGapPct: 0.5, repickHourUtc: 8, reversalHours: 48 },
   levelBufferPct: 0.15, // must close this far past a level to count, so it doesn't flap
   // The job saves the picked levels here; the Playbook reads them.
   stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',

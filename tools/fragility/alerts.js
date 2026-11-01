@@ -29,6 +29,21 @@ export function levelCrossings(price, levels, prevSides, bufferPct) {
   return { sides: sides, crossed: crossed };
 }
 
+// Reversals: a break is { level, dir: 'up' | 'down', at, extreme } (extreme = the
+// furthest price seen past the level). It reverses when the price closes back
+// through the level by the same buffer within windowMs; after that it is dropped.
+// Returns the breaks still open (extremes updated) and the ones that reversed.
+export function breakReversals(price, now, breaks, bufferPct, windowMs) {
+  const open = [], reversed = [];
+  (breaks || []).forEach(function (b) {
+    if (now - b.at > windowMs) return; // too old: no longer watched
+    const back = b.dir === 'up' ? price <= b.level * (1 - bufferPct / 100) : price >= b.level * (1 + bufferPct / 100);
+    if (back) { reversed.push(b); return; }
+    open.push(Object.assign({}, b, { extreme: b.dir === 'up' ? Math.max(b.extreme, price) : Math.min(b.extreme, price) }));
+  });
+  return { open: open, reversed: reversed };
+}
+
 // Returns { from, to } when the zone changed since the last call, else null.
 export function checkZoneChange(result, cfg) {
   if (result.score == null) return null;

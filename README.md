@@ -81,11 +81,13 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
 - a Fragility zone changes (3-point buffer so it doesn't flap; rings 3 times, a minute apart);
 - ETH dealers start losing on the Market Maker tab (implied − realized below −5 points;
   rings 3 times), and once when they stop (1-point buffer);
-- ETH crosses a key level (must close 0.15% past it; rings once). Levels are picked
-  automatically (`shared/levels.js`): the 2 strikes above and 2 below the price (within
-  5%) with the most option hedging, calls and puts together, re-picked each day after Deribit's 08:00 UTC
-  expiry or sooner if the price runs past every level on one side. A quiet note (no
-  sound) lists the new levels when they change; the Playbook reads the same saved list.
+- ETH breaks a key gamma level (must close 0.15% past it; rings once), and again,
+  louder, if it then closes back through that level within 48 hours (a reversal).
+  Levels are picked automatically (`shared/levels.js`): the 5 strikes with the most
+  open calls + puts within ±15%, leaving out options that expire within 2 days;
+  re-picked each day after Deribit's 08:00 UTC expiry, or sooner if the price runs
+  past every level on one side. A quiet note (no sound) lists new levels when they
+  change; the Playbook reads the same saved list.
   Settings in `tools/fragility/config.js` (`keyLevels`); dealer settings in
   `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`);
 - all 6 BUY or all 6 SELL rules on the Tactics tab are met for ETH ("Tactics 6/6 BUY"

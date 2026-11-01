@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs
 import { join } from 'node:path';
 import { collect } from '../tools/fragility/collect.js';
 import { evaluate } from '../tools/fragility/score.js';
-import { stickyZone, levelCrossings } from '../tools/fragility/alerts.js';
+import { stickyZone, levelCrossings, breakReversals } from '../tools/fragility/alerts.js';
 import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
@@ -35,6 +35,7 @@ const state = firstRun ? { zones: {}, lastLog: {} } : JSON.parse(readFileSync(ST
 state.dealers = state.dealers || {};
 state.levels = state.levels || {};
 state.keyLevels = state.keyLevels || {};
+state.breaks = state.breaks || {};
 state.tactics = state.tactics || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
@@ -59,16 +60,25 @@ for (const asset of CONFIG.assets) {
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
-  // Key levels, picked automatically (shared/levels.js): ring once when the price
-  // closes past one. Crossings are checked against the stored levels first; then
-  // the levels are re-picked if due, keeping the sides of levels that stay (new
-  // ones only record a side, they don't ring).
+  // Key gamma levels, picked automatically (shared/levels.js). A close past one
+  // rings once (a break); if the price then closes back through it within
+  // reversalHours, a louder reversal alert rings. Breaks are kept on their own, so
+  // a level dropped at the daily re-pick is still watched for its reversal.
+  // Crossings are checked against the stored levels first; then the levels are
+  // re-picked if due, keeping the sides of levels that stay (new ones only record
+  // a side, they don't ring).
   const KL = CONFIG.keyLevels;
   if (KL.assets.includes(asset) && price) {
     const stored = state.keyLevels[asset] || null;
     const levels = stored ? stored.levels : [];
+    const rv = breakReversals(price, now, state.breaks[asset], CONFIG.levelBufferPct, KL.reversalHours * 36e5);
+    for (const b of rv.reversed) pushes.push(reversalMessage(asset, price, b, levels, now));
     const lv = levelCrossings(price, levels, state.levels[asset] || {}, CONFIG.levelBufferPct);
-    if (lv.crossed.length) pushes.push(levelMessage(asset, price, lv.crossed, levels, zone, r));
+    // A crossing that is the turn back of a break was just announced as a reversal.
+    const fresh = lv.crossed.filter(c => !rv.reversed.some(b => b.level === c.level));
+    if (fresh.length) pushes.push(levelMessage(asset, price, fresh, levels, zone, r, KL.reversalHours));
+    state.breaks[asset] = rv.open.filter(b => !fresh.some(c => c.level === b.level))
+      .concat(fresh.map(c => ({ level: c.level, dir: c.dir, at: now, extreme: price })));
     let sides = lv.sides;
     if (needsRepick(stored, price, now, KL.repickHourUtc) && data.options) {
       const picked = pickLevels(data.options.options, price, now, KL).map(l => l.price);
@@ -163,18 +173,40 @@ function zoneMessage(asset, from, to, r) {
 
 function px(x) { return Math.round(x).toLocaleString('en-US'); }
 
-function levelMessage(asset, price, crossed, levels, zone, r) {
+function levelMessage(asset, price, crossed, levels, zone, r, hours) {
   const down = crossed[0].dir === 'down';
   const names = crossed.map(c => px(c.level));
   // The next level in the direction of travel, if any.
   const next = levels.filter(L => down ? L < price : L > price).sort((a, b) => down ? b - a : a - b)[0];
   return {
     title: `${asset} ${down ? 'below' : 'above'} ${names.join(' and ')} (now ${px(price)})`,
-    body: `${asset} ${down ? 'fell through' : 'rose through'} ${names.join(' and ')}, now ${px(price)}.\n` +
+    body: `${asset} ${down ? 'fell through' : 'rose through'} the ${names.join(' and ')} gamma level, now ${px(price)}.\n` +
+      `Watching for a reversal: if it closes back ${down ? 'above' : 'below'} ${names[0]} in the next ${hours} hours, you get a second alert.\n` +
       (next ? `Next level ${down ? 'below' : 'above'}: ${px(next)}.\n` : '') +
       `Fragility: ${r.score.toFixed(0)} ${zone}.`,
     priority: 4,
     tags: down ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
+    click: '#flow',
+  };
+}
+
+// The break failed: price is back through the level. Louder than the break.
+function reversalMessage(asset, price, b, levels, now) {
+  const wasUp = b.dir === 'up', L = px(b.level);
+  const at = new Date(b.at);
+  const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+  const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
+  const hrs = (now - b.at) / 36e5;
+  const ago = hrs < 1 ? 'under an hour' : `${Math.round(hrs)} hour${Math.round(hrs) === 1 ? '' : 's'}`;
+  const next = levels.filter(x => wasUp ? x < price : x > price).sort((a, c) => wasUp ? c - a : a - c)[0];
+  return {
+    title: `${asset} reversal at ${L}: back ${wasUp ? 'below' : 'above'} (now ${px(price)})`,
+    body: `${asset} broke ${wasUp ? 'above' : 'below'} ${L} at ${uk} UK (${day}), got to ${px(b.extreme)}, and is now back ${wasUp ? 'below' : 'above'} at ${px(price)} (${ago} later).\n` +
+      `What it means: the break ${wasUp ? 'up' : 'down'} failed; price is turning back ${wasUp ? 'down' : 'up'} from the gamma level.\n` +
+      (next ? `Next level ${wasUp ? 'below' : 'above'}: ${px(next)}.\n` : '') +
+      'Context, not a trade signal.',
+    priority: 5,
+    tags: wasUp ? 'leftwards_arrow_with_hook,chart_with_downwards_trend' : 'leftwards_arrow_with_hook,chart_with_upwards_trend',
     click: '#flow',
   };
 }
@@ -186,7 +218,7 @@ function levelsMessage(asset, price, levels, before) {
     title: `${asset} alert levels: ${levels.map(px).join(' / ')}`,
     body: `New ${asset} key levels for phone alerts (now ${px(price)}).\n` +
       `Above: ${above.join(' / ') || 'none'}. Below: ${below.join(' / ') || 'none'}.\n` +
-      'Picked from the option strikes with the most hedging (calls and puts together).' +
+      'Picked from the strikes with the most open calls + puts within 15% (big gamma levels).' +
       (before ? ` Before: ${before.levels.map(px).join(' / ')}.` : ''),
     priority: 2,
     tags: 'pushpin',

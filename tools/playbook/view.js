@@ -219,7 +219,7 @@ export function mount(el) {
       '<li><b>Range</b>: price more than ' + CFG.flipBandPct + '% above the gamma flip.</li>' +
       '<li><b>No edge</b>: anything else, usually price sitting on the flip.</li></ul>' +
       '<p class="small">Triggers are your phone alert levels and round numbers, and never on the wrong side of the flip. A level crossed in the last few hourly closes shows as Triggered. ' +
-      'Alert levels are picked automatically each day after the 08:00 UTC option expiry: the two strikes above and two below (within 5%) with the most option hedging, calls and puts together' +
+      'Alert levels are picked automatically each day after the 08:00 UTC option expiry: the five big gamma strikes within 15% (most open calls + puts, leaving out options about to expire). Your phone rings when price breaks one, and again, louder, if it turns back through it within 48 hours' +
       (d.s.levels.length ? '. ' + esc(d.asset) + ' now: ' + d.s.levels.map(px).join(' / ') : '') + '. ' +
       'Stops are ½ of a day\'s implied move past the trigger: over the last 41 days that survived 79% of days that went the right way. ' +
       'Targets are liquidation clusters and dealers\' biggest long-gamma strikes within two days\' moves.</p>' +

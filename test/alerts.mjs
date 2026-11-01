@@ -1,7 +1,7 @@
 // Run: node test/alerts.mjs  — offline checks of the combined verdict and alert logic (no network).
 import assert from 'node:assert/strict';
 import { dealerSide, readOverall, readCarry } from '../tools/market-maker/read.js';
-import { levelCrossings } from '../tools/fragility/alerts.js';
+import { levelCrossings, breakReversals } from '../tools/fragility/alerts.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
 import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
@@ -62,32 +62,47 @@ assert.match(readCarry(c(-3e5), 8, cfg), /in general are winning/);
 assert.doesNotMatch(readCarry(c(3e5), 8, cfg), /in general/);
 assert.doesNotMatch(readCarry(c(3e5)), /in general/);
 
-// 5. Key levels picked from the option chain: 2 biggest strikes above and below.
-const T0 = Date.UTC(2026, 10, 1, 9), opt = (type, strike, oi) => ({ type, strike, oi, iv: 0.6, expiry: T0 + 5 * 864e5 });
+// 5. Key gamma levels: the 5 strikes with the most open calls + puts within ±15%,
+//    leaving out options that expire within 2 days.
+const T0 = Date.UTC(2026, 10, 1, 9), D = 864e5;
+const opt = (type, strike, oi, days = 20) => ({ type, strike, oi, iv: 0.6, expiry: T0 + days * D });
 const chain = [
-  opt('C', 2300, 40000), opt('C', 2280, 30000), opt('C', 2260, 2000), opt('C', 2275, 25000), // 2,275 sits 0.2% from 2,280
-  opt('P', 2220, 8000), opt('P', 2180, 9000), opt('P', 2200, 1000), opt('P', 2240, 500),
-  opt('C', 2500, 99999),                                                                      // outside ±5%: ignored
+  opt('C', 2000, 50000), opt('P', 2000, 55000),          // 105k
+  opt('C', 2200, 60000), opt('P', 2200, 32000),          // 92k
+  opt('C', 2500, 70000), opt('P', 2500, 5000),           // 75k
+  opt('C', 2300, 50000), opt('P', 2300, 23000),          // 73k
+  opt('C', 2400, 55000), opt('P', 2400, 5000),           // 60k
+  opt('C', 2280, 900000, 1),                             // huge but expires tomorrow: ignored
+  opt('C', 2310, 40000),                                 // 0.4% from 2,300, which is bigger: skipped
+  opt('C', 2700, 30000), opt('P', 1700, 99999),          // 2,700 is 6th; 1,700 is outside ±15%
 ];
 const KL = CONFIG.keyLevels;
 let lv = pickLevels(chain, 2267, T0, KL);
-assert.deepEqual(lv.map(l => l.price), [2180, 2220, 2280, 2300]);
-assert.ok(lv.every(l => l.usd > 0));                                                   // size = calls + puts
-assert.ok(lv.find(l => l.price === 2180).net < 0 && lv.find(l => l.price === 2300).net > 0); // net: puts negative, calls positive
-// A strike with lots of calls AND puts counts, even though they cancel out in the net.
-const both = chain.concat([opt('C', 2200, 12000), opt('P', 2200, 12000)]);
-lv = pickLevels(both, 2267, T0, KL);
-assert.deepEqual(lv.map(l => l.price), [2180, 2200, 2280, 2300]);                 // 2,200 replaces the smaller 2,220
-const l2200 = lv.find(l => l.price === 2200);
-assert.ok(Math.abs(l2200.net) < 0.1 * l2200.usd);                                   // its calls and puts cancel in the net
-lv = pickLevels(chain, 2267, T0, KL);
-// The small side still gets levels: each side is measured against its own biggest.
-assert.equal(pickLevels(chain, 2267, T0, KL).filter(l => l.price < 2267).length, 2);
-// Not price-dependent: the same levels a little higher (only the split above/below moves).
-assert.deepEqual(pickLevels(chain, 2250, T0, KL).map(l => l.price), [2180, 2220, 2280, 2300]);
+assert.deepEqual(lv.map(l => l.price), [2000, 2200, 2300, 2400, 2500]);
+assert.equal(lv.find(l => l.price === 2200).oi, 92000);
+// Not tied to the price: the same five a little lower (the range still covers them).
+assert.deepEqual(pickLevels(chain, 2230, T0, KL).map(l => l.price), [2000, 2200, 2300, 2400, 2500]);
 assert.deepEqual(pickLevels([], 2267, T0, KL), []);
-// Expired options don't count.
-assert.deepEqual(pickLevels(chain.map(o => ({ ...o, expiry: T0 - 1 })), 2267, T0, KL), []);
+
+// 5b. Break, then reversal within 48 hours.
+const H = 36e5, WIN = KL.reversalHours * H, buf = CONFIG.levelBufferPct;
+let br = [{ level: 2300, dir: 'up', at: T0, extreme: 2306 }];
+let rv = breakReversals(2318, T0 + 2 * H, br, buf, WIN);             // still above: open, extreme rises
+assert.equal(rv.reversed.length, 0);
+assert.equal(rv.open[0].extreme, 2318);
+rv = breakReversals(2298, T0 + 3 * H, rv.open, buf, WIN);            // back under but within the 0.15% buffer
+assert.equal(rv.reversed.length, 0);
+rv = breakReversals(2292, T0 + 30 * H, rv.open, buf, WIN);           // clearly back below, 30 hours later
+assert.equal(rv.reversed.length, 1);
+assert.equal(rv.reversed[0].extreme, 2318);
+assert.equal(rv.open.length, 0);                                    // dropped after reversing
+// Downside break that comes back up.
+rv = breakReversals(2206, T0 + 5 * H, [{ level: 2200, dir: 'down', at: T0, extreme: 2185 }], buf, WIN);
+assert.equal(rv.reversed.length, 1);
+// Older than 48 hours: no longer watched, even if price comes back.
+rv = breakReversals(2292, T0 + 49 * H, [{ level: 2300, dir: 'up', at: T0, extreme: 2318 }], buf, WIN);
+assert.equal(rv.reversed.length, 0);
+assert.equal(rv.open.length, 0);
 
 // 6. When to pick again: daily after 08:00 UTC, or when price runs past one side.
 const st = { levels: [2180, 2220, 2280, 2300], picked: Date.UTC(2026, 10, 1, 8, 7), method: METHOD };

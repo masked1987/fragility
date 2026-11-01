@@ -33,21 +33,25 @@ the file layout. Tabs, in order:
   change, or phones keep old files for up to 10 minutes.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
-  so does "ETH dealers now losing". "No longer losing" and key-level crossings
-  ring once, and
+  so does "ETH dealers now losing". "No longer losing" and key-level breaks ring
+  once (a reversal back through the level rings once, louder), and
   so does "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH).
-- Key levels are picked automatically (asked for after the fixed 2,250 / 2,200 /
-  2,170): `pickLevels()` in `shared/levels.js`, per strike the dealer hedging per
-  1% with gamma taken AT the strike (so the ranking doesn't move with price),
-  calls + puts (owner asked so 2,200 counts: big call and put OI cancel in the
-  net); `net` kept for info; `METHOD` saved with the levels, a change re-picks;
-  within ±5%, the 2 biggest above and 2 below, each side against its
-  own biggest (≥25%), ≥0.5% apart. `needsRepick()`: daily after 08:00 UTC (Deribit
-  expiry), or when the price is past every level on one side. Saved in `state.json`
-  (`keyLevels`, sides still in `levels`); crossings are checked against the saved
-  list before re-picking. A priority-2 (silent) push lists new levels. The Playbook
-  reads the saved list from `stateUrl` (falls back to picking live), so its
-  "your phone alert rings" note matches the alerts.
+- Key gamma levels, picked automatically. The owner watches the big, noticeable
+  gamma strikes (2,200 / 2,300 / 2,500) and is "not strict to these levels", but
+  waits for price to cross one and reverse, sometimes over a couple of days.
+  `pickLevels()` in `shared/levels.js`: the 5 strikes with the most open contracts
+  (calls + puts) within ±15%, leaving out options expiring within 2 days, ≥0.5%
+  apart. (Earlier tries: fixed 2,250/2,200/2,170; then 2 per side within ±5% by
+  hedging $, which picked small near strikes and missed 2,500.) `needsRepick()`:
+  daily after 08:00 UTC (Deribit expiry), when price is past every level on one
+  side, or when `METHOD` changes. Saved in `state.json` (`keyLevels`, sides in
+  `levels`). Alerts: a close past a level rings once (break, priority 4); a close
+  back through it within 48 h rings louder (reversal, priority 5, says how far it
+  got and how long ago). Breaks live in `state.json` (`breaks`), apart from the
+  level list, so a level dropped at a re-pick still gets its reversal;
+  `breakReversals()` in `tools/fragility/alerts.js`. A priority-2 (silent) push
+  lists new levels. The Playbook reads the saved list from `stateUrl` (falls back
+  to picking live), so its "your phone alert rings" note matches.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
