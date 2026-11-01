@@ -384,3 +384,45 @@ The owner's own method, built from the version that tested best
 - `node test/alt.mjs` is offline and must pass. No phone alert yet (offer it).
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
+## Where we stopped (handover, 1 Nov 2026, end of a long session)
+
+The owner closed this conversation to start a new one. Pick up from here:
+
+- **Alt Tactics SELLS — open, owner said "Nope, you got it wrong, stop for now".**
+  He asked for "not only buys but also sells" with his rules. I built sells as
+  the mirror image (spike up through a huge level, stop at the high, 5-min
+  Ichimoku score down through 20, target the next huge level down, once per
+  level for either side, marked "unproven") and showed SELL / WATCH cards. He
+  rejected it before it was published. Live site = buy-only Alt Tactics. The
+  draft is kept as `drafts/alt-sells-draft.patch` (not applied). **Ask him how
+  his sells should work before building anything.** What he said earlier about
+  sells: "for sells I actually never looking so I need some different
+  calculations like that on video"; "usually after successful trade, e.g. a buy
+  hit TP, I am looking for sells but not sure what to do if price keeps
+  continuing". Backtest facts for the conversation (huge70, 5-min, once per
+  level): mirrored sells 32 trades, 6% hit, −0.74R/trade; buys + sells ±0R;
+  sells only at the level a buy just hit: 6 trades, all lost; on key levels
+  sells ~0 to +0.11R. Possibly he wants a different sell trigger (like the
+  video: rejection at a level overhead) or sells only after a buy target.
+- **Offered, not answered:** a phone alert for Alt Tactics (BUY, and maybe
+  WATCH) like Tactics 6/6. Don't build until he says yes.
+- **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
+  Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
+  is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,
+  timeframe); none sent yet.
+- **Alert job timing:** GitHub ran the scheduled monitor only every 3–7 hours
+  (not every 15 min) on 31 Oct–1 Nov; told him, he said no need to explain.
+  Outside cron trigger stays declined.
+- **Figma:** connected this session. File "Fragility site: styles"
+  https://www.figma.com/design/xskq1HEJA6i5Xr8yC5NSZd — all three colour styles,
+  style guide + Score / Flow / Plan / Tactics screens (captured before the later
+  layout changes: short titles, Details folding, Alt tab). His seat is View on a
+  starter plan.
+- Backtest data cache lives outside the repo; `.bt-cache/` is git-ignored. The
+  1-minute candles for 3 years take ~365 requests to download again.
+- **Session summary** (all published and noted above): new look (teal/lime,
+  Dela Gothic titles, style switcher Teal / Fire / Moonlight, motion), short
+  phone tab names, short headline titles, folded Details, import-map version fix
+  for blank tabs, Tactics watching BUY and SELL sides at once, net vs total
+  pivot backtest (no difference), the owner's level method backtests, and the
+  Alt Tactics tab.

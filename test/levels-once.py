@@ -80,3 +80,7 @@ for mode in ['huge60', 'huge70', 'key']:
             print(f"  {name:6} SELL after a buy hit target  {stats(sells)}")
             both = buys + sells
             print(f"  {name:6} BUY + those SELLs           {stats(both)}")
+            mirror = once_per_level(d['crosses'], by_key, {'sell': lambda t, taken: True})
+            print(f"  {name:6} SELL mirror (any spike up)   {stats(mirror)}")
+            both2 = once_per_level(d['crosses'], by_key, {'buy': lambda t, taken: True, 'sell': lambda t, taken: True})
+            print(f"  {name:6} BUY + SELL, once per level  {stats(both2)}")
