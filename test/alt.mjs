@@ -1,6 +1,6 @@
 // Run: node test/alt.mjs  — offline checks of the Alt Tactics model (made-up data).
 import assert from 'node:assert/strict';
-import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt } from '../tools/alt-tactics/model.js';
+import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG as cfg } from '../tools/alt-tactics/config.js';
 
 const M5 = 5 * 6e4, T0 = Date.UTC(2026, 9, 29, 12);
@@ -129,5 +129,19 @@ c = candles([...toTarget, ...line(2305, 2280, 10), ...flat(2280, 600), ...line(2
 d = decideAlt(c, lv3, cfg);
 assert.equal(d.action, 'wait');
 assert.equal(d.sellReady, null);
+
+// 9. Target = the biggest huge level that way ("I wouldn't aim 2300 ... most likely 2500").
+//    Shares of the biggest as the owner listed them: 2,000 100%, 2,200 97%, 2,500 79%, 2,300 72%.
+const sized = [{ price: 2000, oi: 100 }, { price: 2200, oi: 97 }, { price: 2300, oi: 72 }, { price: 2500, oi: 79 }];
+assert.equal(pickTarget(sized, 2200, 1, cfg), 2500);                                  // not ~2,300
+assert.equal(pickTarget(sized, 2200, 1, { ...cfg, target: 'next' }), 2300);
+assert.equal(pickTarget(sized, 2500, -1, cfg), 2000);                                 // sells: biggest below
+assert.equal(pickTarget(sized, 2300, 1, { ...cfg, minTargetPct: 10 }), null);         // 2,500 is 8.7% away
+assert.equal(pickTarget([2000, 2200, 2500].map(p => ({ price: p, oi: 0 })), 2500, -1, cfg), 2200); // tie: the nearer
+c = candles(dip);
+s = findSetups(c, sized, cfg);
+assert.equal(s[0].level, 2200);
+assert.equal(s[0].signal.target, 2500);
+assert.equal(decideAlt(c, sized, cfg).open.signal.target, 2500);
 
 console.log('alt: all checks passed');

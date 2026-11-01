@@ -371,7 +371,7 @@ The owner's own method, built from the version that tested best
 - Signal: the 5-minute Ichimoku score (`ichimoku()`, 20 points each: close >
   Tenkan, Tenkan > Kijun, above cloud, bullish cloud, lagging close up) crosses
   up through 80 — stand-in for his protected "Wyichi AI" indicator. Entry at
-  that close; target the next huge level up.
+  that close; target the biggest huge level up (see "Target rule" below).
 - Once per level (`oncePerLevel()`): a traded level is skipped until the trade
   ends and price crosses another level (either side).
 - **Sells** (owner, new conversation 1 Nov 2026: "I look for sells only after
@@ -406,7 +406,11 @@ The owner's own method, built from the version that tested best
   +0.47R came from the older test script), biggest 42, 14% hit, +0.78R, but 2024
   all 11 lost, worst run 18, and two July 2025 trades (+19R, +35R) are the whole
   profit (without them −0.53R/trade). ≥3% / ≥5% / ≥8% minimum changed little.
-  Sells after a winning buy: 7 (next) / 3 (biggest), all lost. Waiting for his call.
+  Sells after a winning buy: 7 (next) / 3 (biggest), all lost. Shown to him as an
+  artifact page (https://claude.ai/artifact/VZhutbD1Hsgz8oj26Vs6o7, ranking first).
+  He said **"yes switch to biggest level"**: `target: 'biggest'` in config; collect
+  passes the levels with their open contracts; the backtest card shows 42 / 14% /
+  +0.78R / worst run 18 and a "catch" box (two July 2025 trades made all of it).
 - No phone alert for Alt Tactics. Asked, the owner said "I did explain it to
   you": he wants only zone, dealers and Tactics 6/6. Don't offer it again.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
@@ -415,9 +419,9 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **Alt Tactics sells: built from his rule, in PREVIEW, waiting for his OK**
+- **Alt Tactics sells + biggest-level target: in PREVIEW, waiting for his OK**
   (see the Alt Tactics section). Preview: https://masked1987.github.io/fragility/preview/#alt
-  If he approves: publish (main + gh-pages, v=38) and delete `preview/`.
+  If he approves: publish (main + gh-pages, v=39) and delete `preview/`.
 - **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
   Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
   is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,

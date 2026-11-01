@@ -5,7 +5,7 @@
 //   3. The lowest price since the dip is the stop ("price doesn't revisit it when it
 //      truly reverses"). More than maxDepthPct past = a real breakdown, no trade.
 //   4. Entry when the Ichimoku score (5-minute) crosses up through 80: buyers are back.
-//   5. Target: the next huge level up. Once per level: a level that was traded is not
+//   5. Target: the biggest huge level up (cfg.target, pickTarget). Once per level: a level that was traded is not
 //      traded again until price has crossed another level.
 //   SELL only after a buy reached its target, at that level ("sells only after a
 //   successful buy and vice versa"): a spike over it, the high is the stop, the score
@@ -78,8 +78,9 @@ export function pickTarget(levels, L, dir, cfg) {
   const min = (cfg.minTargetPct || 0) / 100;
   const c = levels.filter(function (x) { return dir > 0 ? x.price >= L * (1 + min) && x.price > L : x.price <= L * (1 - min) && x.price < L; });
   if (!c.length) return null;
-  if (cfg.target === 'biggest') return c.reduce(function (a, b) { return b.oi > a.oi ? b : a; }).price;
-  return dir > 0 ? c[0].price : c[c.length - 1].price;
+  const near = dir > 0 ? c : c.slice().reverse(); // nearest first, so a tie goes to the nearer one
+  if (cfg.target === 'biggest') return near.reduce(function (a, b) { return b.oi > a.oi ? b : a; }).price;
+  return near[0].price;
 }
 
 // Every cross through every level, followed until it confirms (signal), breaks
