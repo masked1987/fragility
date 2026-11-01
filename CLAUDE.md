@@ -335,6 +335,16 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   +0.46/+0.51R (271/266 trades, 26–29% hit), huge60 +0.35/+0.50R (171/162), but
   not every year (key 2025 −0.25R, huge60 2026 −1.1R on ~10 trades) and the top
   10 wins carry all of it. Promising, not proven.
+  Correction from the owner: no re-entries at the same level; "I re-enter on the
+  next level, once per level". `test/levels-once.py <cache>` scores that from the
+  saved crosses (a level is traded once, re-armed only after the trade ends and
+  price crosses another level). First result that is positive: BUY, huge70, 5-min
+  Ichimoku score +0.47R/trade (43 trades in 3 years, 26% hit, worst losing run
+  8; 2024 +0.81, 2025 +0.86, 2026 +0.09), range +0.41R; 1-min score +0.53R,
+  range +0.75R (but 2025 negative); huge60 +0.15 to +0.28R; key levels −0.14 to
+  +0.09R. Few trades (~15 a year) and the top 10 wins carry the total. SELL after
+  a buy hit its target, once per level: huge levels only 6–15 trades, mostly
+  negative; key levels +0.18 to +0.98R on 25–31 trades. Too few to trust yet.
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs

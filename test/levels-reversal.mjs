@@ -238,6 +238,7 @@ function outcome(side, entryT, entry, stop, target) {
 // Walk each month's levels through the 15-minute candles.
 const trades = [];
 let setups = 0, breakdowns = 0, timeouts = 0, noTarget = 0;
+const crosses = []; // every cross in order, for the owner's "once per level" rule (scored after the run)
 for (const blk of levelsBy) {
   const cs = c15.filter(c => c.t >= blk.from && c.t < blk.to);
   const lv = blk.levels;
@@ -251,6 +252,7 @@ for (const blk of levelsBy) {
       if (!side) { pos = c.c >= L ? 'above' : 'below'; continue; }
       // A cross: follow it until it confirms, breaks down or times out.
       setups++;
+      crosses.push({ level: L, side, t0: c.t });
       const buy = side === 'buy', target = buy ? upNext : dnNext, t0 = c.t;
       if (target) for (const kind of ['ichi', 'ichiR', 'rsi']) oscTrades(kind, side, L, target, t0).forEach((x, n) => {
         if (n === 0) trades.push({ ...x, how: kind, buffer: 0 });
@@ -329,4 +331,4 @@ if (ex.length) {
   console.log('\nThe owner\'s Oct 30 example:');
   ex.forEach(x => console.log(`  ${x.how.padEnd(7)} ${x.side.toUpperCase()} level ${px(x.level)}  crossed ${new Date(x.t0).toISOString().slice(5, 16)}  in ${new Date(x.T).toISOString().slice(5, 16)} at ${px(x.entry)}  stop ${px(x.stop)}  target ${px(x.target)} (${x.rr.toFixed(1)}R)  -> ${x.out.result} ${x.out.R >= 0 ? '+' : ''}${x.out.R.toFixed(2)}R`));
 }
-writeFileSync(join(CACHE, 'levels-reversal-' + MODE + '-' + TF + 'm.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, trades }, null, 1));
+writeFileSync(join(CACHE, 'levels-reversal-' + MODE + '-' + TF + 'm.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, crosses, trades }, null, 1));
