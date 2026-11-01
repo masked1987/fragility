@@ -45,9 +45,13 @@ the file layout. Tabs, in order:
   hedging $, which picked small near strikes and missed 2,500.) `needsRepick()`:
   daily after 08:00 UTC (Deribit expiry), when price is past every level on one
   side, or when `METHOD` changes. Saved in `state.json` (`keyLevels`, sides in
-  `levels`). Alerts: a close past a level rings once (break, priority 4); a close
-  back through it within 48 h rings louder (reversal, priority 5, says how far it
-  got and how long ago). Breaks live in `state.json` (`breaks`), apart from the
+  `levels`). Alerts (owner: "make sure price is crossed"): only finished 15-minute
+  Gate candle closes count, never the live price (`closedCandles()` in
+  `shared/sources/gate.js`), and a close must be `confirmPct` 0.5% past the level.
+  Each finished candle since `lastCandle` (in `state.json`) is walked in order, up
+  to 12 hours back. A break rings once (priority 4); a later close 0.5% back
+  through it within 48 h rings louder (reversal, priority 5, says how far it got
+  and how long ago). Breaks live in `state.json` (`breaks`), apart from the
   level list, so a level dropped at a re-pick still gets its reversal;
   `breakReversals()` in `tools/fragility/alerts.js`. A priority-2 (silent) push
   lists new levels. The Playbook reads the saved list from `stateUrl` (falls back

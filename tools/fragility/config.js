@@ -22,14 +22,16 @@ export const CONFIG = {
   ],
   hysteresis: 3,
 
-  // Phone alerts on the key gamma levels (jobs/monitor.mjs): one ring when the price
-  // closes past a level, a louder one if it then turns back through it within
-  // reversalHours. Levels are picked automatically (shared/levels.js): the `count`
-  // strikes with the most open calls + puts within ±rangePct, leaving out options
-  // that expire within minDays. Re-picked daily after Deribit's 08:00 UTC expiry,
-  // or sooner if the price runs past every level on one side.
-  keyLevels: { assets: ['ETH'], rangePct: 15, count: 5, minDays: 2, minGapPct: 0.5, repickHourUtc: 8, reversalHours: 48 },
-  levelBufferPct: 0.15, // must close this far past a level to count, so it doesn't flap
+  // Phone alerts on the key gamma levels (jobs/monitor.mjs). A level counts as
+  // crossed only when a finished `candleMinutes` candle (Gate) closes at least
+  // confirmPct past it: one ring (a break). If a later candle closes confirmPct back
+  // on the other side within reversalHours, a louder one rings (a reversal).
+  // Levels are picked automatically (shared/levels.js): the `count` strikes with the
+  // most open calls + puts within ±rangePct, leaving out options that expire within
+  // minDays. Re-picked daily after Deribit's 08:00 UTC expiry, or sooner if the
+  // price runs past every level on one side.
+  keyLevels: { assets: ['ETH'], rangePct: 15, count: 5, minDays: 2, minGapPct: 0.5, repickHourUtc: 8,
+    reversalHours: 48, confirmPct: 0.5, candleMinutes: 15 },
   // The job saves the picked levels here; the Playbook reads them.
   stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',
 

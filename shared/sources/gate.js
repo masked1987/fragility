@@ -54,3 +54,12 @@ export async function hourlyCloses(asset, hours) {
   const k = await getJson(BASE + '/candlesticks?contract=' + asset + '_USDT&interval=1h&limit=' + Math.min(hours, 1000));
   return k.map(function (c) { return { t: c.t * 1000, close: +c.c }; }).filter(function (c) { return c.close > 0; });
 }
+
+// Finished candles only (Gate's last one is still forming), oldest first.
+// minutes: 1, 5, 15, 30 or 60.
+export async function closedCandles(asset, minutes, limit, now) {
+  const k = await getJson(BASE + '/candlesticks?contract=' + asset + '_USDT&interval=' + (minutes === 60 ? '1h' : minutes + 'm') + '&limit=' + Math.min(limit, 1000));
+  const end = now || Date.now();
+  return k.map(function (c) { return { t: c.t * 1000, close: +c.c }; })
+    .filter(function (c) { return c.close > 0 && c.t + minutes * 6e4 <= end; });
+}

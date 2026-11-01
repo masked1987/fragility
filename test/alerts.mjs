@@ -84,23 +84,32 @@ assert.equal(lv.find(l => l.price === 2200).oi, 92000);
 assert.deepEqual(pickLevels(chain, 2230, T0, KL).map(l => l.price), [2000, 2200, 2300, 2400, 2500]);
 assert.deepEqual(pickLevels([], 2267, T0, KL), []);
 
-// 5b. Break, then reversal within 48 hours.
-const H = 36e5, WIN = KL.reversalHours * H, buf = CONFIG.levelBufferPct;
-let br = [{ level: 2300, dir: 'up', at: T0, extreme: 2306 }];
-let rv = breakReversals(2318, T0 + 2 * H, br, buf, WIN);             // still above: open, extreme rises
+// 5b. A cross only counts when a 15-minute close is 0.5% past the level.
+const conf = KL.confirmPct;
+assert.equal(conf, 0.5);
+let cr = levelCrossings(2306, [2300], { 2300: 'below' }, conf);                 // 0.26% above: not yet
+assert.equal(cr.crossed.length, 0);
+assert.equal(cr.sides[2300], 'below');
+cr = levelCrossings(2312, [2300], cr.sides, conf);                              // 0.52% above: crossed
+assert.deepEqual(cr.crossed, [{ level: 2300, dir: 'up' }]);
+
+// 5c. Break, then reversal within 48 hours (the close must be 0.5% back the other side).
+const H = 36e5, WIN = KL.reversalHours * H;
+let br = [{ level: 2300, dir: 'up', at: T0, extreme: 2312 }];
+let rv = breakReversals(2318, T0 + 2 * H, br, conf, WIN);            // still above: open, extreme rises
 assert.equal(rv.reversed.length, 0);
 assert.equal(rv.open[0].extreme, 2318);
-rv = breakReversals(2298, T0 + 3 * H, rv.open, buf, WIN);            // back under but within the 0.15% buffer
+rv = breakReversals(2292, T0 + 3 * H, rv.open, conf, WIN);           // back under, but only 0.35%: not yet
 assert.equal(rv.reversed.length, 0);
-rv = breakReversals(2292, T0 + 30 * H, rv.open, buf, WIN);           // clearly back below, 30 hours later
+rv = breakReversals(2285, T0 + 30 * H, rv.open, conf, WIN);          // 0.65% back below, 30 hours later
 assert.equal(rv.reversed.length, 1);
 assert.equal(rv.reversed[0].extreme, 2318);
 assert.equal(rv.open.length, 0);                                    // dropped after reversing
 // Downside break that comes back up.
-rv = breakReversals(2206, T0 + 5 * H, [{ level: 2200, dir: 'down', at: T0, extreme: 2185 }], buf, WIN);
+rv = breakReversals(2212, T0 + 5 * H, [{ level: 2200, dir: 'down', at: T0, extreme: 2185 }], conf, WIN);
 assert.equal(rv.reversed.length, 1);
 // Older than 48 hours: no longer watched, even if price comes back.
-rv = breakReversals(2292, T0 + 49 * H, [{ level: 2300, dir: 'up', at: T0, extreme: 2318 }], buf, WIN);
+rv = breakReversals(2285, T0 + 49 * H, [{ level: 2300, dir: 'up', at: T0, extreme: 2318 }], conf, WIN);
 assert.equal(rv.reversed.length, 0);
 assert.equal(rv.open.length, 0);
 

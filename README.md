@@ -81,8 +81,11 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
 - a Fragility zone changes (3-point buffer so it doesn't flap; rings 3 times, a minute apart);
 - ETH dealers start losing on the Market Maker tab (implied − realized below −5 points;
   rings 3 times), and once when they stop (1-point buffer);
-- ETH breaks a key gamma level (must close 0.15% past it; rings once), and again,
-  louder, if it then closes back through that level within 48 hours (a reversal).
+- ETH breaks a key gamma level: a finished 15-minute Gate candle closes at least 0.5%
+  past it (rings once). Again, louder, if a later 15-minute close goes 0.5% back
+  through that level within 48 hours (a reversal). Every finished candle since the
+  last run is checked in order, so a break and reversal between two late runs are
+  both caught.
   Levels are picked automatically (`shared/levels.js`): the 5 strikes with the most
   open calls + puts within ±15%, leaving out options that expire within 2 days;
   re-picked each day after Deribit's 08:00 UTC expiry, or sooner if the price runs

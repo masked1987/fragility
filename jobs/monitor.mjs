@@ -13,6 +13,7 @@ import { collect } from '../tools/fragility/collect.js';
 import { evaluate } from '../tools/fragility/score.js';
 import { stickyZone, levelCrossings, breakReversals } from '../tools/fragility/alerts.js';
 import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
+import { closedCandles } from '../shared/sources/gate.js';
 import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
 import { readMM, readCarry, dealerSide } from '../tools/market-maker/read.js';
@@ -36,6 +37,7 @@ state.dealers = state.dealers || {};
 state.levels = state.levels || {};
 state.keyLevels = state.keyLevels || {};
 state.breaks = state.breaks || {};
+state.lastCandle = state.lastCandle || {};
 state.tactics = state.tactics || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
@@ -60,32 +62,52 @@ for (const asset of CONFIG.assets) {
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
-  // Key gamma levels, picked automatically (shared/levels.js). A close past one
-  // rings once (a break); if the price then closes back through it within
-  // reversalHours, a louder reversal alert rings. Breaks are kept on their own, so
-  // a level dropped at the daily re-pick is still watched for its reversal.
-  // Crossings are checked against the stored levels first; then the levels are
-  // re-picked if due, keeping the sides of levels that stay (new ones only record
-  // a side, they don't ring).
+  // Key gamma levels, picked automatically (shared/levels.js). Only finished
+  // 15-minute candles count (Gate closes, not the live price, so a quick spike
+  // isn't a cross), and a close must be confirmPct past a level. Every candle
+  // since the last check is walked in order, so a break and its reversal between
+  // two late runs are both caught. A break rings once; a close back through the
+  // level within reversalHours rings louder (a reversal). Breaks are kept apart
+  // from the level list, so a level dropped at the daily re-pick still gets its
+  // reversal. Then the levels are re-picked if due, keeping the sides of levels
+  // that stay (new ones only record a side, they don't ring).
   const KL = CONFIG.keyLevels;
   if (KL.assets.includes(asset) && price) {
     const stored = state.keyLevels[asset] || null;
     const levels = stored ? stored.levels : [];
-    const rv = breakReversals(price, now, state.breaks[asset], CONFIG.levelBufferPct, KL.reversalHours * 36e5);
-    for (const b of rv.reversed) pushes.push(reversalMessage(asset, price, b, levels, now));
-    const lv = levelCrossings(price, levels, state.levels[asset] || {}, CONFIG.levelBufferPct);
-    // A crossing that is the turn back of a break was just announced as a reversal.
-    const fresh = lv.crossed.filter(c => !rv.reversed.some(b => b.level === c.level));
-    if (fresh.length) pushes.push(levelMessage(asset, price, fresh, levels, zone, r, KL.reversalHours));
-    state.breaks[asset] = rv.open.filter(b => !fresh.some(c => c.level === b.level))
-      .concat(fresh.map(c => ({ level: c.level, dir: c.dir, at: now, extreme: price })));
-    let sides = lv.sides;
+    let sides = state.levels[asset] || {};
+    let breaks = state.breaks[asset] || [];
+    let closes = [];
+    try {
+      closes = await closedCandles(asset, KL.candleMinutes, 48, now);
+    } catch (e) {
+      console.log(`${asset} candles unavailable (levels not checked this run): ${e.message}`);
+    }
+    const last = state.lastCandle[asset];
+    const todo = last ? closes.filter(c => c.t > last) : closes.slice(-1); // first run: just the latest
+    for (const c of todo) {
+      const end = c.t + KL.candleMinutes * 6e4; // when this candle closed
+      const rv = breakReversals(c.close, end, breaks, KL.confirmPct, KL.reversalHours * 36e5);
+      for (const b of rv.reversed) pushes.push(reversalMessage(asset, c.close, end, b, levels));
+      const lv = levelCrossings(c.close, levels, sides, KL.confirmPct);
+      sides = lv.sides;
+      // A crossing that is the turn back of a break was just announced as a reversal.
+      const fresh = lv.crossed.filter(x => !rv.reversed.some(b => b.level === x.level));
+      if (fresh.length) pushes.push(levelMessage(asset, c.close, end, fresh, levels, zone, r, KL));
+      breaks = rv.open.filter(b => !fresh.some(x => x.level === b.level))
+        .concat(fresh.map(x => ({ level: x.level, dir: x.dir, at: end, extreme: c.close })));
+    }
+    if (todo.length) {
+      state.lastCandle[asset] = todo[todo.length - 1].t;
+      console.log(`${asset} levels: checked ${todo.length} candle close(s), last ${px(todo[todo.length - 1].close)}; watching ${breaks.length} break(s)`);
+    }
+    state.breaks[asset] = breaks;
     if (needsRepick(stored, price, now, KL.repickHourUtc) && data.options) {
       const picked = pickLevels(data.options.options, price, now, KL).map(l => l.price);
       if (picked.length) {
         const changed = !stored || picked.join() !== stored.levels.join();
         state.keyLevels[asset] = { levels: picked, picked: now, method: METHOD };
-        sides = levelCrossings(price, picked, sides, CONFIG.levelBufferPct).sides;
+        sides = levelCrossings(price, picked, sides, KL.confirmPct).sides;
         console.log(`${asset} key levels: ${picked.map(px).join(' / ')}${changed ? ' (new)' : ''}`);
         if (changed) pushes.push(levelsMessage(asset, price, picked, stored));
       }
@@ -173,15 +195,23 @@ function zoneMessage(asset, from, to, r) {
 
 function px(x) { return Math.round(x).toLocaleString('en-US'); }
 
-function levelMessage(asset, price, crossed, levels, zone, r, hours) {
+function ukTime(t) {
+  const d = new Date(t);
+  return d.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }) + ' UK (' +
+    d.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }) + ')';
+}
+
+// price = the close of the finished candle that confirmed it; end = when it closed.
+function levelMessage(asset, price, end, crossed, levels, zone, r, KL) {
   const down = crossed[0].dir === 'down';
-  const names = crossed.map(c => px(c.level));
+  const names = crossed.map(x => px(x.level));
   // The next level in the direction of travel, if any.
   const next = levels.filter(L => down ? L < price : L > price).sort((a, b) => down ? b - a : a - b)[0];
   return {
-    title: `${asset} ${down ? 'below' : 'above'} ${names.join(' and ')} (now ${px(price)})`,
-    body: `${asset} ${down ? 'fell through' : 'rose through'} the ${names.join(' and ')} gamma level, now ${px(price)}.\n` +
-      `Watching for a reversal: if it closes back ${down ? 'above' : 'below'} ${names[0]} in the next ${hours} hours, you get a second alert.\n` +
+    title: `${asset} ${down ? 'below' : 'above'} ${names.join(' and ')} (15m close ${px(price)})`,
+    body: `${asset} crossed ${down ? 'below' : 'above'} the ${names.join(' and ')} gamma level: the 15-minute candle to ${ukTime(end)} closed at ${px(price)}, ` +
+      `at least ${KL.confirmPct}% past it.\n` +
+      `Watching for a reversal: if a 15-minute candle closes back ${down ? 'above' : 'below'} ${names[0]} (by ${KL.confirmPct}%) in the next ${KL.reversalHours} hours, you get a second alert.\n` +
       (next ? `Next level ${down ? 'below' : 'above'}: ${px(next)}.\n` : '') +
       `Fragility: ${r.score.toFixed(0)} ${zone}.`,
     priority: 4,
@@ -190,18 +220,16 @@ function levelMessage(asset, price, crossed, levels, zone, r, hours) {
   };
 }
 
-// The break failed: price is back through the level. Louder than the break.
-function reversalMessage(asset, price, b, levels, now) {
+// The break failed: a candle closed back through the level. Louder than the break.
+function reversalMessage(asset, price, end, b, levels) {
   const wasUp = b.dir === 'up', L = px(b.level);
-  const at = new Date(b.at);
-  const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
-  const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
-  const hrs = (now - b.at) / 36e5;
+  const hrs = (end - b.at) / 36e5;
   const ago = hrs < 1 ? 'under an hour' : `${Math.round(hrs)} hour${Math.round(hrs) === 1 ? '' : 's'}`;
-  const next = levels.filter(x => wasUp ? x < price : x > price).sort((a, c) => wasUp ? c - a : a - c)[0];
+  const next = levels.filter(x => wasUp ? x < price : x > price).sort((a, d) => wasUp ? d - a : a - d)[0];
   return {
-    title: `${asset} reversal at ${L}: back ${wasUp ? 'below' : 'above'} (now ${px(price)})`,
-    body: `${asset} broke ${wasUp ? 'above' : 'below'} ${L} at ${uk} UK (${day}), got to ${px(b.extreme)}, and is now back ${wasUp ? 'below' : 'above'} at ${px(price)} (${ago} later).\n` +
+    title: `${asset} reversal at ${L}: back ${wasUp ? 'below' : 'above'} (15m close ${px(price)})`,
+    body: `${asset} broke ${wasUp ? 'above' : 'below'} ${L} on the 15-minute close at ${ukTime(b.at)}, got as far as ${px(b.extreme)}, ` +
+      `and closed back ${wasUp ? 'below' : 'above'} at ${px(price)} at ${ukTime(end)} (${ago} later).\n` +
       `What it means: the break ${wasUp ? 'up' : 'down'} failed; price is turning back ${wasUp ? 'down' : 'up'} from the gamma level.\n` +
       (next ? `Next level ${wasUp ? 'below' : 'above'}: ${px(next)}.\n` : '') +
       'Context, not a trade signal.',
