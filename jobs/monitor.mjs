@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs
 import { join } from 'node:path';
 import { collect } from '../tools/fragility/collect.js';
 import { evaluate } from '../tools/fragility/score.js';
-import { stickyZone, levelCrossings, breakReversals } from '../tools/fragility/alerts.js';
+import { stickyZone, levelEvents } from '../tools/fragility/alerts.js';
 import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { closedCandles } from '../shared/sources/gate.js';
 import { CONFIG } from '../tools/fragility/config.js';
@@ -38,6 +38,8 @@ state.levels = state.levels || {};
 state.keyLevels = state.keyLevels || {};
 state.breaks = state.breaks || {};
 state.lastCandle = state.lastCandle || {};
+state.lastClose = state.lastClose || {};
+state.quiet = state.quiet || {};
 state.tactics = state.tactics || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
@@ -62,21 +64,18 @@ for (const asset of CONFIG.assets) {
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
-  // Key gamma levels, picked automatically (shared/levels.js). Only finished
-  // 15-minute candles count (Gate closes, not the live price, so a quick spike
-  // isn't a cross), and a close must be confirmPct past a level. Every candle
-  // since the last check is walked in order, so a break and its reversal between
-  // two late runs are both caught. A break rings once; a close back through the
-  // level within reversalHours rings louder (a reversal). Breaks are kept apart
-  // from the level list, so a level dropped at the daily re-pick still gets its
-  // reversal. Then the levels are re-picked if due, keeping the sides of levels
-  // that stay (new ones only record a side, they don't ring).
+  // Key gamma levels, picked automatically (shared/levels.js). Finished 15-minute
+  // Gate candles are walked in order since the last check (so nothing is missed
+  // when GitHub runs late), and any trade through a level counts, spike or not:
+  // a break rings once; trading back through within reversalHours rings louder (a
+  // reversal); through and back in one candle rings once as a spike. Breaks are
+  // kept apart from the level list, so a level dropped at the daily re-pick still
+  // gets its reversal.
   const KL = CONFIG.keyLevels;
   if (KL.assets.includes(asset) && price) {
     const stored = state.keyLevels[asset] || null;
     const levels = stored ? stored.levels : [];
-    let sides = state.levels[asset] || {};
-    let breaks = state.breaks[asset] || [];
+    let breaks = state.breaks[asset] || [], quiet = state.quiet[asset] || {};
     let closes = [];
     try {
       closes = await closedCandles(asset, KL.candleMinutes, 48, now);
@@ -84,35 +83,32 @@ for (const asset of CONFIG.assets) {
       console.log(`${asset} candles unavailable (levels not checked this run): ${e.message}`);
     }
     const last = state.lastCandle[asset];
-    const todo = last ? closes.filter(c => c.t > last) : closes.slice(-1); // first run: just the latest
+    let todo = last ? closes.filter(c => c.t > last) : closes.slice(-1); // first run: just the latest
+    // The close before the first new candle: where price was coming from.
+    let prev = state.lastClose[asset] ?? (closes.filter(c => c.t < (todo[0] || {}).t).pop() || {}).close ?? null;
     for (const c of todo) {
       const end = c.t + KL.candleMinutes * 6e4; // when this candle closed
-      const rv = breakReversals(c.close, end, breaks, KL.confirmPct, KL.reversalHours * 36e5);
-      for (const b of rv.reversed) pushes.push(reversalMessage(asset, c.close, end, b, levels));
-      const lv = levelCrossings(c.close, levels, sides, KL.confirmPct);
-      sides = lv.sides;
-      // A crossing that is the turn back of a break was just announced as a reversal.
-      const fresh = lv.crossed.filter(x => !rv.reversed.some(b => b.level === x.level));
-      if (fresh.length) pushes.push(levelMessage(asset, c.close, end, fresh, levels, zone, r, KL));
-      breaks = rv.open.filter(b => !fresh.some(x => x.level === b.level))
-        .concat(fresh.map(x => ({ level: x.level, dir: x.dir, at: end, extreme: c.close })));
+      const ev = levelEvents(c, prev, levels, breaks, quiet, end, KL.reversalHours * 36e5, KL.quietMinutes * 6e4);
+      breaks = ev.breaks; quiet = ev.quiet;
+      for (const e of ev.events) pushes.push(levelEventMessage(asset, e, end, levels, zone, r, KL));
+      prev = c.close;
     }
     if (todo.length) {
       state.lastCandle[asset] = todo[todo.length - 1].t;
-      console.log(`${asset} levels: checked ${todo.length} candle close(s), last ${px(todo[todo.length - 1].close)}; watching ${breaks.length} break(s)`);
+      state.lastClose[asset] = prev;
+      console.log(`${asset} levels: checked ${todo.length} candle(s), last close ${px(prev)}; watching ${breaks.length} break(s)`);
     }
     state.breaks[asset] = breaks;
+    state.quiet[asset] = quiet;
     if (needsRepick(stored, price, now, KL.repickHourUtc) && data.options) {
       const picked = pickLevels(data.options.options, price, now, KL).map(l => l.price);
       if (picked.length) {
         const changed = !stored || picked.join() !== stored.levels.join();
         state.keyLevels[asset] = { levels: picked, picked: now, method: METHOD };
-        sides = levelCrossings(price, picked, sides, KL.confirmPct).sides;
         console.log(`${asset} key levels: ${picked.map(px).join(' / ')}${changed ? ' (new)' : ''}`);
         if (changed) pushes.push(levelsMessage(asset, price, picked, stored));
       }
     }
-    state.levels[asset] = sides;
     mmSummary.push(`${asset} ${px(price)}`);
   }
 
@@ -201,41 +197,40 @@ function ukTime(t) {
     d.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }) + ')';
 }
 
-// price = the close of the finished candle that confirmed it; end = when it closed.
-function levelMessage(asset, price, end, crossed, levels, zone, r, KL) {
-  const down = crossed[0].dir === 'down';
-  const names = crossed.map(x => px(x.level));
-  // The next level in the direction of travel, if any.
-  const next = levels.filter(L => down ? L < price : L > price).sort((a, b) => down ? b - a : a - b)[0];
-  return {
-    title: `${asset} ${down ? 'below' : 'above'} ${names.join(' and ')} (15m close ${px(price)})`,
-    body: `${asset} crossed ${down ? 'below' : 'above'} the ${names.join(' and ')} gamma level: the 15-minute candle to ${ukTime(end)} closed at ${px(price)}, ` +
-      `at least ${KL.confirmPct}% past it.\n` +
-      `Watching for a reversal: if a 15-minute candle closes back ${down ? 'above' : 'below'} ${names[0]} (by ${KL.confirmPct}%) in the next ${KL.reversalHours} hours, you get a second alert.\n` +
-      (next ? `Next level ${down ? 'below' : 'above'}: ${px(next)}.\n` : '') +
-      `Fragility: ${r.score.toFixed(0)} ${zone}.`,
-    priority: 4,
-    tags: down ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
-    click: '#flow',
+// A gamma-level event from levelEvents(): 'break', 'reversal' or 'spike'.
+// end = when the candle that showed it closed.
+function levelEventMessage(asset, e, end, levels, zone, r, KL) {
+  const up = e.dir === 'up', L = px(e.level), c = e.c;
+  const nextFrom = (p, goingUp) => levels.filter(x => goingUp ? x > p : x < p).sort((a, b) => goingUp ? a - b : b - a)[0];
+  if (e.kind === 'break') {
+    const next = nextFrom(e.level, up);
+    return {
+      title: `${asset} crossed ${up ? 'above' : 'below'} ${L} (${up ? 'high' : 'low'} ${px(e.extreme)})`,
+      body: `${asset} traded ${up ? 'above' : 'below'} the ${L} gamma level: ${up ? 'high' : 'low'} ${px(e.extreme)} in the 15-minute candle to ${ukTime(end)}, which closed at ${px(c.close)}.\n` +
+        `Watching for a reversal: if it trades back ${up ? 'below' : 'above'} ${L} in the next ${KL.reversalHours} hours, you get a second alert.\n` +
+        (next ? `Next level ${up ? 'above' : 'below'}: ${px(next)}.\n` : '') +
+        `Fragility: ${r.score.toFixed(0)} ${zone}.`,
+      priority: 4,
+      tags: up ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+      click: '#flow',
+    };
+  }
+  const next = nextFrom(e.level, !up);
+  const tail = `What it means: the push ${up ? 'up' : 'down'} through the gamma level failed; price is turning back ${up ? 'down' : 'up'}.\n` +
+    (next ? `Next level ${up ? 'below' : 'above'}: ${px(next)}.\n` : '') + 'Context, not a trade signal.';
+  const tags = 'leftwards_arrow_with_hook,' + (up ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend');
+  if (e.kind === 'spike') return {
+    title: `${asset} spiked through ${L} and back (${up ? 'high' : 'low'} ${px(e.extreme)}, close ${px(c.close)})`,
+    body: `In the 15-minute candle to ${ukTime(end)}, ${asset} traded ${up ? 'above' : 'below'} ${L} (to ${px(e.extreme)}) and closed back ${up ? 'below' : 'above'} at ${px(c.close)}.\n` + tail,
+    priority: 5, tags: tags, click: '#flow',
   };
-}
-
-// The break failed: a candle closed back through the level. Louder than the break.
-function reversalMessage(asset, price, end, b, levels) {
-  const wasUp = b.dir === 'up', L = px(b.level);
-  const hrs = (end - b.at) / 36e5;
+  const hrs = (end - e.at) / 36e5;
   const ago = hrs < 1 ? 'under an hour' : `${Math.round(hrs)} hour${Math.round(hrs) === 1 ? '' : 's'}`;
-  const next = levels.filter(x => wasUp ? x < price : x > price).sort((a, d) => wasUp ? d - a : a - d)[0];
   return {
-    title: `${asset} reversal at ${L}: back ${wasUp ? 'below' : 'above'} (15m close ${px(price)})`,
-    body: `${asset} broke ${wasUp ? 'above' : 'below'} ${L} on the 15-minute close at ${ukTime(b.at)}, got as far as ${px(b.extreme)}, ` +
-      `and closed back ${wasUp ? 'below' : 'above'} at ${px(price)} at ${ukTime(end)} (${ago} later).\n` +
-      `What it means: the break ${wasUp ? 'up' : 'down'} failed; price is turning back ${wasUp ? 'down' : 'up'} from the gamma level.\n` +
-      (next ? `Next level ${wasUp ? 'below' : 'above'}: ${px(next)}.\n` : '') +
-      'Context, not a trade signal.',
-    priority: 5,
-    tags: wasUp ? 'leftwards_arrow_with_hook,chart_with_downwards_trend' : 'leftwards_arrow_with_hook,chart_with_upwards_trend',
-    click: '#flow',
+    title: `${asset} reversal at ${L}: back ${up ? 'below' : 'above'} (${up ? 'low' : 'high'} ${px(up ? c.low : c.high)})`,
+    body: `${asset} crossed ${up ? 'above' : 'below'} ${L} in the candle to ${ukTime(e.at)}, got as far as ${px(e.extreme)}, and traded back ${up ? 'below' : 'above'} in the candle to ${ukTime(end)} ` +
+      `(${up ? 'low' : 'high'} ${px(up ? c.low : c.high)}, close ${px(c.close)}), ${ago} later.\n` + tail,
+    priority: 5, tags: tags, click: '#flow',
   };
 }
 

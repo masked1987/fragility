@@ -29,19 +29,42 @@ export function levelCrossings(price, levels, prevSides, bufferPct) {
   return { sides: sides, crossed: crossed };
 }
 
-// Reversals: a break is { level, dir: 'up' | 'down', at, extreme } (extreme = the
-// furthest price seen past the level). It reverses when the price closes back
-// through the level by the same buffer within windowMs; after that it is dropped.
-// Returns the breaks still open (extremes updated) and the ones that reversed.
-export function breakReversals(price, now, breaks, bufferPct, windowMs) {
-  const open = [], reversed = [];
+// Gamma-level breaks and reversals from one finished candle. Any trade through a
+// level counts (a spike is a cross too): the candle's high / low, not its close.
+//   c = { high, low, close }, prev = the previous candle's close, end = when c closed.
+//   breaks = open breaks [{ level, dir: 'up' | 'down', at, extreme }]
+//   quiet = { level: until } — a level rings at most once per quietMs, so price
+//           chopping on it doesn't ring every candle. Breaks are still tracked
+//           while it is quiet, so a later reversal is never missed.
+// Events (only the ones allowed to ring): 'break' (traded through), 'reversal' (an
+// open break traded back through), 'spike' (through and closed back in one candle).
+export function levelEvents(c, prev, levels, breaks, quiet, end, windowMs, quietMs) {
+  const all = [], open = [], q = Object.assign({}, quiet);
+  Object.keys(q).forEach(function (L) { if (q[L] <= end) delete q[L]; });
   (breaks || []).forEach(function (b) {
-    if (now - b.at > windowMs) return; // too old: no longer watched
-    const back = b.dir === 'up' ? price <= b.level * (1 - bufferPct / 100) : price >= b.level * (1 + bufferPct / 100);
-    if (back) { reversed.push(b); return; }
-    open.push(Object.assign({}, b, { extreme: b.dir === 'up' ? Math.max(b.extreme, price) : Math.min(b.extreme, price) }));
+    if (end - b.at > windowMs) return; // too old: no longer watched
+    const ext = b.dir === 'up' ? Math.max(b.extreme, c.high) : Math.min(b.extreme, c.low);
+    const back = b.dir === 'up' ? c.low < b.level : c.high > b.level;
+    if (back) all.push({ kind: 'reversal', level: b.level, dir: b.dir, at: b.at, extreme: ext, c: c });
+    else open.push(Object.assign({}, b, { extreme: ext }));
   });
-  return { open: open, reversed: reversed };
+  levels.forEach(function (L) {
+    if (prev == null || open.some(function (b) { return b.level === L; }) || all.some(function (e) { return e.level === L; })) return;
+    const up = prev < L && c.high > L, down = prev > L && c.low < L;
+    if (!up && !down) return;
+    const dir = up ? 'up' : 'down', ext = up ? c.high : c.low;
+    if (up ? c.close < L : c.close > L) all.push({ kind: 'spike', level: L, dir: dir, at: end, extreme: ext, c: c }); // through and straight back
+    else {
+      all.push({ kind: 'break', level: L, dir: dir, at: end, extreme: ext, c: c });
+      open.push({ level: L, dir: dir, at: end, extreme: ext });
+    }
+  });
+  const events = all.filter(function (e) {
+    if (q[e.level]) return false;
+    q[e.level] = end + quietMs;
+    return true;
+  });
+  return { breaks: open, quiet: q, events: events };
 }
 
 // Returns { from, to } when the zone changed since the last call, else null.

@@ -1,7 +1,7 @@
 // Run: node test/alerts.mjs  — offline checks of the combined verdict and alert logic (no network).
 import assert from 'node:assert/strict';
 import { dealerSide, readOverall, readCarry } from '../tools/market-maker/read.js';
-import { levelCrossings, breakReversals } from '../tools/fragility/alerts.js';
+import { levelCrossings, levelEvents } from '../tools/fragility/alerts.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
 import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
@@ -84,34 +84,55 @@ assert.equal(lv.find(l => l.price === 2200).oi, 92000);
 assert.deepEqual(pickLevels(chain, 2230, T0, KL).map(l => l.price), [2000, 2200, 2300, 2400, 2500]);
 assert.deepEqual(pickLevels([], 2267, T0, KL), []);
 
-// 5b. A cross only counts when a 15-minute close is 0.5% past the level.
-const conf = KL.confirmPct;
-assert.equal(conf, 0.5);
-let cr = levelCrossings(2306, [2300], { 2300: 'below' }, conf);                 // 0.26% above: not yet
-assert.equal(cr.crossed.length, 0);
-assert.equal(cr.sides[2300], 'below');
-cr = levelCrossings(2312, [2300], cr.sides, conf);                              // 0.52% above: crossed
-assert.deepEqual(cr.crossed, [{ level: 2300, dir: 'up' }]);
-
-// 5c. Break, then reversal within 48 hours (the close must be 0.5% back the other side).
-const H = 36e5, WIN = KL.reversalHours * H;
-let br = [{ level: 2300, dir: 'up', at: T0, extreme: 2312 }];
-let rv = breakReversals(2318, T0 + 2 * H, br, conf, WIN);            // still above: open, extreme rises
-assert.equal(rv.reversed.length, 0);
-assert.equal(rv.open[0].extreme, 2318);
-rv = breakReversals(2292, T0 + 3 * H, rv.open, conf, WIN);           // back under, but only 0.35%: not yet
-assert.equal(rv.reversed.length, 0);
-rv = breakReversals(2285, T0 + 30 * H, rv.open, conf, WIN);          // 0.65% back below, 30 hours later
-assert.equal(rv.reversed.length, 1);
-assert.equal(rv.reversed[0].extreme, 2318);
-assert.equal(rv.open.length, 0);                                    // dropped after reversing
-// Downside break that comes back up.
-rv = breakReversals(2212, T0 + 5 * H, [{ level: 2200, dir: 'down', at: T0, extreme: 2185 }], conf, WIN);
-assert.equal(rv.reversed.length, 1);
-// Older than 48 hours: no longer watched, even if price comes back.
-rv = breakReversals(2285, T0 + 49 * H, [{ level: 2300, dir: 'up', at: T0, extreme: 2318 }], conf, WIN);
-assert.equal(rv.reversed.length, 0);
-assert.equal(rv.open.length, 0);
+// 5b. Breaks and reversals: any trade through a level counts (high / low), spike or not.
+const H = 36e5, WIN = KL.reversalHours * H, QUIET = KL.quietMinutes * 6e4, LV = [2200, 2300];
+const k = (low, high, close) => ({ low, high, close });
+const step = (c, prev, bs, at) => levelEvents(c, prev, LV, bs.breaks, bs.quiet, at, WIN, QUIET);
+let bs = { breaks: [], quiet: {} };
+// A wick to 2,300.5 from below that closes back under 2,300 = a spike (through and back).
+let ev = step(k(2290, 2300.5, 2296), 2292, bs, T0);
+assert.deepEqual(ev.events.map(e => [e.kind, e.level, e.dir]), [['spike', 2300, 'up']]);
+assert.equal(ev.breaks.length, 0);
+// The level then rings at most once an hour: chop on it doesn't ring every candle.
+ev = step(k(2294, 2301, 2297), 2296, ev, T0 + 15 * 6e4);
+assert.equal(ev.events.length, 0);
+ev = step(k(2294, 2301, 2297), 2297, ev, T0 + 61 * 6e4);              // after the hour: rings again
+assert.deepEqual(ev.events.map(e => e.kind), ['spike']);
+// A real break during the quiet hour is still tracked, so its later reversal rings.
+let qb = step(k(2296, 2304, 2302), 2297, { breaks: [], quiet: { 2300: T0 + H } }, T0 + 30 * 6e4);
+assert.equal(qb.events.length, 0);                                    // quiet: no ring...
+assert.equal(qb.breaks.length, 1);                                    // ...but watched
+qb = step(k(2296, 2303, 2298), 2302, qb, T0 + 3 * H);
+assert.deepEqual(qb.events.map(e => e.kind), ['reversal']);
+// A plain break: trades above 2,300 by a little and closes above.
+bs = { breaks: [], quiet: {} };
+ev = step(k(2296, 2301, 2300.4), 2297, bs, T0);
+assert.deepEqual(ev.events.map(e => [e.kind, e.level, e.dir, e.extreme]), [['break', 2300, 'up', 2301]]);
+assert.equal(ev.breaks.length, 1);
+// Next candles stay above: no new alerts, the furthest point is kept.
+ev = step(k(2302, 2318, 2310), 2300.4, ev, T0 + 1 * H);
+assert.equal(ev.events.length, 0);
+assert.equal(ev.breaks[0].extreme, 2318);
+// 30 hours later a wick back to 2,299 is the reversal, even if the candle closes above.
+ev = step(k(2299, 2306, 2304), 2305, ev, T0 + 30 * H);
+assert.deepEqual(ev.events.map(e => [e.kind, e.level, e.extreme]), [['reversal', 2300, 2318]]);
+assert.equal(ev.breaks.length, 0);
+assert.ok(ev.quiet[2300] > T0 + 30 * H);
+// Downside break of 2,200, then back up.
+bs = { breaks: [], quiet: {} };
+ev = step(k(2195, 2206, 2198), 2204, bs, T0);
+assert.deepEqual(ev.events.map(e => [e.kind, e.dir]), [['break', 'down']]);
+ev = step(k(2197, 2203, 2201), 2198, ev, T0 + 5 * H);
+assert.deepEqual(ev.events.map(e => [e.kind, e.level]), [['reversal', 2200]]);
+// Older than 48 hours: no longer watched.
+ev = step(k(2290, 2299, 2295), 2305, { breaks: [{ level: 2300, dir: 'up', at: T0, extreme: 2318 }], quiet: {} }, T0 + 49 * H);
+assert.equal(ev.events.filter(e => e.kind === 'reversal').length, 0);
+// Not touching a level, or no previous close yet: nothing.
+assert.equal(step(k(2250, 2290, 2280), 2260, { breaks: [], quiet: {} }, T0).events.length, 0);
+assert.equal(step(k(2290, 2310, 2305), null, { breaks: [], quiet: {} }, T0).events.length, 0);
+// A big candle through two levels at once: two breaks.
+ev = step(k(2190, 2305, 2302), 2195, { breaks: [], quiet: {} }, T0);
+assert.deepEqual(ev.events.map(e => [e.kind, e.level]), [['break', 2200], ['break', 2300]]);
 
 // 6. When to pick again: daily after 08:00 UTC, or when price runs past one side.
 const st = { levels: [2180, 2220, 2280, 2300], picked: Date.UTC(2026, 10, 1, 8, 7), method: METHOD };

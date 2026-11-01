@@ -22,16 +22,18 @@ export const CONFIG = {
   ],
   hysteresis: 3,
 
-  // Phone alerts on the key gamma levels (jobs/monitor.mjs). A level counts as
-  // crossed only when a finished `candleMinutes` candle (Gate) closes at least
-  // confirmPct past it: one ring (a break). If a later candle closes confirmPct back
-  // on the other side within reversalHours, a louder one rings (a reversal).
+  // Phone alerts on the key gamma levels (jobs/monitor.mjs), from finished
+  // `candleMinutes` candles (Gate). Any trade through a level counts, spike or not
+  // (the candle's high / low): one ring (a break). If price then trades back
+  // through it within reversalHours, a louder one rings (a reversal); through and
+  // back in one candle rings once as a spike. After a reversal the level stays
+  // quiet for quietMinutes, so chop on a level doesn't ring every candle.
   // Levels are picked automatically (shared/levels.js): the `count` strikes with the
   // most open calls + puts within ±rangePct, leaving out options that expire within
   // minDays. Re-picked daily after Deribit's 08:00 UTC expiry, or sooner if the
   // price runs past every level on one side.
   keyLevels: { assets: ['ETH'], rangePct: 15, count: 5, minDays: 2, minGapPct: 0.5, repickHourUtc: 8,
-    reversalHours: 48, confirmPct: 0.5, candleMinutes: 15 },
+    reversalHours: 48, quietMinutes: 60, candleMinutes: 15 },
   // The job saves the picked levels here; the Playbook reads them.
   stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',
 

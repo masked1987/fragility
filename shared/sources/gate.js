@@ -60,6 +60,6 @@ export async function hourlyCloses(asset, hours) {
 export async function closedCandles(asset, minutes, limit, now) {
   const k = await getJson(BASE + '/candlesticks?contract=' + asset + '_USDT&interval=' + (minutes === 60 ? '1h' : minutes + 'm') + '&limit=' + Math.min(limit, 1000));
   const end = now || Date.now();
-  return k.map(function (c) { return { t: c.t * 1000, close: +c.c }; })
+  return k.map(function (c) { return { t: c.t * 1000, high: +c.h, low: +c.l, close: +c.c }; })
     .filter(function (c) { return c.close > 0 && c.t + minutes * 6e4 <= end; });
 }

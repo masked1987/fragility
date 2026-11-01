@@ -44,16 +44,18 @@ the file layout. Tabs, in order:
   apart. (Earlier tries: fixed 2,250/2,200/2,170; then 2 per side within ±5% by
   hedging $, which picked small near strikes and missed 2,500.) `needsRepick()`:
   daily after 08:00 UTC (Deribit expiry), when price is past every level on one
-  side, or when `METHOD` changes. Saved in `state.json` (`keyLevels`, sides in
-  `levels`). Alerts (owner: "make sure price is crossed"): only finished 15-minute
-  Gate candle closes count, never the live price (`closedCandles()` in
-  `shared/sources/gate.js`), and a close must be `confirmPct` 0.5% past the level.
-  Each finished candle since `lastCandle` (in `state.json`) is walked in order, up
-  to 12 hours back. A break rings once (priority 4); a later close 0.5% back
-  through it within 48 h rings louder (reversal, priority 5, says how far it got
-  and how long ago). Breaks live in `state.json` (`breaks`), apart from the
-  level list, so a level dropped at a re-pick still gets its reversal;
-  `breakReversals()` in `tools/fragility/alerts.js`. A priority-2 (silent) push
+  side, or when `METHOD` changes. Saved in `state.json` (`keyLevels`).
+  Alerts: first asked "make sure price is crossed" (built as 0.5% past on a
+  15-minute close), then "doesn't matter if that's spike or not as long as price
+  is crossed": now any trade through counts, from finished 15-minute Gate candles'
+  high / low (`closedCandles()` in `shared/sources/gate.js`), walked in order since
+  `lastCandle` (`lastClose` = where price came from), up to 12 hours back.
+  `levelEvents()` in `tools/fragility/alerts.js`: break (priority 4); reversal =
+  an open break traded back through within 48 h (priority 5, says how far it got
+  and how long ago); spike = through and closed back in one candle (priority 5).
+  Each level rings at most once an hour (`quiet`), but breaks are always tracked.
+  Breaks live in `state.json` (`breaks`), apart from the level list, so a level
+  dropped at a re-pick still gets its reversal. A priority-2 (silent) push
   lists new levels. The Playbook reads the saved list from `stateUrl` (falls back
   to picking live), so its "your phone alert rings" note matches.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
