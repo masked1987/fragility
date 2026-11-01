@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=31';
+const V = '?v=32';
 const TOOLS = [
   { id: 'gamma', title: 'Gamma Detrite', short: 'Gamma', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
   { id: 'fragility', title: 'Fragility', short: 'Score', load: function () { return import('../tools/fragility/view.js' + V); } },
@@ -53,11 +53,21 @@ function moveInk(animate) {
 }
 
 function slideIn(pane, dir) {
-  if (reduceMotion.matches || !pane.animate || !dir) return;
+  if (!pane.animate || !dir) return;
+  const ease = 'cubic-bezier(.16, 1, .3, 1)';
+  // Phones set to reduce motion still get a soft fade, just no movement.
+  if (reduceMotion.matches) { pane.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' }); return; }
   pane.animate([
-    { opacity: 0, transform: 'translateX(' + (dir * 22) + 'px)' },
+    { opacity: 0, transform: 'translateX(' + (dir * 64) + 'px) scale(.985)' },
     { opacity: 1, transform: 'none' },
-  ], { duration: 260, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+  ], { duration: 460, easing: ease });
+  // Cards rise in one after another (first few only, so it stays quick).
+  Array.prototype.slice.call(pane.querySelectorAll('.card'), 0, 5).forEach(function (card, i) {
+    card.animate([
+      { opacity: 0, transform: 'translateY(18px)' },
+      { opacity: 1, transform: 'none' },
+    ], { duration: 460, delay: 70 + i * 70, easing: ease, fill: 'backwards' });
+  });
 }
 
 async function route() {
@@ -122,6 +132,19 @@ lookMenu.innerHTML = '<div class="look-title">Style</div>' + LOOKS.map(function 
   return '<button type="button" role="menuitemradio" data-look="' + l.id + '">' +
     '<i class="look-sw" data-look="' + l.id + '"></i>' + l.name + '</button>';
 }).join('');
+// New colours spread out in a circle from the corner dot (View Transitions).
+function revealLook(id) {
+  if (!document.startViewTransition || reduceMotion.matches) { applyLook(id); return; }
+  const r = lookBtn.getBoundingClientRect();
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const t = document.startViewTransition(function () { applyLook(id); });
+  t.ready.then(function () {
+    document.documentElement.animate(
+      { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + end + 'px at ' + x + 'px ' + y + 'px)'] },
+      { duration: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', pseudoElement: '::view-transition-new(root)' });
+  }).catch(function () {});
+}
 lookBtn.addEventListener('click', function (e) { e.stopPropagation(); openMenu(lookMenu.hidden); });
 lookMenu.addEventListener('click', function (e) {
   const b = e.target.closest('button[data-look]');
@@ -129,8 +152,7 @@ lookMenu.addEventListener('click', function (e) {
   const id = b.getAttribute('data-look');
   try { if (id === 'teal') localStorage.removeItem('look'); else localStorage.setItem('look', id); } catch (err) {}
   openMenu(false);
-  if (document.startViewTransition && !reduceMotion.matches) document.startViewTransition(function () { applyLook(id); });
-  else applyLook(id);
+  revealLook(id);
 });
 document.addEventListener('click', function (e) { if (!lookMenu.hidden && !lookMenu.contains(e.target)) openMenu(false); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') openMenu(false); });
