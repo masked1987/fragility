@@ -437,6 +437,12 @@ The owner's own method, built from the version that tested best
   rising candles: −0.70 to −0.22R (best 3); low holds 1–12 candles: −0.73 to −0.16R
   (5+ all about −0.2R). Every count loses over 3 years and in the first 2 years;
   the last year is +0.9 to +1.1R for some, from the two July 2026 trades.
+  Then "try 79" (`FIB=0.79`), results `test/results/alt-fib79-2026-11-01.txt`:
+  0.79 after a 1% bounce 42 buys, 10% hit, +0.88R (first 2y +1.04R, last year
+  +0.43R), better than the tab on paper, but only 4 wins and one (+49R, 9 Jul 2025,
+  2,603 → 3,200) is more than the whole profit: without it −0.30R/buy (the tab
+  without its best: −0.07R). Other 0.79 versions lose (after Ichimoku −0.72R, after
+  4 candles −0.64 to −0.79R, 6 rising candles +0.32R on 23).
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back

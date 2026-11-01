@@ -21,7 +21,7 @@ import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 
 const MONTHS = +(process.argv[2] || 36);
 setCache(process.argv[3] || '.bt-cache');
-const FEE = 0.001, M5 = 5 * 6e4, FIB = 0.62;
+const FEE = 0.001, M5 = 5 * 6e4, FIB = +(process.env.FIB || 0.62); // FIB=0.79 etc. to try another level
 const now = Date.now();
 const months = [];
 for (let k = MONTHS; k >= 0; k--) { const d = new Date(now); months.push(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - k, 1)); }
