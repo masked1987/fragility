@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=30';
+const V = '?v=31';
 const TOOLS = [
   { id: 'gamma', title: 'Gamma Detrite', short: 'Gamma', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
   { id: 'fragility', title: 'Fragility', short: 'Score', load: function () { return import('../tools/fragility/view.js' + V); } },
@@ -30,21 +30,57 @@ function edgeFade() {
 }
 tabsEl.addEventListener('scroll', edgeFade, { passive: true });
 
+// Motion (asked Nov 2026): the tab underline glides to the new tab and the page
+// slides in from the side you move toward. Short and quick; off when the phone
+// asks for reduced motion.
+const reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+const ink = document.createElement('span');
+ink.className = 'tab-ink';
+tabsEl.appendChild(ink);
+let currentId = null;
+
+function moveInk(animate) {
+  const a = tabsEl.querySelector('a.active');
+  if (!a) return;
+  const cs = getComputedStyle(a);
+  const padL = parseFloat(cs.paddingLeft) || 0;
+  const padR = parseFloat(cs.paddingRight) || 0;
+  ink.style.transition = animate && !reduceMotion.matches ? '' : 'none';
+  ink.style.width = (a.offsetWidth - padL - padR) + 'px';
+  ink.style.transform = 'translateX(' + (a.offsetLeft + padL) + 'px)';
+  ink.style.top = (a.offsetTop + a.offsetHeight - 2) + 'px';
+  ink.style.opacity = '1';
+}
+
+function slideIn(pane, dir) {
+  if (reduceMotion.matches || !pane.animate || !dir) return;
+  pane.animate([
+    { opacity: 0, transform: 'translateX(' + (dir * 22) + 'px)' },
+    { opacity: 1, transform: 'none' },
+  ], { duration: 260, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+}
+
 async function route() {
   const id = location.hash.slice(1);
   const tool = TOOLS.find(function (t) { return t.id === id; }) || TOOLS[0];
-  Array.prototype.forEach.call(tabsEl.children, function (a) {
+  const from = TOOLS.findIndex(function (t) { return t.id === currentId; });
+  const to = TOOLS.indexOf(tool);
+  const dir = from < 0 || from === to ? 0 : (to > from ? 1 : -1);
+  currentId = tool.id;
+  Array.prototype.forEach.call(tabsEl.querySelectorAll('a'), function (a) {
     a.classList.toggle('active', a.getAttribute('data-id') === tool.id);
   });
   const on = tabsEl.querySelector('a.active');
   if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   edgeFade();
+  moveInk(from >= 0);
   Object.keys(panes).forEach(function (k) { panes[k].hidden = k !== tool.id; });
-  if (panes[tool.id]) return;
+  if (panes[tool.id]) { slideIn(panes[tool.id], dir); return; }
   const pane = document.createElement('div');
   pane.className = tool.full ? 'pane full' : 'pane wrap';
   viewEl.appendChild(pane);
   panes[tool.id] = pane;
+  slideIn(pane, dir);
   const mod = await tool.load();
   mod.mount(pane, { title: tool.title, url: tool.url });
 }
@@ -92,14 +128,16 @@ lookMenu.addEventListener('click', function (e) {
   if (!b) return;
   const id = b.getAttribute('data-look');
   try { if (id === 'teal') localStorage.removeItem('look'); else localStorage.setItem('look', id); } catch (err) {}
-  applyLook(id);
   openMenu(false);
+  if (document.startViewTransition && !reduceMotion.matches) document.startViewTransition(function () { applyLook(id); });
+  else applyLook(id);
 });
 document.addEventListener('click', function (e) { if (!lookMenu.hidden && !lookMenu.contains(e.target)) openMenu(false); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') openMenu(false); });
 applyLook(currentLook());
 
-window.addEventListener('resize', function () { setTopHeight(); edgeFade(); });
+window.addEventListener('resize', function () { setTopHeight(); edgeFade(); moveInk(false); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { moveInk(false); });
 window.addEventListener('hashchange', route);
 setTopHeight();
 route();

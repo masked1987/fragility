@@ -91,6 +91,11 @@ the file layout. Tabs, in order:
   change (`:root[data-look=…]` in `style.css`, dark and light each), state and
   chart colours never. Gamma Detrite reads the same key (same site address) and
   follows live through the `storage` event; keep its palettes in sync.
+  **Motion** (asked "motion on click or changing tab"): one `.tab-ink` underline
+  glides to the new tab (`moveInk()`), the new tab's page slides in ~22px from
+  the side you move toward (`slideIn()`, 260 ms expo-out), every control gives
+  a press squeeze, the style menu pops from its corner, a style change
+  cross-fades (View Transitions). Short (≤ ⅓ s) and off under reduced motion.
   Gamma Detrite has the same look in its own `index.html`. Built using the
   Impeccable design rules (Operate mode: dashboards stay easy to scan).
   To show a change before publishing: copy the site into `preview/` on
