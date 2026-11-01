@@ -210,8 +210,10 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   (Nov 2023–Oct 2026, 2,880 checks): 6/6 on 6 checks, 2 alerts, both BUY, both
   stopped out (−1R each, best +0.5R / +0.3R first); the video's SELL never fired.
   5/6 on 96 checks; the missing rule was mostly the value-area edge (41) or the
-  gamma flip (38). Far too few signals to judge; offered to also test 5/6 and the
-  looser "Ready" for a bigger sample, and a forward log of every live check.
+  gamma flip (38). Far too few signals to judge. Offered a 5/6 / "Ready" test,
+  a forward log and wider stops: owner declined ("happy how it works now").
+- Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
+  Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
   `collectTac()`, whose `decision` (= `decide(setup)`) is also what the tab's card
   shows, so they always agree. `sixOfSix()` in `model.js` rings only on the step
