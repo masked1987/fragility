@@ -1,0 +1,386 @@
+diff --git a/assets/app.js b/assets/app.js
+index 36e05cd..1c91789 100644
+--- a/assets/app.js
++++ b/assets/app.js
+@@ -2,7 +2,7 @@
+ // Add a tool by adding a line here; routing is by URL hash (#fragility).
+ // Tools are mounted on first visit and then kept alive, so switching is instant.
+ // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
+-const V = '?v=37';
++const V = '?v=38';
+ const TOOLS = [
+   { id: 'gamma', title: 'Gamma Detrite', short: 'Gamma', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
+   { id: 'fragility', title: 'Fragility', short: 'Score', load: function () { return import('../tools/fragility/view.js' + V); } },
+diff --git a/assets/style.css b/assets/style.css
+index 8381b4a..5a0d2df 100644
+--- a/assets/style.css
++++ b/assets/style.css
+@@ -790,3 +790,6 @@ details.tc-fold[open] .chev { transform: translateY(1px) rotate(-135deg); }
+ @media (max-width: 380px) { .tabs a { padding: 7px 3px; font-size: 13.5px; } }
+ .chart .al-stop { stroke: var(--primed); stroke-width: 1; stroke-dasharray: 2 3; }
+ .chart .al-stopt { fill: var(--primed); font-size: 10px; font-weight: 700; }
++.chart .al-sell { fill: var(--primed); }
++.legend .al-tri.dn { border-bottom: 0; border-top: 8px solid var(--primed); }
++.al-warn { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--building) 14%, transparent); border: 1px solid color-mix(in srgb, var(--building) 40%, var(--line)); }
+diff --git a/index.html b/index.html
+index a470bcd..66378e6 100644
+--- a/index.html
++++ b/index.html
+@@ -12,7 +12,7 @@
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Geist:wght@400..800&display=swap">
+-  <link rel="stylesheet" href="assets/style.css?v=37">
++  <link rel="stylesheet" href="assets/style.css?v=38">
+   <script>
+     // Every module gets the same ?v= as the page, so a phone can never mix a new
+     // file with an old cached one (that broke four tabs once, Nov 2026). The
+@@ -75,6 +75,6 @@
+     <div class="look-menu" id="look-menu" role="menu" hidden></div>
+   </header>
+   <main id="view"></main>
+-  <script type="module" src="assets/app.js?v=37"></script>
++  <script type="module" src="assets/app.js?v=38"></script>
+ </body>
+ </html>
+diff --git a/test/alt.mjs b/test/alt.mjs
+index 7643f8a..b9187ec 100644
+--- a/test/alt.mjs
++++ b/test/alt.mjs
+@@ -53,7 +53,11 @@ assert.ok(d.waiting.low < 2181);
+ c = candles([...flat(2260, 120), ...line(2260, 2120, 40), ...line(2120, 2240, 40)]);
+ s = findSetups(c, levels, cfg);
+ assert.equal(s[0].state, 'broken');
+-assert.equal(decideAlt(c, levels, cfg).action, 'wait');
++assert.equal(decideAlt(c, levels, { ...cfg, sides: { buy: true } }).action, 'wait');  // buys only: nothing
++// ...and coming back up through 2,200 from below is a SELL setup (the mirror), waiting.
++d = decideAlt(c, levels, cfg);
++assert.equal(d.action, 'watch');
++assert.equal(d.waiting.side, 'sell');
+ 
+ // 6. Once per level: stopped at 2,200, a second dip through 2,200 is not traded
+ //    until price has crossed another level.
+@@ -76,4 +80,26 @@ assert.equal(d.action, 'wait');
+ assert.equal(d.below, 2200);
+ assert.equal(d.above, 2500);
+ 
++// 8. SELL, the mirror: below 2,200, spikes up to ~2,231, sellers back -> sell, stop at
++//    the high, target the next huge level down (2,000).
++const spike = [...flat(2140, 120), ...line(2140, 2230, 30), ...flat(2230, 6), ...line(2230, 2160, 30), ...flat(2160, 10)];
++c = candles(spike);
++s = findSetups(c, levels, cfg).filter(x => x.side === 'sell');
++assert.equal(s.length, 1);
++assert.equal(s[0].state, 'signal');
++assert.ok(Math.abs(s[0].signal.stop - Math.max(...c.map(x => x.h))) < 1e-9, 'stop at the highest price of the spike');
++assert.equal(s[0].signal.target, 2000);
++assert.ok(s[0].signal.entry < s[0].signal.stop && s[0].signal.rr > 1);
++d = decideAlt(c, levels, cfg);
++assert.equal(d.action, 'sell');
++assert.equal(d.open.side, 'sell');
++assert.equal(decideAlt(c, levels, { ...cfg, sides: { buy: true } }).action, 'wait');    // can be switched off
++// Once per level covers both sides: after the sell at 2,200, a buy dip at 2,200 is skipped
++// until price crosses another level.
++const both = [...spike, ...line(2160, 2250, 30), ...flat(2250, 20), ...line(2250, 2180, 25), ...flat(2180, 6), ...line(2180, 2245, 30), ...flat(2245, 10)];
++c = candles(both);
++s = oncePerLevel(findSetups(c, levels, cfg), c);
++assert.equal(s.filter(x => x.taken).length, 1);
++assert.ok(s.some(x => x.used && x.side === 'buy'));
++
+ console.log('alt: all checks passed');
+diff --git a/tools/alt-tactics/config.js b/tools/alt-tactics/config.js
+index 598bc08..c4bc27c 100644
+--- a/tools/alt-tactics/config.js
++++ b/tools/alt-tactics/config.js
+@@ -21,10 +21,13 @@ export const ALT_CONFIG = {
+   // Confirmation: the Ichimoku score on candleMinutes candles crosses up through scoreBuy.
+   candleMinutes: 5,
+   scoreBuy: 80,
++  scoreSell: 20,           // SELL: the score crosses down through this (mirror image)
++  sides: { buy: true, sell: true },
+   candles: 1000,           // Gate 5-minute candles fetched (~3.5 days, Ichimoku needs 78 to warm up)
+   chartHours: 48,
+ 
+   // Backtest summary shown on the tab (huge 70%, 5-min score, once per level, 0.1% costs).
+   backtest: { from: 'Nov 2023', trades: 43, hitPct: 26, avgR: 0.47, worstRun: 8,
+-    years: '2024 +0.81R, 2025 +0.86R, 2026 +0.09R per trade' },
++    years: '2024 +0.81R, 2025 +0.86R, 2026 +0.09R per trade',
++    sell: { trades: 32, hitPct: 6, avgR: -0.74, worstRun: 18 }, both: { trades: 53, hitPct: 17, avgR: 0.0 } },
+ };
+diff --git a/tools/alt-tactics/model.js b/tools/alt-tactics/model.js
+index 0b62645..be60aeb 100644
+--- a/tools/alt-tactics/model.js
++++ b/tools/alt-tactics/model.js
+@@ -7,6 +7,9 @@
+ //   4. Entry when the Ichimoku score (5-minute) crosses up through 80: buyers are back.
+ //   5. Target: the next huge level up. Once per level: a level that was traded is not
+ //      traded again until price has crossed another level.
++//   SELL is the mirror image (spike up through a level, the high is the stop, the score
++//   crossing down through 20, target the next level down); asked for, but unproven:
++//   in the backtest sells on the huge levels lost (−0.74R per trade, 6% hit target).
+ // Mirrors test/levels-reversal.mjs (cross on 15-minute candles, signal on 5-minute).
+ 
+ const DAY = 864e5;
+@@ -59,36 +62,44 @@ export function to15(c5) {
+   return Array.from(by.values()).filter(function (x) { return x.n === 3; }).sort(function (a, b) { return a.t - b.t; });
+ }
+ 
+-// Every dip through every level in the candles, followed until it confirms (signal),
+-// breaks down, lapses, or the data ends (still waiting). c5 = 5-minute candles
++// Every cross through every level, followed until it confirms (signal), breaks
++// through, lapses, or the data ends (still waiting). BUY: price was above a level and
++// dips below it; the low is the stop; the Ichimoku score crossing up through scoreBuy
++// confirms; target the next level up. SELL (the mirror, asked for later): price was
++// below a level and spikes above it; the high is the stop; the score crossing down
++// through scoreSell confirms; target the next level down. c5 = 5-minute candles
+ // { t, h, l, c } oldest first; levels = [numbers].
+ export function findSetups(c5, levels, cfg) {
+   const c15 = to15(c5), ich = ichimoku(c5), bar = cfg.candleMinutes * 6e4, win = cfg.windowHours * 36e5;
+   const lv = levels.slice().sort(function (a, b) { return a - b; });
+   const out = [];
+   lv.forEach(function (L) {
+-    const target = lv.filter(function (x) { return x > L; })[0] || null;
++    const up = lv.filter(function (x) { return x > L; })[0] || null, down = lv.filter(function (x) { return x < L; }).pop() || null;
+     let pos = null;
+     for (let i = 0; i < c15.length; i++) {
+       const c = c15[i];
+       if (pos === null) { pos = c.c >= L ? 'above' : 'below'; continue; }
+-      if (!(pos === 'above' && c.l < L)) { pos = c.c >= L ? 'above' : 'below'; continue; }
+-      const t0 = c.t, s = { level: L, target: target, t0: t0, low: Infinity, lowT: null, state: 'waiting', signal: null };
++      const side = pos === 'above' && c.l < L ? 'buy' : pos === 'below' && c.h > L ? 'sell' : null;
++      if (!side) { pos = c.c >= L ? 'above' : 'below'; continue; }
++      const buy = side === 'buy', t0 = c.t;
++      const s = { side: side, level: L, target: buy ? up : down, t0: t0, ext: buy ? Infinity : -Infinity, extT: null, state: 'waiting', signal: null };
+       let k = c5.findIndex(function (x) { return x.t >= t0; }), endT = null;
+       for (; k >= 0 && k < c5.length && c5[k].t - t0 <= win; k++) {
+         const x = c5[k];
+-        if (x.l < s.low) { s.low = x.l; s.lowT = x.t; }
+-        if ((L - s.low) / L * 100 > cfg.maxDepthPct) { s.state = 'broken'; endT = x.t; break; }
++        if (buy ? x.l < s.ext : x.h > s.ext) { s.ext = buy ? x.l : x.h; s.extT = x.t; }
++        if ((buy ? L - s.ext : s.ext - L) / L * 100 > cfg.maxDepthPct) { s.state = 'broken'; endT = x.t; break; }
+         const a = ich[k - 1], b = ich[k];
+-        if (a && b && a.score < cfg.scoreBuy && b.score >= cfg.scoreBuy) {
++        if (a && b && (buy ? a.score < cfg.scoreBuy && b.score >= cfg.scoreBuy : a.score > cfg.scoreSell && b.score <= cfg.scoreSell)) {
+           s.state = 'signal';
+-          s.signal = { t: x.t + bar, entry: x.c, stop: s.low, target: target, rr: target && x.c > s.low ? (target - x.c) / (x.c - s.low) : null };
++          const risk = Math.abs(x.c - s.ext);
++          s.signal = { t: x.t + bar, entry: x.c, stop: s.ext, target: s.target, rr: s.target && risk > 0 ? Math.abs(s.target - x.c) / risk : null };
+           endT = x.t;
+           break;
+         }
+       }
+       if (s.state === 'waiting' && k < c5.length) { s.state = 'lapsed'; endT = c5[Math.min(k, c5.length - 1)].t; }
+-      s.depth = isFinite(s.low) ? (L - s.low) / L * 100 : 0;
++      s.depth = isFinite(s.ext) ? Math.abs(s.ext - L) / L * 100 : 0;
++      s.low = s.ext; s.lowT = s.extT; // older name, kept for the BUY side
+       out.push(s);
+       if (endT === null) break; // still waiting at the end of the data
+       while (i + 1 < c15.length && c15[i + 1].t <= endT) i++;
+@@ -99,28 +110,32 @@ export function findSetups(c5, levels, cfg) {
+ }
+ 
+ // What happened after a signal: target first, stop first, or still open.
+-export function follow(sig, c5) {
++export function follow(sig, c5, side) {
++  const buy = side !== 'sell';
+   for (let k = 0; k < c5.length; k++) {
+     const x = c5[k];
+     if (x.t < sig.t) continue;
+-    if (x.l <= sig.stop) return { result: 'stopped', at: x.t };
+-    if (sig.target && x.h >= sig.target) return { result: 'target', at: x.t };
++    if (buy ? x.l <= sig.stop : x.h >= sig.stop) return { result: 'stopped', at: x.t };
++    if (sig.target && (buy ? x.h >= sig.target : x.l <= sig.target)) return { result: 'target', at: x.t };
+   }
+   return { result: 'open', at: null };
+ }
+ 
+-// Once per level: a level whose setup was traded is skipped until that trade has
+-// ended and price has dipped through another level. Marks setups taken / used.
+-export function oncePerLevel(setups, c5) {
+-  const armed = {}, endAt = {};
++// Once per level (either side): a level whose setup was traded is skipped until that
++// trade has ended and price has crossed another level. Marks setups taken / used.
++// sides: which sides to trade, default both.
++export function oncePerLevel(setups, c5, sides) {
++  const armed = {}, endAt = {}, ok = sides || { buy: true, sell: true };
+   setups.forEach(function (s) {
+     Object.keys(endAt).forEach(function (L) {
+       if (+L !== s.level && endAt[L] !== null && endAt[L] < s.t0) { armed[L] = true; delete endAt[L]; }
+     });
++    if (!ok[s.side]) return;
+     if (armed[s.level] === false) { s.used = true; return; }
+-    if (s.state === 'signal' && s.signal.target && s.signal.entry > s.signal.stop && s.signal.entry < s.signal.target) {
++    const g = s.signal, buy = s.side === 'buy';
++    if (s.state === 'signal' && g.target && (buy ? g.entry > g.stop && g.entry < g.target : g.entry < g.stop && g.entry > g.target)) {
+       s.taken = true;
+-      s.trade = follow(s.signal, c5);
++      s.trade = follow(g, c5, s.side);
+       armed[s.level] = false;
+       endAt[s.level] = s.trade.at; // null while open: stays used
+     }
+@@ -128,16 +143,16 @@ export function oncePerLevel(setups, c5) {
+   return setups;
+ }
+ 
+-// The tab's verdict. BUY while a taken trade is open, WATCH while a dip waits for its
+-// confirmation, else WAIT. Also the nearest huge levels around the price.
++// The tab's verdict: BUY / SELL while a taken trade is open (the latest one), WATCH
++// while a cross waits for its confirmation, else WAIT. Also the huge levels around the price.
+ export function decideAlt(c5, levels, cfg) {
+-  const setups = oncePerLevel(findSetups(c5, levels, cfg), c5);
++  const setups = oncePerLevel(findSetups(c5, levels, cfg), c5, cfg.sides);
+   const ich = ichimoku(c5), now = ich[ich.length - 1];
+   const spot = c5.length ? c5[c5.length - 1].c : null;
+   const open = setups.filter(function (s) { return s.taken && s.trade.result === 'open'; }).pop() || null;
+-  const waiting = setups.filter(function (s) { return s.state === 'waiting' && !s.used; }).pop() || null;
++  const waiting = setups.filter(function (s) { return s.state === 'waiting' && !s.used && (!cfg.sides || cfg.sides[s.side]); }).pop() || null;
+   const below = levels.filter(function (L) { return L <= spot; }).pop() || null;
+   const above = levels.filter(function (L) { return L > spot; })[0] || null;
+-  const action = open ? 'buy' : waiting ? 'watch' : 'wait';
++  const action = open ? open.side : waiting ? 'watch' : 'wait';
+   return { action: action, open: open, waiting: waiting, setups: setups, ichimoku: now, spot: spot, below: below, above: above };
+ }
+diff --git a/tools/alt-tactics/view.js b/tools/alt-tactics/view.js
+index be9804c..d000797 100644
+--- a/tools/alt-tactics/view.js
++++ b/tools/alt-tactics/view.js
+@@ -69,44 +69,49 @@ export function mount(el) {
+   }
+ 
+   function decisionHtml(d) {
+-    const dec = d.decision, a = esc(d.asset);
+-    // A signal is "BUY" for its first hour; after that the trade shows as OPEN, so an
+-    // old signal is never read as "buy now" (entering late means a wider stop).
+-    const fresh = dec.open && d.fetched - dec.open.signal.t <= 60 * 6e4;
+-    const act = dec.action === 'buy' ? (fresh ? 'buy' : 'open') : dec.action;
++    const dec = d.decision, a = esc(d.asset), b = CFG.backtest;
++    // A signal is BUY / SELL for its first hour; after that the trade shows as OPEN, so an
++    // old signal is never read as "trade now" (entering late means a wider stop).
++    const o = dec.open, fresh = o && d.fetched - o.signal.t <= 60 * 6e4;
++    const act = o ? (fresh ? o.side : 'open') : dec.action;
++    const unproven = '<p class="small al-warn"><b>Unproven:</b> in the backtest, sells on the huge levels lost (' + b.sell.trades + ' trades, ' +
++      b.sell.hitPct + '% reached target, ' + b.sell.avgR.toFixed(2) + 'R per trade). ETH mostly bounced back up after spikes. Your call.</p>';
+     let head, body;
+-    if (dec.action === 'buy') {
+-      const s = dec.open, g = s.signal;
+-      head = fresh ? 'Buy: ' + a + ' dipped through ' + px(s.level) + ' and buyers are back'
+-        : 'Open: the buy from the dip through ' + px(s.level) + ' is still running';
++    if (o) {
++      const g = o.signal, buy = o.side === 'buy', word = buy ? 'Buy' : 'Sell';
++      const how = buy ? 'dipped through ' : 'spiked over ';
++      head = fresh ? word + ': ' + a + ' ' + how + px(o.level) + (buy ? ' and buyers are back' : ' and sellers are back')
++        : 'Open: the ' + word.toLowerCase() + ' from the ' + (buy ? 'dip through ' : 'spike over ') + px(o.level) + ' is still running';
+       body = '<dl class="pb-dl">' +
+-        '<dt>Bought at</dt><dd><b class="num">' + num(g.entry) + '</b> <span class="muted">(' + hhmm(g.t) + ', price now ' + num(d.spot) + ')</span></dd>' +
+-        '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">the lowest price of the dip, ' + s.depth.toFixed(1) + '% under ' + px(s.level) + '</span></dd>' +
+-        '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the next huge level, ' + (g.rr ? g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
++        '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(g.entry) + '</b> <span class="muted">(' + hhmm(g.t) + ', price now ' + num(d.spot) + ')</span></dd>' +
++        '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">the ' + (buy ? 'lowest' : 'highest') + ' price of the ' + (buy ? 'dip' : 'spike') + ', ' + o.depth.toFixed(1) + '% ' + (buy ? 'under ' : 'over ') + px(o.level) + '</span></dd>' +
++        '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the next huge level ' + (buy ? 'up' : 'down') + (g.rr ? ', ' + g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
+         '<dt>Size</dt><dd>' + sizeText(g.entry, g.stop) + '</dd></dl>' +
+-        (fresh ? '' : '<p class="small">Signal from ' + hhmm(g.t) + '. Buying now instead means a wider stop and less reward; the low stays the stop either way.</p>') +
+-        '<p class="verdict-action"><b>What it means:</b> the dip through ' + px(s.level) + ' looks like a shake-out, not a breakdown. ' +
+-        'If price goes back under ' + num(g.stop) + ' the idea is wrong; ' + px(s.level) + ' is then used, and the next chance is at the next huge level.</p>';
++        (fresh ? '' : '<p class="small">Signal from ' + hhmm(g.t) + '. Entering now instead means a wider stop and less reward; the ' + (buy ? 'low' : 'high') + ' stays the stop either way.</p>') +
++        (buy ? '' : unproven) +
++        '<p class="verdict-action"><b>What it means:</b> the ' + (buy ? 'dip through ' : 'spike over ') + px(o.level) + ' looks like a shake-out, not a real break. ' +
++        'If price goes ' + (buy ? 'back under ' : 'back over ') + num(g.stop) + ' the idea is wrong; ' + px(o.level) + ' is then used, and the next chance is at the next huge level.</p>';
+     } else if (act === 'watch') {
+-      const s = dec.waiting, now = dec.ichimoku ? dec.ichimoku.score : null;
+-      head = 'Watch: ' + a + ' dipped through ' + px(s.level) + ', waiting for buyers';
++      const w = dec.waiting, buy = w.side === 'buy', now = dec.ichimoku ? dec.ichimoku.score : null;
++      head = 'Watch: ' + a + (buy ? ' dipped through ' : ' spiked over ') + px(w.level) + ', waiting for ' + (buy ? 'buyers' : 'sellers');
+       body = '<dl class="pb-dl">' +
+-        '<dt>Dipped</dt><dd>' + hhmm(s.t0) + ', low so far <b class="num">' + num(s.low) + '</b> <span class="muted">(' + s.depth.toFixed(1) + '% under, a breakdown past ' + CFG.maxDepthPct + '%)</span></dd>' +
+-        '<dt>Waiting for</dt><dd>the ' + CFG.candleMinutes + '-minute Ichimoku score to reach ' + CFG.scoreBuy + ' <span class="muted">(now ' + (now == null ? '–' : now) + ')</span></dd>' +
+-        '<dt>Then</dt><dd>buy, stop at the low, target ' + (s.target ? px(s.target) : '<span class="muted">no huge level above</span>') + '</dd></dl>' +
+-        '<p class="verdict-action"><b>What it means:</b> the setup is live. Don\'t buy yet: the low can still go lower until buyers take over.</p>';
++        '<dt>' + (buy ? 'Dipped' : 'Spiked') + '</dt><dd>' + hhmm(w.t0) + ', ' + (buy ? 'low' : 'high') + ' so far <b class="num">' + num(w.ext) + '</b> <span class="muted">(' + w.depth.toFixed(1) + '% ' + (buy ? 'under' : 'over') + ', a real break past ' + CFG.maxDepthPct + '%)</span></dd>' +
++        '<dt>Waiting for</dt><dd>the ' + CFG.candleMinutes + '-minute Ichimoku score to ' + (buy ? 'reach ' + CFG.scoreBuy : 'drop to ' + CFG.scoreSell) + ' <span class="muted">(now ' + (now == null ? '–' : now) + ')</span></dd>' +
++        '<dt>Then</dt><dd>' + (buy ? 'buy, stop at the low' : 'sell, stop at the high') + ', target ' + (w.target ? px(w.target) : '<span class="muted">no huge level ' + (buy ? 'above' : 'below') + '</span>') + '</dd></dl>' +
++        (buy ? '' : unproven) +
++        '<p class="verdict-action"><b>What it means:</b> the setup is live. Don\'t ' + (buy ? 'buy' : 'sell') + ' yet: the ' + (buy ? 'low can still go lower until buyers' : 'high can still go higher until sellers') + ' take over.</p>';
+     } else {
+-      head = 'Wait: no dip through a huge level';
+-      body = '<p class="verdict-action"><b>What it means:</b> nothing to do. The setup starts when price trades below a huge level' +
+-        (dec.below ? ', the nearest is <b>' + px(dec.below) + '</b> (' + pct(dec.below, d.spot) + ')' : '') +
+-        (dec.above ? '. Next one up: ' + px(dec.above) + ' (' + pct(dec.above, d.spot) + ')' : '') + '.</p>';
++      head = 'Wait: no cross of a huge level';
++      body = '<p class="verdict-action"><b>What it means:</b> nothing to do. A buy setup starts when price dips below a huge level' +
++        (dec.below ? ' (nearest <b>' + px(dec.below) + '</b>, ' + pct(dec.below, d.spot) + ')' : '') +
++        ', a sell setup when it spikes over one' + (dec.above ? ' (nearest <b>' + px(dec.above) + '</b>, ' + pct(dec.above, d.spot) + ')' : '') + '.</p>';
+     }
+-    const cls = act === 'buy' || act === 'open' ? 'buy' : act === 'watch' ? 'watch' : 'hold';
++    const cls = act === 'buy' || (act === 'open' && o.side === 'buy') ? 'buy' : act === 'sell' || act === 'open' ? 'sell' : act === 'watch' ? 'watch' : 'hold';
+     return '<section class="card tc-dec ' + cls + '">' +
+       '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
+         '<div><div class="label">' + a + ' · your method</div><p class="tc-dec-head">' + esc(splitHead(head).rest || head) + '</p></div></div>' +
+       body +
+-      '<p class="muted small">Buys only, once per level. Your own indicator may see what this doesn\'t; it has the last word. Context, not a trade signal.</p>' +
++      '<p class="muted small">Once per level, either side. Your own indicator may see what this doesn\'t; it has the last word. Context, not a trade signal.</p>' +
+     '</section>';
+   }
+ 
+@@ -132,10 +137,12 @@ export function mount(el) {
+     const setups = d.decision.setups;
+     const status = function (L) {
+       const last = setups.filter(function (s) { return s.level === L; }).pop();
+-      if (!last) return L <= d.spot ? 'Watching for a dip through' : 'Above the price';
++      if (!last) return L <= d.spot ? 'Watching for a dip through' : 'Watching for a spike over';
++      const buy = last.side === 'buy';
+       if (last.used) return 'Used (once per level)';
+-      if (last.taken) return last.trade.result === 'open' ? 'In the trade' : last.trade.result === 'target' ? 'Bought, target hit' : 'Bought, stopped';
+-      return { waiting: 'Dipped, waiting for buyers', broken: 'Broke through (more than ' + CFG.maxDepthPct + '%)', lapsed: 'Dipped, no buyers in ' + CFG.windowHours + ' h', signal: 'Signal, no level above' }[last.state] || '';
++      if (last.taken) return last.trade.result === 'open' ? (buy ? 'In a buy' : 'In a sell') : (buy ? 'Bought, ' : 'Sold, ') + (last.trade.result === 'target' ? 'target hit' : 'stopped');
++      return { waiting: buy ? 'Dipped, waiting for buyers' : 'Spiked, waiting for sellers', broken: 'Broke through (more than ' + CFG.maxDepthPct + '%)',
++        lapsed: buy ? 'Dipped, no buyers in ' + CFG.windowHours + ' h' : 'Spiked, no sellers in ' + CFG.windowHours + ' h', signal: 'Signal, no level beyond' }[last.state] || '';
+     };
+     const rows = d.huge.slice().reverse().map(function (h) {
+       return '<tr' + (h.price === d.decision.below ? ' class="al-near"' : '') + '><td class="num"><b>' + px(h.price) + '</b></td>' +
+@@ -157,7 +164,7 @@ export function mount(el) {
+     const lv = d.huge.map(function (h) { return h.price; });
+     let lo = Math.min.apply(null, c.map(function (x) { return x.l; })), hi = Math.max.apply(null, c.map(function (x) { return x.h; }));
+     // Always show the huge level under and over the price (and the trade's level and stop).
+-    [dec.below, dec.above, live && live.level, dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
++    [dec.below, dec.above, live && live.level, live && isFinite(live.ext) && live.ext, dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
+     const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
+     const x = function (t) { return padL + (t - c[0].t) / (c[c.length - 1].t - c[0].t) * (W - padL - padR); };
+     const y = function (p) { return H - (p - lo) / (hi - lo) * H; };
+@@ -174,29 +181,34 @@ export function mount(el) {
+     }
+     s += '<polyline class="al-px" points="' + c.map(function (k) { return x(k.t).toFixed(1) + ',' + y(k.c).toFixed(1); }).join(' ') + '"/>';
+     d.decision.setups.forEach(function (st) {
+-      if (st === live && st.lowT && st.lowT >= from && isFinite(st.low)) s += '<circle class="al-low" cx="' + x(st.lowT).toFixed(1) + '" cy="' + y(st.low).toFixed(1) + '" r="3.5"/>';
+-      if (st.taken && st.signal.t >= from) s += '<path class="al-buy" d="M' + x(st.signal.t).toFixed(1) + ',' + (y(st.signal.entry) + 12).toFixed(1) + ' l-5,8 h10 z"/>';
++      if (st === live && st.extT && st.extT >= from && isFinite(st.ext)) s += '<circle class="al-low" cx="' + x(st.extT).toFixed(1) + '" cy="' + y(st.ext).toFixed(1) + '" r="3.5"/>';
++      if (st.taken && st.signal.t >= from) s += st.side === 'buy'
++        ? '<path class="al-buy" d="M' + x(st.signal.t).toFixed(1) + ',' + (y(st.signal.entry) + 12).toFixed(1) + ' l-5,8 h10 z"/>'
++        : '<path class="al-sell" d="M' + x(st.signal.t).toFixed(1) + ',' + (y(st.signal.entry) - 12).toFixed(1) + ' l-5,-8 h10 z"/>';
+     });
+     return '<section class="card"><h3>' + (live ? 'Since the dip' : 'Last ' + CFG.chartHours + ' hours') + '</h3>' +
+-      '<div class="legend small"><span><i class="ln al-lvl"></i>Huge level</span><span><i class="dot al-lowdot"></i>Low of a dip</span><span><i class="al-tri"></i>Buy signal</span></div>' +
++      '<div class="legend small"><span><i class="ln al-lvl"></i>Huge level</span><span><i class="dot al-lowdot"></i>Low / high (the stop)</span><span><i class="al-tri"></i>Buy</span><span><i class="al-tri dn"></i>Sell</span></div>' +
+       '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Price and the huge levels, last ' + CFG.chartHours + ' hours">' + s + '</svg></div></section>';
+   }
+ 
+   function backtestHtml() {
+     const b = CFG.backtest;
+     return '<section class="card"><h3>How it did on past data</h3>' +
+-      '<p class="small">ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop at the low, target the next huge level, once per level, 0.1% costs):</p>' +
++      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop at the low, target the next huge level, once per level, 0.1% costs):</p>' +
+       '<dl class="pb-dl"><dt>Trades</dt><dd>' + b.trades + ' (about 15 a year)</dd>' +
+       '<dt>Reached target</dt><dd>' + b.hitPct + '%</dd>' +
+       '<dt>Average</dt><dd><b>+' + b.avgR.toFixed(2) + 'R</b> per trade <span class="muted">(R = the stop distance)</span></dd>' +
+       '<dt>By year</dt><dd>' + esc(b.years) + '</dd>' +
+       '<dt>Worst run</dt><dd>' + b.worstRun + ' losses in a row</dd></dl>' +
++      '<p class="small"><b>Sells</b> (the mirror image, added later): ' + b.sell.trades + ' trades, ' + b.sell.hitPct + '% reached target, <b>' + b.sell.avgR.toFixed(2) + 'R</b> per trade, worst run ' + b.sell.worstRun +
++        '. Buys and sells together: ' + b.both.trades + ' trades, ' + b.both.hitPct + '% reached target, about ±0R. The buys carry the method.</p>' +
+       '<details class="tc-fold"><summary class="small"><b>The rules and the catch</b></summary><ol class="tc-steps small">' +
+         '<li>Levels: only the huge strikes, at least ' + Math.round(CFG.hugeShare * 100) + '% of the biggest open interest.</li>' +
+         '<li>Price was above a level and trades below it (spikes count).</li>' +
+         '<li>Stop: the lowest price since the dip. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
+         '<li>Buy when the ' + CFG.candleMinutes + '-minute Ichimoku score crosses up through ' + CFG.scoreBuy + ' (stand-in for your indicator).</li>' +
+         '<li>Target: the next huge level up. One trade per level; a used level comes back after price crosses another one.</li>' +
++        '<li>Sells mirror it: a spike over a huge level, stop at the high, score down through ' + CFG.scoreSell + ', target the next huge level down.</li>' +
+         '<li>The catch: few trades, and the 10 best make most of the profit. Levels came from monthly snapshots, so yours may differ. Stops can fill worse in fast markets.</li>' +
+       '</ol></details></section>';
+   }
