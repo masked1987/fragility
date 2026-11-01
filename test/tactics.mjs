@@ -1,6 +1,6 @@
 // Run: node test/tactics.mjs  — offline checks of the Tactics model with made-up data (no network).
 import assert from 'node:assert/strict';
-import { gexNodes, pickPivot, profile, drift, footprint, niceStep, signals, setup, decide, sixOfSix } from '../tools/tactics/model.js';
+import { gexNodes, pickPivot, pickPivots, profile, drift, footprint, niceStep, signals, setup, decide, decideBoth, sixOfSix } from '../tools/tactics/model.js';
 import { TAC_CONFIG as cfg } from '../tools/tactics/config.js';
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, a + ' vs ' + b);
@@ -149,5 +149,56 @@ assert.deepEqual(ring([D(6)], 2), [true]);                                      
 assert.equal(sixOfSix(decide(setup(st, cfg)), { met: 5, action: 'hold' }).fire, true);
 assert.equal(sixOfSix(decide(setup(stL, cfg)), { met: 5, action: 'hold' }).fire, true);
 assert.equal(sixOfSix(decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg)), { met: 4 }).fire, false);
+
+// 8. Both sides at once: SELL rules at the nearest big node above, BUY rules at the
+// nearest big node below (asked "look for sells and buys at the same time").
+const two = [{ strike: 2200, net: -4e6 }, { strike: 2250, net: 5e6 }, { strike: 2275, net: 1e6 }, { strike: 2300, net: -4.5e6 }];
+let pv = pickPivots(two, 2243, cfg);
+assert.equal(pv.above.strike, 2250);                                 // 2,275 is too small to count
+assert.equal(pv.below.strike, 2200);
+assert.ok([pv.above, pv.below].includes(pickPivot(two, 2243, cfg))); // the tab's nearest pivot is one of them
+pv = pickPivots(two, 2320, cfg);
+assert.equal(pv.above, null);                                        // nothing big above: no sell side
+assert.equal(pv.below.strike, 2300);
+assert.deepEqual(pickPivots([], 2243, cfg), { above: null, below: null });
+// SELL 6/6 at the pivot above while the buy side below is only partly there.
+const sellS = setup(st, cfg), buyBelow = setup({ ...st, pivot: { strike: 2200, net: -4e6 } }, cfg);
+assert.equal(sellS.side, 'short');
+assert.equal(buyBelow.side, 'long');
+dd = decideBoth(sellS, buyBelow, st.spot);
+assert.equal(dd.action, 'sell');
+assert.equal(dd.met, 6);
+assert.equal(dd.setup, sellS);
+assert.ok(dd.sides.buy.met < 6 && dd.sides.buy.action === 'hold');
+// BUY 6/6 at the pivot below while the nearest big node is above: this used to be missed.
+const buyS = setup(stL, cfg), sellAbove = setup({ ...stL, pivot: { strike: 2262, net: -4e6 } }, cfg);
+assert.equal(sellAbove.side, 'short');
+assert.ok(Math.abs(2262 - stL.spot) < Math.abs(2250 - stL.spot), 'the pivot above is the nearer one');
+dd = decideBoth(sellAbove, buyS, stL.spot);
+assert.equal(dd.action, 'buy');
+assert.equal(dd.met, 6);
+assert.equal(dd.short, false);
+assert.equal(dd.setup, buyS);
+assert.ok(dd.sides.sell.met < 6);
+assert.equal(sixOfSix(dd, { met: 3, action: 'hold' }).fire, true);   // the phone rings for it
+// Neither side complete: HOLD, led by the side with more rules met; both counts kept.
+const sellPart = setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg);          // 5 of 6
+dd = decideBoth(sellPart, buyBelow, st.spot);
+assert.equal(dd.action, 'hold');
+assert.equal(dd.met, 5);
+assert.equal(dd.short, true);
+assert.equal(dd.sides.sell.met, 5);
+assert.equal(dd.sides.buy.met, buyBelow && decide(buyBelow).met);
+// Only one side has a big node, or none.
+assert.equal(decideBoth(sellS, null, st.spot).action, 'sell');
+assert.equal(decideBoth(null, buyS, stL.spot).action, 'buy');
+dd = decideBoth(null, null, 2243);
+assert.equal(dd.action, 'hold');
+assert.equal(dd.noPivot, true);
+// Both sides can never be 6/6 together: the gamma rule needs opposite sides of the flip.
+for (const flip of [2200, 2243, 2300]) {
+  const a = decide(setup({ ...st, flip }, cfg)), b = decide(setup({ ...st, flip, pivot: { strike: 2200, net: -4e6 } }, cfg));
+  assert.ok(!(a.rules.find(r => r.key === 'gamma').ok && b.rules.find(r => r.key === 'gamma').ok));
+}
 
 console.log('tactics: all checks passed');

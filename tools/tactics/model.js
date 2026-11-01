@@ -53,6 +53,21 @@ export function pickPivot(nodes, spot, cfg) {
     .reduce(function (a, b) { return Math.abs(b.strike - spot) < Math.abs(a.strike - spot) ? b : a; });
 }
 
+// Both sides at once (asked Nov 2026: "look for sells and buys at the same time"):
+// among the same big nodes pickPivot() uses, the nearest one above the price (SELL
+// rules) and the nearest one at or below it (BUY rules). Either can be null.
+export function pickPivots(nodes, spot, cfg) {
+  const near = nodes.filter(function (n) { return Math.abs(n.strike / spot - 1) * 100 <= cfg.pivotRangePct; });
+  const top = Math.max.apply(null, near.map(function (n) { return Math.abs(n.net); }).concat([0]));
+  if (!(top > 0)) return { above: null, below: null };
+  const big = near.filter(function (n) { return Math.abs(n.net) >= cfg.pivotShare * top; });
+  const closest = function (list) { return list.reduce(function (a, b) { return !a || Math.abs(b.strike - spot) < Math.abs(a.strike - spot) ? b : a; }, null); };
+  return {
+    above: closest(big.filter(function (n) { return n.strike > spot; })),
+    below: closest(big.filter(function (n) { return n.strike <= spot; })),
+  };
+}
+
 // Volume profile of a session from 1-minute candles: each candle's volume spread
 // evenly over its high-low range. Value area: grow out from the busiest row (POC)
 // until it holds `share` of the volume.
@@ -240,6 +255,26 @@ export function decide(s) {
   ];
   const met = rules.filter(function (r) { return r.ok; }).length;
   return { action: met === rules.length ? (short ? 'sell' : 'buy') : 'hold', met: met, rules: rules, short: short, side: s.side };
+}
+
+// Both sides: decide() for the SELL setup (pivot above) and the BUY setup (pivot
+// below), each keeping its setup. The result looks like one decide() result (the
+// side that is 6/6, else the side with more rules met, a tie going to the nearer
+// pivot) plus `sides: { sell, buy }`, so the tab card, the phone alert and the
+// backtest read it the same way. Both can't be 6/6 at once: the gamma rule needs
+// price below the flip for SELL and above it for BUY.
+export function decideBoth(sellSetup, buySetup, spot) {
+  const one = function (s) { return s ? Object.assign(decide(s), { setup: s }) : null; };
+  const sell = one(sellSetup), buy = one(buySetup);
+  const sides = { sell: sell, buy: buy };
+  if (!sell && !buy) return { action: 'hold', met: 0, rules: [], noPivot: true, sides: sides };
+  let lead;
+  if (sell && sell.action === 'sell') lead = sell;
+  else if (buy && buy.action === 'buy') lead = buy;
+  else if (!buy || (sell && sell.met > buy.met)) lead = sell;
+  else if (!sell || buy.met > sell.met) lead = buy;
+  else lead = Math.abs(sell.setup.pivot - spot) <= Math.abs(buy.setup.pivot - spot) ? sell : buy;
+  return Object.assign({}, lead, { sides: sides });
 }
 
 // Phone alert for the decision above: ring when the rules met go from 5 or fewer

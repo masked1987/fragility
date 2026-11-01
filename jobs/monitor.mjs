@@ -144,7 +144,8 @@ for (const asset of CONFIG.assets) {
       const d = await collectTac(asset, TAC_CONFIG);
       const t = sixOfSix(d.decision, state.tactics[asset] ?? null);
       state.tactics[asset] = t.state;
-      console.log(`${asset} tactics: ${d.decision.met}/${RULES_TOTAL} ${d.decision.side || ''} -> ${d.decision.action}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
+      const sd = d.decision.sides || {}, side = k => sd[k] ? `${k} ${sd[k].met}/${RULES_TOTAL} at ${Math.round(sd[k].setup.pivot)}` : `${k} none`;
+      console.log(`${asset} tactics: ${side('sell')}, ${side('buy')} -> ${d.decision.action}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
       if (t.fire) pushes.push(tacticsMessage(d));
       if (!tacNow) tacNow = d;
     } catch (e) {
@@ -297,7 +298,7 @@ function tacticsMessage(d, test) {
   const at = new Date(d.fetched);
   const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
   const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
-  const s = d.setup, dec = d.decision;
+  const dec = d.decision, s = dec.setup || d.setup; // the side that fired (SELL above or BUY below)
   const action = test || dec.action, act = action.toUpperCase();
   const tg = (s.targets || [])[0];
   const levels = s.pivot ? `Pivot ~${px(s.pivot)}, stop ~${px(s.stop)}` + (tg ? `, first target ~${px(tg.price)} (${tg.r.toFixed(1)}R)` : '') + '.\n' : '';

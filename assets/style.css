@@ -747,3 +747,22 @@ details.more .chev {
 }
 details.more[open] .chev { transform: translateY(1px) rotate(-135deg); }
 details.more > ul { margin-top: 10px; }
+
+/* Tactics decision card: both sides at once (SELL above, BUY below). */
+.tc-side { border-top: 1px solid var(--line); padding: 10px 0 4px; }
+.tc-side:first-of-type { margin-top: 4px; }
+.tc-side-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 32px; }
+.tc-side-word { font-family: "Dela Gothic One", "Geist", sans-serif; font-weight: 400; font-synthesis: none; font-size: 14px; letter-spacing: .02em; }
+.tc-side.sell .tc-side-word { color: var(--primed); }
+.tc-side.buy .tc-side-word { color: var(--calm); }
+.tc-dots { display: inline-flex; gap: 4px; margin-left: auto; }
+.tc-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.tc-side.sell .tc-dots i.on { background: var(--primed); }
+.tc-side.buy .tc-dots i.on { background: var(--calm); }
+.tc-side-n { min-width: 30px; text-align: right; }
+.tc-side.empty .tc-side-top span { flex: 1 1 200px; }
+.tc-side .tc-checks { margin: 8px 0 6px; }
+details.tc-fold > summary { list-style: none; cursor: pointer; }
+details.tc-fold > summary::-webkit-details-marker { display: none; }
+details.tc-fold .chev { width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-2px) rotate(45deg); transition: transform .25s cubic-bezier(.16, 1, .3, 1); }
+details.tc-fold[open] .chev { transform: translateY(1px) rotate(-135deg); }
