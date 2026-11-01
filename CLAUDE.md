@@ -300,6 +300,13 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   ≥0.3% depth, positive every year, but only ~13% reach the target (typical
   ~10R), losing runs of 40–80 in a row, and the top 10 wins make most of the
   profit. Order-flow entry: 37–64 trades in 6 months, too few to judge.
+  Owner: "I take only levels which are huge" (now 2,000 100%, 2,200 97%, 2,500
+  79%, 2,300 72%, 3,000 69% of the biggest by open contracts within ±35%). Mode
+  arg `huge60` / `huge70` (`pickHuge()`): worse, −0.17R / −0.29R per trade on the
+  bounce entry, only 5–7% reach the target, because the next huge level is far
+  (e.g. 2,200 → 2,500). His Oct 30 trade shows why: the mechanical entry bought
+  2,203 at 00:30 after a first dip to 2,193 and was stopped when price went on to
+  2,169; he waited for the real low. His timing / indicator is the edge.
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
