@@ -7,7 +7,7 @@ import { MM_CONFIG as CFG } from './config.js';
 import { collectMM } from './collect.js';
 import { readMM, readOverall, readShock, vegaSide, usd, signedUsd } from './read.js';
 import { dailyMove } from './model.js';
-import { headHtml } from '../../shared/head.js';
+import { headHtml, moreHtml } from '../../shared/head.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 
 function esc(s) {
@@ -68,8 +68,8 @@ export function mount(el) {
       '<div class="label">' + esc(d.asset) + ' market makers</div>' +
       '<p class="small verdict-urgency">' + pill + '<b class="o-' + o.level + '">Overall: ' + esc(o.name.toLowerCase()) + '.</b> ' + esc(o.reason) + '</p>' +
       headHtml(r.headline) +
-      '<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
+      moreHtml('<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>', r.lines.length) +
       '<p class="muted small">Worked out automatically from Deribit options, Gate prices and the Fragility score. Context, not a trade signal.</p>' +
     '</section>';
   }

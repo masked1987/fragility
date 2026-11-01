@@ -6,7 +6,7 @@ import { TAC_CONFIG as CFG } from './config.js';
 import { collectTac } from './collect.js';
 import { readTac, checkLines, money } from './read.js';
 import { signals } from './model.js';
-import { headHtml, splitHead } from '../../shared/head.js';
+import { headHtml, splitHead, moreHtml } from '../../shared/head.js';
 import { load, save } from '../../shared/storage.js';
 
 function esc(s) {
@@ -174,10 +174,10 @@ export function mount(el) {
       '<div class="label">' + esc(d.asset) + ' tactic · GEX pivot + exhaustion</div>' +
       '<p class="small verdict-urgency"><span class="pill tc-st-' + s.status + '">' + STATUS[s.status] + '</span> ' + sideP + '</p>' +
       headHtml(r.headline) +
-      (lines.length ? '<ul class="tc-checks small">' + lines.map(function (l) {
-        return '<li class="' + l.state + '"><span class="tc-ic">' + ICON[l.state] + '</span><span><b>' + esc(l.name) + '.</b> ' + esc(l.text) + '</span></li>';
-      }).join('') + '</ul>' : '') +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
+      moreHtml(lines.length ? '<ul class="tc-checks small">' + lines.map(function (l) {
+        return '<li class="' + l.state + '"><span class="tc-ic">' + ICON[l.state] + '</span><span><b>' + esc(l.name) + '.</b> ' + esc(l.text) + '</span></li>';
+      }).join('') + '</ul>' : '', lines.length) +
       '<p class="muted small">Worked out automatically from Deribit options and trades and Gate prices' +
         (d.missing.length ? ' (unavailable right now: ' + esc(d.missing.join(', ')) + ')' : '') + '. Context, not a trade signal.</p>' +
     '</section>';

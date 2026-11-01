@@ -26,3 +26,14 @@ export function headHtml(s) {
   return '<p class="verdict-head">' + esc(h.title) + '</p>' +
     (h.rest ? '<p class="verdict-sub">' + esc(h.rest) + '</p>' : '');
 }
+
+// Reading-card bullets folded under a "Details" button (asked "collapse the bullets").
+// Open or closed is remembered per phone (localStorage 'readingOpen'), so the
+// 5-minute refresh and other tabs keep the choice; app.js saves it on toggle.
+export function moreHtml(inner, count) {
+  if (!inner) return '';
+  let open = false;
+  try { open = localStorage.getItem('readingOpen') === '1'; } catch (e) {}
+  return '<details class="more"' + (open ? ' open' : '') + '><summary><span>Details' +
+    (count ? ' · ' + count : '') + '</span><i class="chev" aria-hidden="true"></i></summary>' + inner + '</details>';
+}

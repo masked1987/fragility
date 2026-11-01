@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=32';
+const V = '?v=33';
 const TOOLS = [
   { id: 'gamma', title: 'Gamma Detrite', short: 'Gamma', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
   { id: 'fragility', title: 'Fragility', short: 'Score', load: function () { return import('../tools/fragility/view.js' + V); } },
@@ -160,6 +160,12 @@ applyLook(currentLook());
 
 window.addEventListener('resize', function () { setTopHeight(); edgeFade(); moveInk(false); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { moveInk(false); });
+// Reading-card "Details" (shared/head.js): remember open or closed on this phone.
+document.addEventListener('toggle', function (e) {
+  const d = e.target;
+  if (!d.classList || !d.classList.contains('more')) return;
+  try { localStorage.setItem('readingOpen', d.open ? '1' : '0'); } catch (err) {}
+}, true);
 window.addEventListener('hashchange', route);
 setTopHeight();
 route();
