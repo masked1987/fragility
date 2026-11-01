@@ -33,6 +33,8 @@ const CACHE = process.argv[3] || '.bt-cache';
 // only the huge strikes, at least 60% / 70% the size of the biggest within ±35% (the owner:
 // "I take only levels which are huge", e.g. 2,000 / 2,200 / 2,500 / 3,000).
 const MODE = process.argv[4] || 'key';
+// Entry chart for the indicator signals, in minutes (1 = the owner's chart, 5 = asked to compare).
+const TF = +(process.argv[5] || 1);
 setCache(CACHE);
 const KL = CONFIG.keyLevels;
 const DEPTH = 3, BOUNCE = 0.5, WINDOW = 48 * 36e5, HOLD = 7 * DAY, M5 = 5 * 6e4, M15 = 15 * 6e4;
@@ -118,7 +120,14 @@ const c15 = to15(c5);
 const flowMap = await taker();
 const c1 = await candles1();
 const RSI_N = 14, RSI_UP = 80, RSI_DN = 20, REENTRIES = 3;
-const r1 = rsi(c1.map(c => c.c), RSI_N);
+// Candles on the entry chart: 1-minute as they are, or built from them (TF minutes).
+const cT = TF === 1 ? c1 : (() => {
+  const by = new Map(), ms = TF * 6e4;
+  for (const c of c1) { const k = Math.floor(c.t / ms) * ms, x = by.get(k); if (!x) by.set(k, { t: k, h: c.h, l: c.l, c: c.c, n: 1 }); else { x.h = Math.max(x.h, c.h); x.l = Math.min(x.l, c.l); x.c = c.c; x.n++; } }
+  return [...by.values()].filter(x => x.n === TF).sort((a, b) => a.t - b.t);
+})();
+const r1 = rsi(cT.map(c => c.c), RSI_N);
+function idxT(t) { let lo = 0, hi = cT.length; while (lo < hi) { const m = (lo + hi) >> 1; if (cT[m].t < t) lo = m + 1; else hi = m; } return lo; }
 // Ichimoku on 1-minute candles (the owner: "closest to it, use Ichimoku"; his indicator
 // "Wyichi AI" is protected but says Wyckoff + Ichimoku "phase", 0-100, he enters on 80).
 //   ichi  = phase score, 20 points per bullish condition: close > Tenkan(9), Tenkan >
@@ -135,11 +144,11 @@ function rolling(arr, n, better) {
   }
   return out;
 }
-const H1 = c1.map(c => c.h), L1 = c1.map(c => c.l), C1 = c1.map(c => c.c);
+const H1 = cT.map(c => c.h), L1 = cT.map(c => c.l), C1 = cT.map(c => c.c);
 const hh = n => rolling(H1, n, (a, b) => a > b), ll = n => rolling(L1, n, (a, b) => a < b);
 const hh9 = hh(9), ll9 = ll(9), hh26 = hh(26), ll26 = ll(26), hh52 = hh(52), ll52 = ll(52);
-const ichi = new Array(c1.length).fill(null), ichiR = new Array(c1.length).fill(null);
-for (let i = 78; i < c1.length; i++) {
+const ichi = new Array(cT.length).fill(null), ichiR = new Array(cT.length).fill(null);
+for (let i = 78; i < cT.length; i++) {
   const ten = (hh9[i] + ll9[i]) / 2, kij = (hh26[i] + ll26[i]) / 2, j = i - 26;
   const spanA = ((hh9[j] + ll9[j]) / 2 + (hh26[j] + ll26[j]) / 2) / 2, spanB = (hh52[j] + ll52[j]) / 2;
   ichi[i] = 20 * ((C1[i] > ten) + (ten > kij) + (C1[i] > Math.max(spanA, spanB)) + (spanA > spanB) + (C1[i] > C1[j]));
@@ -164,9 +173,10 @@ function outcome1(side, entryT, entry, stop, target) {
 // 'rsi-re' = after a stop, wait for a new extreme and the next signal (up to REENTRIES more).
 function oscTrades(kind, side, L, target, t0) {
   const r1 = OSC[kind], buy = side === 'buy', out = [];
-  let k = idx1(t0), ext = buy ? Infinity : -Infinity, attempt = 0, after = t0;
-  for (; k < c1.length && c1[k].t - t0 <= WINDOW; k++) {
-    const c = c1[k];
+  let k = idxT(t0), ext = buy ? Infinity : -Infinity, attempt = 0, after = t0;
+  const bar = TF * 6e4;
+  for (; k < cT.length && cT[k].t - t0 <= WINDOW; k++) {
+    const c = cT[k];
     ext = buy ? Math.min(ext, c.l) : Math.max(ext, c.h);
     if ((buy ? (L - ext) / L : (ext - L) / L) * 100 > DEPTH) break;
     if (c.t < after || r1[k] == null || r1[k - 1] == null) continue;
@@ -174,14 +184,14 @@ function oscTrades(kind, side, L, target, t0) {
     if (!sig) continue;
     const entry = c.c, stop = ext;
     if (!target || (buy ? !(entry > stop && entry < target) : !(entry < stop && entry > target))) continue;
-    const o = outcome1(side, c.t + 6e4, entry, stop, target);
-    out.push({ attempt, side, level: L, target, t0, T: c.t + 6e4, entry, stop, ext, rr: Math.abs(target - entry) / Math.abs(entry - stop), depth: Math.abs(ext - L) / L * 100, recent: t0 >= flowFrom, out: o });
+    const o = outcome1(side, c.t + bar, entry, stop, target);
+    out.push({ attempt, side, level: L, target, t0, T: c.t + bar, entry, stop, ext, rr: Math.abs(target - entry) / Math.abs(entry - stop), depth: Math.abs(ext - L) / L * 100, recent: t0 >= flowFrom, out: o });
     if (o.result !== 'stop' || ++attempt > REENTRIES) break;
     after = o.at + 6e4; // look for the next signal only after being stopped out
   }
   return out;
 }
-console.log(`1-minute candles ${c1.length}`);
+console.log(`1-minute candles ${c1.length}; indicator chart ${TF} min (${cT.length} candles)`);
 const flowFrom = Math.min(...flowMap.keys());
 console.log(`5-minute candles ${c5.length} (${ymd(c5[0].t)}–${ymd(c5.at(-1).t)}), 15-minute ${c15.length}, taker rows ${flowMap.size} from ${ymd(flowFrom)}`);
 
@@ -319,4 +329,4 @@ if (ex.length) {
   console.log('\nThe owner\'s Oct 30 example:');
   ex.forEach(x => console.log(`  ${x.how.padEnd(7)} ${x.side.toUpperCase()} level ${px(x.level)}  crossed ${new Date(x.t0).toISOString().slice(5, 16)}  in ${new Date(x.T).toISOString().slice(5, 16)} at ${px(x.entry)}  stop ${px(x.stop)}  target ${px(x.target)} (${x.rr.toFixed(1)}R)  -> ${x.out.result} ${x.out.R >= 0 ? '+' : ''}${x.out.R.toFixed(2)}R`));
 }
-writeFileSync(join(CACHE, 'levels-reversal-' + MODE + '.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, trades }, null, 1));
+writeFileSync(join(CACHE, 'levels-reversal-' + MODE + '-' + TF + 'm.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, trades }, null, 1));
