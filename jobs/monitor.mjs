@@ -119,10 +119,11 @@ if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
     body: `You will also get a message when ${MM_CONFIG.alertAssets.join(' or ')} dealers start losing (and when they stop), and when ${lv}.\nNow: ` + mmSummary.join(' · ') });
 }
 
-// And the Tactics alert: a test push in the alert's own format, sent once.
-if (!state.welcomedTac && process.env.NTFY_TOPIC && tacNow) {
-  state.welcomedTac = true;
-  pushes.push(tacticsMessage(tacNow, true));
+// And the Tactics alert: one test push per side, in the alert's own format, sent once.
+// (welcomedTac 2 = the BUY + SELL pair; the first, sell-only test was `true`.)
+if (state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
+  state.welcomedTac = 2;
+  pushes.push(tacticsMessage(tacNow, 'buy'), tacticsMessage(tacNow, 'sell'));
 }
 
 writeFileSync(STATE, JSON.stringify(state, null, 2) + '\n');
@@ -175,22 +176,25 @@ function dealerMessage(asset, from, to, mm, zone, r) {
   };
 }
 
-// "Tactics 6/6 BUY|SELL" with asset, UK time and price. test = the one-time setup check.
+// "Tactics 6/6 BUY|SELL" with asset, UK time and price.
+// test = 'buy' or 'sell': a one-time check of that side's message on the phone.
 function tacticsMessage(d, test) {
   const at = new Date(d.fetched);
   const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
   const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
-  const s = d.setup, dec = d.decision, act = dec.action.toUpperCase();
+  const s = d.setup, dec = d.decision;
+  const action = test || dec.action, act = action.toUpperCase();
   const tg = (s.targets || [])[0];
   const levels = s.pivot ? `Pivot ~${px(s.pivot)}, stop ~${px(s.stop)}` + (tg ? `, first target ~${px(tg.price)} (${tg.r.toFixed(1)}R)` : '') + '.\n' : '';
+  const now = `${dec.met}/${RULES_TOTAL} ${dec.short === false ? 'buy' : 'sell'} rules`;
   return {
-    title: test ? `Tactics 6/6 [test] - ${d.asset} ${px(d.spot)} at ${uk} UK` : `Tactics 6/6 ${act} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
+    title: `Tactics 6/6 ${act}${test ? ' [test]' : ''} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
     body: (test
-      ? `Test: alerts for the Tactics tab are on. You will get this message when all 6 BUY or all 6 SELL rules are met at once (right now: ${dec.met}/${RULES_TOTAL} ${dec.short === false ? 'buy' : 'sell'} rules).\n`
+      ? `Test: this is the message you will get when all ${RULES_TOTAL} ${act} rules on the Tactics tab are met. Nothing to do now (right now: ${now}).\n`
       : `All ${RULES_TOTAL} ${act} rules on the Tactics tab are met.\n` + levels) +
       `${d.asset} ${px(d.spot)} at ${uk} UK time (${day}).\nContext, not a trade signal.`,
     priority: test ? 3 : 4,
-    tags: test ? 'white_check_mark' : dec.action === 'buy' ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+    tags: action === 'buy' ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
     click: '#tactics',
   };
 }

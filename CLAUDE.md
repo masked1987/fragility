@@ -176,4 +176,5 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   from ≤5 to 6 (or a straight flip from 6/6 one side to the other) and re-arms
   below 6; last `{ met, action }` in `state.json` (`tactics`). ETH only
   (`alertAssets` in `tools/tactics/config.js`). Rings once. A one-time test push in
-  the same format (`welcomedTac`) confirmed the setup.
+  the same format (`welcomedTac`) confirmed the setup; `welcomedTac: 2` = the
+  later BUY + SELL test pair.
