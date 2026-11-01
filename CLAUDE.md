@@ -38,8 +38,10 @@ the file layout. Tabs, in order:
   so does "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH).
 - Key levels are picked automatically (asked for after the fixed 2,250 / 2,200 /
   2,170): `pickLevels()` in `shared/levels.js`, per strike the dealer hedging per
-  1% with gamma taken AT the strike (so the ranking doesn't move with price), net
-  calls − puts; within ±5%, the 2 biggest above and 2 below, each side against its
+  1% with gamma taken AT the strike (so the ranking doesn't move with price),
+  calls + puts (owner asked so 2,200 counts: big call and put OI cancel in the
+  net); `net` kept for info; `METHOD` saved with the levels, a change re-picks;
+  within ±5%, the 2 biggest above and 2 below, each side against its
   own biggest (≥25%), ≥0.5% apart. `needsRepick()`: daily after 08:00 UTC (Deribit
   expiry), or when the price is past every level on one side. Saved in `state.json`
   (`keyLevels`, sides still in `levels`); crossings are checked against the saved

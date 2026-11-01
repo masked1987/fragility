@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { dealerSide, readOverall, readCarry } from '../tools/market-maker/read.js';
 import { levelCrossings } from '../tools/fragility/alerts.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
-import { pickLevels, needsRepick } from '../shared/levels.js';
+import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
 
 const cfg = { ...MM_CONFIG, gapPts: 5, flipBufferPts: 1 };
@@ -72,7 +72,15 @@ const chain = [
 const KL = CONFIG.keyLevels;
 let lv = pickLevels(chain, 2267, T0, KL);
 assert.deepEqual(lv.map(l => l.price), [2180, 2220, 2280, 2300]);
-assert.ok(lv.find(l => l.price === 2180).usd < 0 && lv.find(l => l.price === 2300).usd > 0); // puts negative, calls positive
+assert.ok(lv.every(l => l.usd > 0));                                                   // size = calls + puts
+assert.ok(lv.find(l => l.price === 2180).net < 0 && lv.find(l => l.price === 2300).net > 0); // net: puts negative, calls positive
+// A strike with lots of calls AND puts counts, even though they cancel out in the net.
+const both = chain.concat([opt('C', 2200, 12000), opt('P', 2200, 12000)]);
+lv = pickLevels(both, 2267, T0, KL);
+assert.deepEqual(lv.map(l => l.price), [2180, 2200, 2280, 2300]);                 // 2,200 replaces the smaller 2,220
+const l2200 = lv.find(l => l.price === 2200);
+assert.ok(Math.abs(l2200.net) < 0.1 * l2200.usd);                                   // its calls and puts cancel in the net
+lv = pickLevels(chain, 2267, T0, KL);
 // The small side still gets levels: each side is measured against its own biggest.
 assert.equal(pickLevels(chain, 2267, T0, KL).filter(l => l.price < 2267).length, 2);
 // Not price-dependent: the same levels a little higher (only the split above/below moves).
@@ -82,12 +90,13 @@ assert.deepEqual(pickLevels([], 2267, T0, KL), []);
 assert.deepEqual(pickLevels(chain.map(o => ({ ...o, expiry: T0 - 1 })), 2267, T0, KL), []);
 
 // 6. When to pick again: daily after 08:00 UTC, or when price runs past one side.
-const st = { levels: [2180, 2220, 2280, 2300], picked: Date.UTC(2026, 10, 1, 8, 7) };
+const st = { levels: [2180, 2220, 2280, 2300], picked: Date.UTC(2026, 10, 1, 8, 7), method: METHOD };
 assert.equal(needsRepick(null, 2267, T0, 8), true);                              // nothing stored
 assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 1, 23), 8), false);         // same day
 assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 2, 7, 52), 8), false);      // next day, before 08:00 UTC
 assert.equal(needsRepick(st, 2267, Date.UTC(2026, 10, 2, 8, 7), 8), true);        // next day, after the expiry
 assert.equal(needsRepick(st, 2310, Date.UTC(2026, 10, 1, 12), 8), true);          // above every level
 assert.equal(needsRepick(st, 2170, Date.UTC(2026, 10, 1, 12), 8), true);          // below every level
+assert.equal(needsRepick({ ...st, method: undefined }, 2267, Date.UTC(2026, 10, 1, 12), 8), true); // sized the old way
 
 console.log('alerts: all checks passed');

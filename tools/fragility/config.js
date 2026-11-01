@@ -23,8 +23,8 @@ export const CONFIG = {
   hysteresis: 3,
 
   // Phone alert when the price crosses a key level (jobs/monitor.mjs). Levels are
-  // picked automatically (shared/levels.js): the strikes where dealers would hedge
-  // most, within ±rangePct of the price, perSide above and below, each at least
+  // picked automatically (shared/levels.js): the strikes with the most option
+  // hedging (calls + puts), within ±rangePct of the price, perSide above and below, each at least
   // minShare of the biggest on its side and minGapPct apart. Re-picked daily after Deribit's
   // 08:00 UTC expiry, or sooner if the price runs past every level on one side.
   keyLevels: { assets: ['ETH'], rangePct: 5, perSide: 2, minShare: 0.25, minGapPct: 0.5, repickHourUtc: 8 },

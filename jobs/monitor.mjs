@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { collect } from '../tools/fragility/collect.js';
 import { evaluate } from '../tools/fragility/score.js';
 import { stickyZone, levelCrossings } from '../tools/fragility/alerts.js';
-import { pickLevels, needsRepick } from '../shared/levels.js';
+import { pickLevels, needsRepick, METHOD } from '../shared/levels.js';
 import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
 import { readMM, readCarry, dealerSide } from '../tools/market-maker/read.js';
@@ -74,7 +74,7 @@ for (const asset of CONFIG.assets) {
       const picked = pickLevels(data.options.options, price, now, KL).map(l => l.price);
       if (picked.length) {
         const changed = !stored || picked.join() !== stored.levels.join();
-        state.keyLevels[asset] = { levels: picked, picked: now };
+        state.keyLevels[asset] = { levels: picked, picked: now, method: METHOD };
         sides = levelCrossings(price, picked, sides, CONFIG.levelBufferPct).sides;
         console.log(`${asset} key levels: ${picked.map(px).join(' / ')}${changed ? ' (new)' : ''}`);
         if (changed) pushes.push(levelsMessage(asset, price, picked, stored));
@@ -186,7 +186,7 @@ function levelsMessage(asset, price, levels, before) {
     title: `${asset} alert levels: ${levels.map(px).join(' / ')}`,
     body: `New ${asset} key levels for phone alerts (now ${px(price)}).\n` +
       `Above: ${above.join(' / ') || 'none'}. Below: ${below.join(' / ') || 'none'}.\n` +
-      'Picked from the option strikes where dealers would hedge the most.' +
+      'Picked from the option strikes with the most hedging (calls and puts together).' +
       (before ? ` Before: ${before.levels.map(px).join(' / ')}.` : ''),
     priority: 2,
     tags: 'pushpin',

@@ -83,7 +83,7 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
   rings 3 times), and once when they stop (1-point buffer);
 - ETH crosses a key level (must close 0.15% past it; rings once). Levels are picked
   automatically (`shared/levels.js`): the 2 strikes above and 2 below the price (within
-  5%) where dealers would hedge the most, re-picked each day after Deribit's 08:00 UTC
+  5%) with the most option hedging, calls and puts together, re-picked each day after Deribit's 08:00 UTC
   expiry or sooner if the price runs past every level on one side. A quiet note (no
   sound) lists the new levels when they change; the Playbook reads the same saved list.
   Settings in `tools/fragility/config.js` (`keyLevels`); dealer settings in
