@@ -42,14 +42,21 @@ export function gexGrid(options, spot, now, cfg) {
   return { expiries: expiries, strikes: strikes, at: function (s, e) { return cell[s + '|' + e] || 0; } };
 }
 
+// How big a node is when picking pivots. 'net' (the video): |calls − puts|, so a
+// strike with lots of both cancels out. 'total': calls + puts, how much sits there
+// either way (what the key levels use). cfg.pivotSize, default 'net'.
+export function nodeSize(n, cfg) {
+  return cfg && cfg.pivotSize === 'total' ? Math.abs(n.call || 0) + Math.abs(n.put || 0) : Math.abs(n.net);
+}
+
 // The pivot: among nodes within pivotRangePct holding at least pivotShare of the
 // biggest one, the nearest to the price.
 export function pickPivot(nodes, spot, cfg) {
   const near = nodes.filter(function (n) { return Math.abs(n.strike / spot - 1) * 100 <= cfg.pivotRangePct; });
   if (!near.length) return null;
-  const top = Math.max.apply(null, near.map(function (n) { return Math.abs(n.net); }));
+  const top = Math.max.apply(null, near.map(function (n) { return nodeSize(n, cfg); }));
   if (!(top > 0)) return null;
-  return near.filter(function (n) { return Math.abs(n.net) >= cfg.pivotShare * top; })
+  return near.filter(function (n) { return nodeSize(n, cfg) >= cfg.pivotShare * top; })
     .reduce(function (a, b) { return Math.abs(b.strike - spot) < Math.abs(a.strike - spot) ? b : a; });
 }
 
@@ -58,9 +65,9 @@ export function pickPivot(nodes, spot, cfg) {
 // rules) and the nearest one at or below it (BUY rules). Either can be null.
 export function pickPivots(nodes, spot, cfg) {
   const near = nodes.filter(function (n) { return Math.abs(n.strike / spot - 1) * 100 <= cfg.pivotRangePct; });
-  const top = Math.max.apply(null, near.map(function (n) { return Math.abs(n.net); }).concat([0]));
+  const top = Math.max.apply(null, near.map(function (n) { return nodeSize(n, cfg); }).concat([0]));
   if (!(top > 0)) return { above: null, below: null };
-  const big = near.filter(function (n) { return Math.abs(n.net) >= cfg.pivotShare * top; });
+  const big = near.filter(function (n) { return nodeSize(n, cfg) >= cfg.pivotShare * top; });
   const closest = function (list) { return list.reduce(function (a, b) { return !a || Math.abs(b.strike - spot) < Math.abs(a.strike - spot) ? b : a; }, null); };
   return {
     above: closest(big.filter(function (n) { return n.strike > spot; })),
