@@ -1,4 +1,4 @@
-// Run: node test/alt-fib.mjs [months=36] [cacheDir=.bt-cache]   (LIST=ichi|bounce1 prints trades)
+// Run: node test/alt-fib.mjs [months=36] [cacheDir=.bt-cache]   (LIST=ichi|bounce1|up4|hold4 prints trades)
 // The owner's Fibonacci entry for Alt Tactics (asked 1 Nov 2026, with a screen recording):
 // "Once it's crossed gamma level, for example 2200, I am waiting for noticeable reverse,
 //  in this case 2169, then starting to measure Fibonacci and my aim would be 62 of
@@ -8,6 +8,9 @@
 // "Noticeable reverse" needs a definition for a computer; two are tested:
 //   ichi    = the 5-minute Ichimoku score crosses up through 80 (the tab's signal)
 //   bounce1 = a 5-minute close 1% or more above the low
+//   up4     = 4 fifteen-minute candles after the low, each closing higher than the last
+//   hold4   = 4 fifteen-minute candles after the low's candle with no lower low (1 hour)
+//   (the last two asked for instead of Ichimoku: "at least 4 candles 15 minutes reversal")
 // After that, 0 = the highest price since the low (it moves up with new highs); a buy
 // order sits at 0.62 and fills when a later candle trades down to it (no fill in the
 // candle that made the new high). No fill before the target is reached or within 48 h
@@ -47,6 +50,16 @@ const monthLevels = months.map((m, i) => {
   return pickHuge((ch[i] || []).map(o => ({ strike: o.strike, oi: o.oi, expiry: o.expiry > 1e14 ? o.expiry / 1000 : o.expiry })), spot, m, ALT_CONFIG);
 });
 const ICH = ichimoku(c5);
+// 15-minute candles for the "4 candles" reversal (owner: "let's at least 4 candles 15 minutes reversal").
+const C15 = to15(c5), I15 = new Map(C15.map((c, i) => [c.t, i])), M15 = 9e5;
+function fourCandles(how, lowT, x) {
+  if ((x.t + M5) % M15 !== 0) return false;              // only when a 15-minute candle has just closed
+  const j = I15.get(x.t + M5 - M15), j0 = I15.get(Math.floor(lowT / M15) * M15);
+  if (j === undefined || j0 === undefined || j - j0 < 4) return false;
+  if (how === 'hold4') return true;                       // 4 closed candles after the low's candle, no lower low
+  for (let q = j - 3; q <= j; q++) if (!(C15[q].c > C15[q - 1].c)) return false;
+  return true;                                            // 'up4': the last 4 closes each higher than the one before
+}
 
 // Dips through each huge level (price was above on 15-minute candles, one trades below),
 // with the low followed until the reversal is confirmed ('how'), then the 0.62 order.
@@ -67,10 +80,11 @@ function fibSetups(i, how, cfg) {
       for (; k < c5.length && c5[k].t - t0 <= win; k++) {
         const x = c5[k];
         if (!conf) {
-          if (x.l < s.low) { s.low = x.l; s.lowK = k; }
+          if (x.l < s.low) { s.low = x.l; s.lowK = k; s.lowT = x.t; }
           if ((L - s.low) / L * 100 > cfg.maxDepthPct) { s.state = 'broken'; endT = x.t; break; }
           const p = ICH[k - 1], n = ICH[k];
-          conf = how === 'ichi' ? !!(p && n && p.score < cfg.scoreBuy && n.score >= cfg.scoreBuy) : x.c >= s.low * 1.01;
+          conf = how === 'ichi' ? !!(p && n && p.score < cfg.scoreBuy && n.score >= cfg.scoreBuy)
+            : how === 'bounce1' ? x.c >= s.low * 1.01 : fourCandles(how, s.lowT, x);
           if (conf) { hi = Math.max(...c5.slice(s.lowK, k + 1).map(y => y.h)); s.confT = x.t; } // 0 = the top since the low
           continue;
         }
@@ -124,6 +138,8 @@ const versions = {
   tab: ['The tab now: buy on the Ichimoku 80 close', () => run(i => tabSetups(i, cfg), cfg)],
   ichi: ['Fib 0.62 after Ichimoku 80', () => run(i => fibSetups(i, 'ichi', cfg).concat(ups(i)), cfg)],
   bounce1: ['Fib 0.62 after a 1% bounce', () => run(i => fibSetups(i, 'bounce1', cfg).concat(ups(i)), cfg)],
+  up4: ['Fib 0.62 after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg).concat(ups(i)), cfg)],
+  hold4: ['Fib 0.62 after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg).concat(ups(i)), cfg)],
 };
 if (process.env.LIST) {
   versions[process.env.LIST][1]().forEach(t => console.log(new Date(t.signal.t).toISOString().slice(0, 16), Math.round(t.level), '-> ' + Math.round(t.target),

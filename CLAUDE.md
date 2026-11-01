@@ -420,6 +420,10 @@ The owner's own method, built from the version that tested best
   bounce: 44, 9%, +0.13R, worst run 27. The fib entry misses the big runners (July
   2025 never pulled back to 0.62) and pullbacks that reach 0.62 mostly go on to the
   low. Oct 30: 0.62 ~2,203 never filled after the real low. Tab not changed.
+  Then "instead of Ichimoku ... SL 2169 ... at least 4 candles 15 minutes
+  reversal": `up4` (4 rising 15-min closes after the low) 42 buys, 7% hit,
+  −0.47R; `hold4` (low holds 4 candles) 45, 7%, −0.58R (bought Oct 30's fake first
+  dip ~2,204, stopped). Both worse than the tab's Ichimoku entry (+0.74R).
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in
