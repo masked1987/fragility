@@ -67,6 +67,20 @@ the file layout. Tabs, in order:
   dropped at a re-pick still gets its reversal. A priority-2 (silent) push
   lists new levels. The Playbook reads the saved list from `stateUrl` (falls back
   to picking live), so its "your phone alert rings" note matches.
+- **The look** (asked for 1 Nov 2026, "colours fading into different colours",
+  "more modern", "not plain white"): teal fading into lime on near-black
+  (`--grad`, `--accent` teal, `--lime` in `assets/style.css`, "Look" sections at
+  the end). Gradients only on the score number, active-tab bar, selected button
+  and the Calm→Primed gauge; card tones fade in from the top-left corner (no
+  thick side stripe). Titles in **Dela Gothic One** (owner picked it from six,
+  wanted "like FIRE or BLEED"): headlines, h2/h3, big numbers, the HOLD/BUY/SELL
+  badge, uppercase, weight 400 only. Body text, labels and tables stay **Geist**.
+  Chart and state colours (calm/building/primed, gamma blue/pink) unchanged.
+  Gamma Detrite has the same look in its own `index.html`. Built using the
+  Impeccable design rules (Operate mode: dashboards stay easy to scan).
+  To show a change before publishing: copy the site into `preview/` on
+  `gh-pages` (and gamma-detrite `main`), point the preview's embed at
+  `gamma-detrite/preview/`, bump its `?v=`; delete `preview/` when published.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
