@@ -95,7 +95,11 @@ the file layout. Tabs, in order:
   glides to the new tab (`moveInk()`), the new tab's page slides in ~22px from
   the side you move toward (`slideIn()`, 260 ms expo-out), every control gives
   a press squeeze, the style menu pops from its corner, a style change
-  cross-fades (View Transitions). Short (≤ ⅓ s) and off under reduced motion.
+  spreads in a circle from the corner dot (`revealLook()`, View Transitions).
+  Owner first "didn't notice anything", so it was made bigger: page slides 64px
+  over 460 ms, cards rise in one after another (first 5, 70 ms apart), the tab
+  line springs with a glow and the tab name pops. Reduced-motion phones (some
+  Xiaomi / battery-saver modes) get a soft fade instead of nothing.
   Gamma Detrite has the same look in its own `index.html`. Built using the
   Impeccable design rules (Operate mode: dashboards stay easy to scan).
   To show a change before publishing: copy the site into `preview/` on
