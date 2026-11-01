@@ -28,6 +28,7 @@ const LOG = join(DIR, 'log.csv');
 const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
 const ZONE_REPEATS = 3;           // a zone change rings this many times...
 const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
+const TACTICS_REPEATS = 5;        // Tactics 6/6 rings 5 times (owner asked), same gap
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
@@ -49,7 +50,8 @@ const mmSummary = [];
 const pushes = [];
 let tacNow = null; // latest Tactics reading, for the one-time test push
 // Started by hand with "send test alerts" ticked: one [test] message per alert kind.
-const TEST = process.env.TEST_ALERTS === 'true';
+// TEST_ALERTS: 'all' (or 'true') = zone, dealers and Tactics; 'tactics' = Tactics only.
+const TEST = ['true', 'all', 'tactics'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
 const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
@@ -162,17 +164,17 @@ for (const asset of CONFIG.assets) {
 // Test run: the real format of each alert that is on, marked [test], sent once each.
 if (TEST) {
   const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: 1 });
-  if (testNow.zone) {
+  if (TEST !== 'tactics' && testNow.zone) {
     const { asset, r } = testNow.zone, zone = state.zones[asset];
     const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
     pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 3 times, a minute apart.`));
   }
-  if (testNow.mm) {
+  if (TEST !== 'tactics' && testNow.mm) {
     const { asset, side, mm, zone, r } = testNow.mm;
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
       `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
   }
-  if (tacNow) pushes.push(tacticsMessage(tacNow, 'sell'));
+  if (tacNow) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings 5 times, like the real one
   console.log('test alerts queued:', pushes.length);
 }
 
@@ -303,10 +305,11 @@ function tacticsMessage(d, test) {
   return {
     title: `Tactics 6/6 ${act}${test ? ' [test]' : ''} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
     body: (test
-      ? `Test: this is the message you will get when all ${RULES_TOTAL} ${act} rules on the Tactics tab are met. Nothing to do now (right now: ${now}).\n`
+      ? `Test: this is the message you will get when all ${RULES_TOTAL} ${act} rules on the Tactics tab are met. A real one rings ${TACTICS_REPEATS} times, a minute apart. Nothing to do now (right now: ${now}).\n`
       : `All ${RULES_TOTAL} ${act} rules on the Tactics tab are met.\n` + levels) +
       `${d.asset} ${px(d.spot)} at ${uk} UK time (${day}).\nContext, not a trade signal.`,
     priority: test ? 3 : 4,
+    repeats: test ? 1 : TACTICS_REPEATS,
     tags: action === 'buy' ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
     click: '#tactics',
   };

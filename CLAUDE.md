@@ -33,15 +33,17 @@ the file layout. Tabs, in order:
   change, or phones keep old files for up to 10 minutes.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
-  so does "ETH dealers now losing". "No longer losing" rings once, and so does
-  "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH). Key gamma
+  so does "ETH dealers now losing". "No longer losing" rings once. "Tactics 6/6
+  BUY / SELL" (all six Tactics rules on one side, ETH) rings 5 times, a minute
+  apart (owner asked; `TACTICS_REPEATS` in `jobs/monitor.mjs`). Key gamma
   level alerts are OFF (`keyLevels.alerts: false`): after learning they are not
   part of the Tactics rules, the owner said "I don't need crossing alert gamma,
   I will need just 6/6 alerts from tactics". Asked about the zone and dealer
   alerts: "keep those two on". So the phone gets: zone changes, ETH dealers
   losing / no longer losing, and Tactics 6/6. "Test them now": the workflow has a
-  `test_alerts` input (Run workflow → tick it; `TEST_ALERTS` in the job) that sends
-  one [test] message per alert that is on, in its real format.
+  `test_alerts` input (Run workflow → choose `all` or `tactics`; `TEST_ALERTS` in
+  the job) that sends [test] messages in their real format: zone and dealers once
+  each, Tactics 5 times like the real one.
 - Key gamma levels, picked automatically (alerts now off, see above; levels still
   picked for the Playbook). The owner watches the big, noticeable
   gamma strikes (2,200 / 2,300 / 2,500) and is "not strict to these levels", but
@@ -204,6 +206,6 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   shows, so they always agree. `sixOfSix()` in `model.js` rings only on the step
   from ≤5 to 6 (or a straight flip from 6/6 one side to the other) and re-arms
   below 6; last `{ met, action }` in `state.json` (`tactics`). ETH only
-  (`alertAssets` in `tools/tactics/config.js`). Rings once. A one-time test push in
+  (`alertAssets` in `tools/tactics/config.js`). Rings 5 times. A one-time test push in
   the same format (`welcomedTac`) confirmed the setup; `welcomedTac: 2` = the
   later BUY + SELL test pair.

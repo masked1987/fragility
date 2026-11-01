@@ -92,15 +92,15 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
   Settings in `tools/fragility/config.js` (`keyLevels`); dealer settings in
   `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`);
 - all 6 BUY or all 6 SELL rules on the Tactics tab are met for ETH ("Tactics 6/6 BUY"
-  or "SELL", with UK time and price; rings once). BUY is the mirror image of the
+  or "SELL", with UK time and price; rings 5 times, a minute apart). BUY is the mirror image of the
   video's sell. It uses the tab's own `decide()`, rings only when the count goes
   from 5 or fewer to 6, and re-arms once it drops below 6. Assets in
   `tools/tactics/config.js` (`alertAssets`). The rules need a retest in the last 3
   fifteen-minute candles, so a late GitHub run can miss a short-lived 6/6.
 
 To test the phone: GitHub → Actions → "Fragility log and alerts" → Run workflow →
-tick "Send one [test] message for each phone alert". You get one message per alert
-that is on (zone change, dealers losing, Tactics 6/6), marked [test].
+"Send [test] phone alerts": `all` sends the zone-change and dealers alerts once
+each plus Tactics 6/6 five times (like the real one); `tactics` sends only Tactics.
 
 It also appends an hourly row to `log.csv` on the `data` branch. The Fragility tab charts that log and shows how big the
 next-day moves were after each zone.

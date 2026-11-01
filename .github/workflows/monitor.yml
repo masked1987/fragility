@@ -7,9 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send one [test] message for each phone alert'
-        type: boolean
-        default: false
+        description: 'Send [test] phone alerts: all (zone, dealers, Tactics) or tactics only'
+        type: choice
+        options: ['no', 'all', 'tactics']
+        default: 'no'
 
 permissions:
   contents: write
