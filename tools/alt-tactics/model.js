@@ -36,16 +36,18 @@ export function pickHuge(options, spot, now, cfg) {
 // close above Tenkan (9-bar midpoint), Tenkan above Kijun (26), close above the cloud,
 // cloud bullish (Span A above Span B), lagging close above the close 26 bars back.
 // Returns [{ score, parts: { tenkan, cross, cloud, green, lag } } | null].
-export function ichimoku(c) {
+// p = the look-back lengths in candles, standard 9 / 26 / 52 (others only for backtests).
+export function ichimoku(c, p) {
+  const P = p || { t: 9, k: 26, s: 52 };
   const mid = function (i, n) {
     let hi = -Infinity, lo = Infinity;
     for (let k = i - n + 1; k <= i; k++) { hi = Math.max(hi, c[k].h); lo = Math.min(lo, c[k].l); }
     return (hi + lo) / 2;
   };
   return c.map(function (x, i) {
-    if (i < 78) return null;
-    const ten = mid(i, 9), kij = mid(i, 26), j = i - 26;
-    const spanA = (mid(j, 9) + mid(j, 26)) / 2, spanB = mid(j, 52);
+    if (i < P.k + P.s) return null;
+    const ten = mid(i, P.t), kij = mid(i, P.k), j = i - P.k;
+    const spanA = (mid(j, P.t) + mid(j, P.k)) / 2, spanB = mid(j, P.s);
     const parts = { tenkan: x.c > ten, cross: ten > kij, cloud: x.c > Math.max(spanA, spanB), green: spanA > spanB, lag: x.c > c[j].c };
     const score = 20 * Object.keys(parts).filter(function (k) { return parts[k]; }).length;
     return { score: score, parts: parts, tenkan: ten, kijun: kij, spanA: spanA, spanB: spanB };
@@ -91,7 +93,8 @@ export function pickTarget(levels, L, dir, cfg) {
 // through scoreSell confirms; target the next level down. c5 = 5-minute candles
 // { t, h, l, c } oldest first; levels = [numbers].
 export function findSetups(c5, levels, cfg) {
-  const c15 = to15(c5), ich = ichimoku(c5), bar = cfg.candleMinutes * 6e4, win = cfg.windowHours * 36e5;
+  // cfg.ichSeries (backtests only): another Ichimoku per 5-minute candle, e.g. on bigger candles.
+  const c15 = to15(c5), ich = cfg.ichSeries ? cfg.ichSeries(c5) : ichimoku(c5), bar = cfg.candleMinutes * 6e4, win = cfg.windowHours * 36e5;
   const all = asLevels(levels), lv = all.map(function (x) { return x.price; });
   const out = [];
   lv.forEach(function (L) {

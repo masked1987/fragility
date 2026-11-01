@@ -8,7 +8,7 @@
 // ETH-PERPETUAL 5-minute candles. Costs 0.1% of the entry per round trip, in R.
 // Trades still open at the end of the data count at the last close.
 import { setCache, cached, chainAt, getJson, DAY } from './bt-data.mjs';
-import { pickHuge, findSetups, oncePerLevel, follow, pickTarget } from '../tools/alt-tactics/model.js';
+import { pickHuge, findSetups, oncePerLevel, follow, pickTarget, ichimoku } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 
 const MONTHS = +(process.argv[2] || 36);
@@ -136,6 +136,31 @@ if (process.env.GRID) {
       `first 2y ${f(avg(a)).padStart(6)}R (${a.length}) | last year ${f(avg(b)).padStart(6)}R (${b.length}) | without best 2 ${f(avg(top2)).padStart(6)}R`);
   };
   console.log('tweak                              buys hit  per-buy  total   worst | first 2 years      | last year (unseen) | ');
+  // GRID=ichi: Ichimoku on bigger candles (built from 5-minute ones; the score changes
+  // only when a bigger candle closes) and with other look-back lengths.
+  const onTF = (min, p) => c => {
+    const ms = min * 6e4, out = new Array(c.length).fill(null), big = [], at = [];
+    for (let k = 0; k < c.length; k++) {
+      const x = c[k], key = Math.floor(x.t / ms) * ms, last = big[big.length - 1];
+      if (!last || last.t !== key) big.push({ t: key, h: x.h, l: x.l, c: x.c, n: 1 }); else { last.h = Math.max(last.h, x.h); last.l = Math.min(last.l, x.l); last.c = x.c; last.n++; }
+      at.push((x.t + M5) % ms === 0 && big[big.length - 1].n === min / 5 ? big.length - 1 : -1);
+    }
+    const sc = ichimoku(big, p);
+    let cur = null;
+    for (let k = 0; k < c.length; k++) { if (at[k] >= 0) cur = sc[at[k]]; out[k] = cur; }
+    return out;
+  };
+  if (process.env.GRID === 'ichi') {
+    [['5-min candles, 9/26/52 (the tab now)', {}],
+     ['10-min candles', { ichSeries: onTF(10) }], ['15-min candles', { ichSeries: onTF(15) }],
+     ['30-min candles', { ichSeries: onTF(30) }], ['1-hour candles', { ichSeries: onTF(60) }],
+     ['5-min, faster 6/18/36', { ichSeries: c => ichimoku(c, { t: 6, k: 18, s: 36 }) }],
+     ['5-min, slower 12/36/72', { ichSeries: c => ichimoku(c, { t: 12, k: 36, s: 72 }) }],
+     ['5-min, slower 18/52/104', { ichSeries: c => ichimoku(c, { t: 18, k: 52, s: 104 }) }],
+     ['5-min, crypto 20/60/120', { ichSeries: c => ichimoku(c, { t: 20, k: 60, s: 120 }) }],
+    ].forEach(([n, v]) => row(n, v));
+    process.exit(0);
+  }
   const grid = (process.env.GRID === '1' ? [
     ['the tab now (biggest level)', {}],
     ['target: next level', { target: 'next' }],

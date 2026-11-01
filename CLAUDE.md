@@ -432,6 +432,13 @@ The owner's own method, built from the version that tested best
   hold4 test (fib 0 moving up with new highs). Also with the fib drawn once at the
   4th candle (`up4fix` / `hold4fix`): 41 / 44 buys, 5% hit, −0.53R / −0.64R, worst
   run 36–37. Every 4-candle version loses; Ichimoku entry stays.
+- Ichimoku settings (asked "adjust how many candles is optimal for applying
+  ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
+  `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
+  lengths and `cfg.ichSeries` swaps the series (backtests only; tab unchanged).
+  5-min 9/26/52 (tab) +0.74R is best; 10-min +0.23R, 15-min −0.01R, 30-min −0.03R,
+  1-hour −0.38R; 5-min 6/18/36 +0.50R, 12/36/72 +0.31R, 18/52/104 +0.29R,
+  20/60/120 +0.33R. None better in the last year (all −0.39 to +0.01R).
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in
