@@ -325,6 +325,16 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   the fake first dip and bought ~2,213 at 03:10, stop 2,170. Owner said his stop
   is always the lowest / highest price of the move, never from Ichimoku (the
   test already does that: extreme since the cross, up to the entry).
+  Owner then: his method is BUY only, huge levels, 2–3 re-entries; he doesn't
+  know when to sell, usually looks for a sell after a buy hits its target.
+  BUY only, 5-min Ichimoku, ≤2 re-entries: huge60 −0.13R/trade (score) / −0.22R
+  (range), huge70 −0.30R, key levels ±0.00R. Sells (his method mirrored: spike
+  over a level, Ichimoku down through 20, stop at the spike high, target the
+  next level down) in general ~0 (key +0.01/+0.10R, huge60 +0.02/+0.08R, huge70
+  −0.5R); only at the level a buy just hit (within 48 h, no look-ahead): key
+  +0.46/+0.51R (271/266 trades, 26–29% hit), huge60 +0.35/+0.50R (171/162), but
+  not every year (key 2025 −0.25R, huge60 2026 −1.1R on ~10 trades) and the top
+  10 wins carry all of it. Promising, not proven.
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
