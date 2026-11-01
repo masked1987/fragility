@@ -574,3 +574,105 @@ h2, h3 { font-size: 15px; line-height: 1.3; }
   .tabs a { padding: 7px 6px; font-size: 14px; }
   .tabs a.active::after { left: 6px; right: 6px; }
 }
+
+/* ---- Colour styles (switcher in the top-right corner, asked for Nov 2026) ----
+   Teal & lime is the default (:root above). Fire and Blue moonlight swap only the
+   look tokens; state colours (calm / building / primed) and chart colours keep
+   their meaning in every style. */
+:root[data-look="fire"] {
+  --bg: #0b0706; --card: #140d0b; --card-top: #1d130f; --line: #2e1f18;
+  --text: #f7ede7; --muted: #a8968c;
+  --accent: #ff8a3d; --lime: #f0304e;
+  --grad: linear-gradient(110deg, #ffd166 0%, #ff8a3d 45%, #f0304e 100%);
+  --halo: rgba(255, 122, 47, .17); --halo-2: rgba(240, 48, 78, .09); --shadow: rgba(0, 0, 0, .6);
+}
+:root[data-look="moon"] {
+  --bg: #05070e; --card: #0b0f1c; --card-top: #11172b; --line: #1c2442;
+  --text: #ebefff; --muted: #8f99ba;
+  --accent: #8fb0ff; --lime: #5468ff;
+  --grad: linear-gradient(110deg, #ffffff 0%, #c3d4ff 35%, #7f9cff 70%, #5468ff 100%);
+  --halo: rgba(95, 125, 255, .19); --halo-2: rgba(195, 212, 255, .06); --shadow: rgba(0, 0, 0, .6);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-look="fire"] {
+    --bg: #fbf5f1; --card: #ffffff; --card-top: #fffaf6; --line: #f0e0d6;
+    --text: #25140d; --muted: #7a6358;
+    --accent: #c2410c; --lime: #be123c;
+    --grad: linear-gradient(110deg, #d97706 0%, #ea580c 45%, #be123c 100%);
+    --halo: rgba(234, 88, 12, .11); --halo-2: rgba(190, 18, 60, .06); --shadow: rgba(60, 25, 10, .12);
+  }
+  :root[data-look="moon"] {
+    --bg: #f2f4fb; --card: #ffffff; --card-top: #f7f8ff; --line: #dde2f2;
+    --text: #10162b; --muted: #5b6584;
+    --accent: #3451d1; --lime: #1e2f99;
+    --grad: linear-gradient(110deg, #1e2f99 0%, #3451d1 50%, #6f8dff 100%);
+    --halo: rgba(52, 81, 209, .11); --halo-2: rgba(111, 141, 255, .06); --shadow: rgba(16, 22, 43, .12);
+  }
+}
+
+/* Switcher: a round swatch of the current style, menu drops from the corner. */
+.look-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  margin-top: -16px;
+  border-radius: 50%;
+  border: 2px solid var(--card);
+  background: var(--grad);
+  box-shadow: 0 0 0 1px var(--line), 0 4px 12px -4px var(--shadow);
+  cursor: pointer;
+  padding: 0;
+}
+.look-btn:active { transform: scale(.94); }
+.look-menu {
+  position: fixed;
+  top: 52px;
+  right: 8px;
+  z-index: 20;
+  min-width: 190px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px -12px var(--shadow);
+}
+.look-menu[hidden] { display: none; }
+.look-title { padding: 6px 10px 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.look-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.look-menu button:hover { background: var(--card-top); }
+.look-menu button[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--card)); }
+.look-menu button[aria-checked="true"]::after { content: "✓"; margin-left: auto; color: var(--accent); }
+.look-sw { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.look-sw[data-look="teal"] { background: linear-gradient(110deg, #2cc9b5, #5fd69a, #b4e33d); }
+.look-sw[data-look="fire"] { background: linear-gradient(110deg, #ffd166, #ff8a3d, #f0304e); }
+.look-sw[data-look="moon"] { background: linear-gradient(110deg, #ffffff, #c3d4ff, #7f9cff, #5468ff); }
+
+/* Leave room for the switcher at the right end of the tab bar. */
+.tabs { padding-right: 52px; }
+@media (max-width: 600px) {
+  .tabs { padding: 8px 46px 8px 6px; }
+  .tabs a { padding: 7px 7px; }
+  .tabs a.active::after { left: 7px; right: 7px; }
+}
+@media (max-width: 380px) {
+  .tabs { padding: 8px 42px 8px 2px; }
+  .tabs a { padding: 7px 5px; font-size: 14px; }
+  .tabs a.active::after { left: 5px; right: 5px; }
+  .look-btn { right: 7px; width: 28px; height: 28px; margin-top: -15px; }
+}

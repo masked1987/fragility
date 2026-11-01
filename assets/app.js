@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=29';
+const V = '?v=30';
 const TOOLS = [
   { id: 'gamma', title: 'Gamma Detrite', short: 'Gamma', full: true, url: 'https://masked1987.github.io/gamma-detrite/', load: function () { return import('../tools/embed.js' + V); } },
   { id: 'fragility', title: 'Fragility', short: 'Score', load: function () { return import('../tools/fragility/view.js' + V); } },
@@ -54,6 +54,50 @@ function setTopHeight() {
   const h = document.querySelector('.top').offsetHeight;
   document.documentElement.style.setProperty('--avail-h', (window.innerHeight - h) + 'px');
 }
+
+// Colour style switcher (top-right corner). Saved per phone in localStorage under
+// 'look'; Gamma Detrite reads the same key and follows along (same site address).
+const LOOKS = [
+  { id: 'teal', name: 'Teal & lime', bg: '#070b0c' },
+  { id: 'fire', name: 'Fire', bg: '#0b0706' },
+  { id: 'moon', name: 'Blue moonlight', bg: '#05070e' },
+];
+const lookBtn = document.getElementById('look-btn');
+const lookMenu = document.getElementById('look-menu');
+
+function currentLook() {
+  return document.documentElement.getAttribute('data-look') || 'teal';
+}
+function applyLook(id) {
+  if (id === 'teal') document.documentElement.removeAttribute('data-look');
+  else document.documentElement.setAttribute('data-look', id);
+  const look = LOOKS.find(function (l) { return l.id === id; }) || LOOKS[0];
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', look.bg);
+  Array.prototype.forEach.call(lookMenu.querySelectorAll('button'), function (b) {
+    b.setAttribute('aria-checked', String(b.getAttribute('data-look') === id));
+  });
+}
+function openMenu(open) {
+  lookMenu.hidden = !open;
+  lookBtn.setAttribute('aria-expanded', String(open));
+}
+lookMenu.innerHTML = '<div class="look-title">Style</div>' + LOOKS.map(function (l) {
+  return '<button type="button" role="menuitemradio" data-look="' + l.id + '">' +
+    '<i class="look-sw" data-look="' + l.id + '"></i>' + l.name + '</button>';
+}).join('');
+lookBtn.addEventListener('click', function (e) { e.stopPropagation(); openMenu(lookMenu.hidden); });
+lookMenu.addEventListener('click', function (e) {
+  const b = e.target.closest('button[data-look]');
+  if (!b) return;
+  const id = b.getAttribute('data-look');
+  try { if (id === 'teal') localStorage.removeItem('look'); else localStorage.setItem('look', id); } catch (err) {}
+  applyLook(id);
+  openMenu(false);
+});
+document.addEventListener('click', function (e) { if (!lookMenu.hidden && !lookMenu.contains(e.target)) openMenu(false); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') openMenu(false); });
+applyLook(currentLook());
 
 window.addEventListener('resize', function () { setTopHeight(); edgeFade(); });
 window.addEventListener('hashchange', route);
