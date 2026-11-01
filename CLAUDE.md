@@ -273,6 +273,18 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   5/6 on 96 checks; the missing rule was mostly the value-area edge (41) or the
   gamma flip (38). Far too few signals to judge. Offered a 5/6 / "Ready" test,
   a forward log and wider stops: owner declined ("happy how it works now").
+- **Net vs total pivots** (asked "backtest my method and the video method"): the
+  owner reads big strikes by calls + puts (2,200 has lots of both, so net = calls −
+  puts nearly cancels and Tactics ignored it). `cfg.pivotSize` ('net' default =
+  video, 'total' = calls + puts) via `nodeSize()` in `model.js`.
+  `test/tactics-compare.mjs [months] [cache] [parallel]` runs both on the same
+  36 days (loaders shared in `test/bt-data.mjs`). Result (Nov 2023–Oct 2026,
+  2,880 checks each; pivots differed on 55% of checks): every retest of a pivot
+  net 355 trades, 23% target first, −0.27R avg; total 361, 22%, −0.28R. Retest +
+  order-flow trigger: net 319, −0.24R; total 324, −0.24R. 6/6: net 2 (both
+  stopped, −2R), total 5 (2 targets, +0.3R; really 3 separate setups). No real
+  difference; total gives a BUY pivot on more checks (2,174 vs 1,782). Both lose
+  at the retest level: the stop 0.1% past the retest is hit first ~3 times in 4.
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs

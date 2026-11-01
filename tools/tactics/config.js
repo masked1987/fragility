@@ -9,6 +9,7 @@ export const TAC_CONFIG = {
   nodeRangePct: 4,
   pivotRangePct: 3,        // the pivot is a big node within this distance
   pivotShare: 0.5,         // ...at least this share of the biggest node; nearest one wins
+  pivotSize: 'net',        // node size for picking pivots: 'net' = |calls − puts| (the video), 'total' = calls + puts
   heatExpiries: 5,         // columns in the strike × expiry heat map
   heatStrikes: 13,         // rows (odd: the middle one is closest to the price)
 
