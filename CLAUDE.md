@@ -18,6 +18,8 @@ the file layout. Tabs, in order:
 5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
 6. **Tactics**: a separate intraday tactic, the GEX pivot + order-flow exhaustion
    setup from the owner's video. Keep it independent of the Playbook.
+7. **Alt Tactics**: the owner's own method (dip through a huge gamma level, buy
+   when buyers are back, stop at the low). Kept apart from Tactics (video rules).
 
 ## How the owner works
 
@@ -128,7 +130,7 @@ the file layout. Tabs, in order:
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
   `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
-  `node test/tactics.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
+  `node test/tactics.mjs`, `node test/alt.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
   and `node test/tactics-live.mjs` print the live tabs.
 - Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
   from a start time ran out of pages on BTC and silently dropped the newest trades.
@@ -355,3 +357,30 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   (`alertAssets` in `tools/tactics/config.js`). Rings 3 times. A one-time test push in
   the same format (`welcomedTac`) confirmed the setup; `welcomedTac: 2` = the
   later BUY + SELL test pair.
+
+## Alt Tactics tab
+
+Asked for after the backtests ("keep video rules as they are and create an
+additional tab, alt tactics"). `tools/alt-tactics/`, short name "Alt" on phones.
+The owner's own method, built from the version that tested best
+(`test/levels-reversal.mjs` + `test/levels-once.py`, huge70, 5-minute Ichimoku):
+- Levels: `pickHuge()` = strikes with ≥70% of the biggest open contracts (calls
+  + puts, expiring after 2 days) within ±35%, ≥0.5% apart (Deribit chain).
+- Setup (`findSetups()`): price was above a level and a 15-minute candle trades
+  below it; the low since then is the stop; >3% past = broken; 48 h to confirm.
+- Signal: the 5-minute Ichimoku score (`ichimoku()`, 20 points each: close >
+  Tenkan, Tenkan > Kijun, above cloud, bullish cloud, lagging close up) crosses
+  up through 80 — stand-in for his protected "Wyichi AI" indicator. Entry at
+  that close; target the next huge level up.
+- Once per level (`oncePerLevel()`): a traded level is skipped until the trade
+  ends and price dips through another level. Buys only (sells unproven).
+- Card: BUY (signal ≤ 1 h old), OPEN (older trade still running, says buying
+  late means a wider stop), WATCH (dipped, waiting for 80), WAIT (nearest huge
+  levels). Then the Ichimoku checklist, the huge levels with their status, a
+  chart (since the dip when one is live, with the stop), and the backtest card
+  (43 trades, 26% hit, +0.47R, worst run 8). Size uses the Playbook account.
+- Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
+  that window are known, so once-per-level starts fresh each load.
+- `node test/alt.mjs` is offline and must pass. No phone alert yet (offer it).
+- Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
+
