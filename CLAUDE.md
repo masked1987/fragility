@@ -454,6 +454,10 @@ The owner's own method, built from the version that tested best
   without its best 2 trades (+0.11R). Stop room is jumpy (0.2% +0.50R, 0.3% +1.36R,
   0.5% +1.03R, 0.7% +0.80R, 1% +0.63R): read as "some room helps", not an exact
   number. Recommended to him; not applied (he said don't change until he says).
+  Finer steps: 0.25% +0.52R, then a jump at 0.3% (+1.36R; 2 more trades reach
+  target), then smoothly down (0.35% +1.26, 0.4% +1.18, 0.5% +1.03, 0.6% +0.91R).
+  0.3% sits on the edge of that jump, so 0.4–0.5% suggested for a safety margin.
+  With dips ≤2%: 0.3% +1.55R, 0.4% +1.36R, 0.5% +1.20R.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
