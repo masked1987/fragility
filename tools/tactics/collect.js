@@ -4,30 +4,51 @@ import { gammaFlip } from '../../shared/gamma.js';
 import { optionTrades, perpTrades, minuteCandles } from './sources.js';
 import { gexNodes, gexGrid, pickPivot, profile, drift, footprint, niceStep, setup, decide } from './model.js';
 
-export async function collectTac(asset, cfg) {
-  const now = Date.now();
-  // Session = the UTC day; early in the day, yesterday's full session is used.
+// The session the tab uses at time `now`: the UTC day; early in the day,
+// yesterday's full session.
+export function session(now, cfg) {
   const today = Math.floor(now / 864e5) * 864e5;
   const young = now - today < cfg.sessionMinHours * 36e5;
-  const from = young ? today - 864e5 : today;
+  return { from: young ? today - 864e5 : today, today: today, young: young };
+}
+
+export async function collectTac(asset, cfg) {
+  const now = Date.now();
+  const ses = session(now, cfg);
   const fpFrom = now - cfg.footprintHours * 36e5;
 
   const res = await Promise.allSettled([
     deribit.options(asset),
-    minuteCandles(asset, Math.min(from, now - 8 * 36e5), now), // the interval map shows 8 hours
-    optionTrades(asset, from, now),
+    minuteCandles(asset, Math.min(ses.from, now - 8 * 36e5), now), // the interval map shows 8 hours
+    optionTrades(asset, ses.from, now),
     perpTrades(asset, Math.floor(fpFrom / (cfg.candleMinutes * 6e4)) * cfg.candleMinutes * 6e4, now),
   ]);
   if (res[0].status !== 'fulfilled') throw new Error('Deribit options unavailable: ' + res[0].reason.message);
-  const chain = res[0].value, spot = chain.spot;
-  const minutes = res[1].status === 'fulfilled' ? res[1].value : [];
-  const optTr = res[2].status === 'fulfilled' ? res[2].value : null;
-  const perp = res[3].status === 'fulfilled' ? res[3].value : [];
+  const out = buildTac(asset, now, {
+    chain: res[0].value,
+    minutes: res[1].status === 'fulfilled' ? res[1].value : [],
+    optTr: res[2].status === 'fulfilled' ? res[2].value : null,
+    perp: res[3].status === 'fulfilled' ? res[3].value : [],
+  }, cfg);
+  out.missing = [res[1].status !== 'fulfilled' ? 'volume profile (Gate)' : null, res[2].status !== 'fulfilled' ? 'premium drift (Deribit)' : null,
+    res[3].status !== 'fulfilled' ? 'order flow (Deribit)' : null].filter(Boolean);
+  return out;
+}
+
+// Everything the tab and the alert read, from data already fetched. Pure: the
+// backtest (test/tactics-backtest.mjs) feeds it past data, so live and past
+// readings go through exactly the same steps.
+//   chain = { spot, options }, minutes = 1-minute candles { t, o, h, l, c, usd },
+//   optTr = option trades since the session start (or null), perp = perpetual
+//   trades since the footprint window start.
+export function buildTac(asset, now, data, cfg) {
+  const chain = data.chain, spot = chain.spot, minutes = data.minutes, optTr = data.optTr, perp = data.perp;
+  const ses = session(now, cfg);
 
   const nodes = gexNodes(chain.options, spot, now, cfg.nodeRangePct);
   const pivot = pickPivot(nodes, spot, cfg);
   const flip = gammaFlip(chain.options, spot, now);
-  const sessionCandles = minutes.filter(function (c) { return c.t >= from && (!young || c.t < today); });
+  const sessionCandles = minutes.filter(function (c) { return c.t >= ses.from && (!ses.young || c.t < ses.today); });
   const prof = sessionCandles.length ? profile(sessionCandles, cfg.profileRows, cfg.valueArea) : null;
   const dr = optTr ? drift(optTr, 5 * 6e4) : null;
 
@@ -42,12 +63,11 @@ export async function collectTac(asset, cfg) {
   const st = { spot: spot, pivot: pivot, flip: flip, nodes: nodes, profile: prof, drift: dr, candles: candles };
   const s = setup(st, cfg);
   return {
-    asset: asset, fetched: now, spot: spot, session: { from: from, today: today, young: young },
+    asset: asset, fetched: now, spot: spot, session: ses,
     nodes: nodes, pivot: pivot, flip: flip, grid: gexGrid(chain.options, spot, now, cfg),
     minutes: minutes, profile: prof, drift: dr, candles: candles, rowSize: rowSize,
     setup: s,
     decision: decide(s), // the six video rules: the tab's BUY / SELL / HOLD card and the phone alert both read this
-    missing: [res[1].status !== 'fulfilled' ? 'volume profile (Gate)' : null, res[2].status !== 'fulfilled' ? 'premium drift (Deribit)' : null,
-      res[3].status !== 'fulfilled' ? 'order flow (Deribit)' : null].filter(Boolean),
+    missing: [],
   };
 }

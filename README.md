@@ -64,6 +64,7 @@ test/plan.mjs              node test/plan.mjs  -> offline checks of the Playbook
 test/playbook.mjs          node test/playbook.mjs -> prints the live Playbook mode and decisions
 test/tactics.mjs           node test/tactics.mjs -> offline checks of the Tactics model (made-up trades)
 test/tactics-live.mjs      node test/tactics-live.mjs -> prints the live Tactics setup
+test/tactics-backtest.mjs  node test/tactics-backtest.mjs [months] -> Tactics 6/6 on past data (1st of each month)
 ```
 
 ## Run locally

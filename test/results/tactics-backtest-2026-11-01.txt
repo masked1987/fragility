@@ -1,0 +1,45 @@
+2023/11/01  options 454  perp trades 75227  option trades 11520  best 5/6  signals 0
+2023/12/01  options 515  perp trades 80996  option trades 14186  best 4/6  signals 0
+2024/01/01  options 524  perp trades 42966  option trades 7408  best 4/6  signals 0
+2024/02/01  options 506  perp trades 61222  option trades 6994  best 4/6  signals 0
+2024/03/01  options 696  perp trades 119986  option trades 14503  best 4/6  signals 0
+2024/04/01  options 708  perp trades 99392  option trades 12587  best 4/6  signals 0
+2024/05/01  options 684  perp trades 119547  option trades 17370  best 5/6  signals 0
+2024/06/01  options 700  perp trades 28621  option trades 6096  best 5/6  signals 0
+2024/07/01  options 613  perp trades 32716  option trades 5627  best 3/6  signals 0
+2024/08/01  options 620  perp trades 67756  option trades 7642  best 5/6  signals 0
+2024/09/01  options 623  perp trades 27133  option trades 2815  best 5/6  signals 0
+2024/10/01  options 575  perp trades 69652  option trades 8853  best 5/6  signals 0
+2024/11/01  options 553  perp trades 58960  option trades 6394  best 6/6  signals 1
+2024/12/01  options 633  perp trades 54068  option trades 6071  best 4/6  signals 0
+2025/01/01  options 576  perp trades 34571  option trades 5234  best 2/6  signals 0
+2025/02/01  options 595  perp trades 80575  option trades 10898  best 4/6  signals 0
+2025/03/01  options 608  perp trades 108766  option trades 8881  best 4/6  signals 0
+2025/04/01  options 513  perp trades 86610  option trades 7705  best 4/6  signals 0
+2025/05/01  options 475  perp trades 65067  option trades 6608  best 5/6  signals 0
+2025/06/01  options 596  perp trades 80233  option trades 5525  best 4/6  signals 0
+2025/07/01  options 530  perp trades 58132  option trades 6714  best 4/6  signals 0
+2025/08/01  options 686  perp trades 166538  option trades 15334  best 4/6  signals 0
+2025/09/01  options 781  perp trades 145581  option trades 7772  best 3/6  signals 0
+2025/10/01  options 703  perp trades 76110  option trades 9460  best 5/6  signals 0
+2025/11/01  options 711  perp trades 33301  option trades 2994  best 5/6  signals 0
+2025/12/01  options 646  perp trades 115708  option trades 12536  best 4/6  signals 0
+2026/01/01  options 543  perp trades 21551  option trades 2853  best 4/6  signals 0
+2026/02/01  options 752  perp trades 158392  option trades 8665  best 4/6  signals 0
+2026/03/01  options 727  perp trades 103578  option trades 5435  best 6/6  signals 1
+2026/04/01  options 629  perp trades 66751  option trades 5893  best 5/6  signals 0
+2026/05/01  options 621  perp trades 28282  option trades 4200  best 5/6  signals 0
+2026/06/01  options 594  perp trades 45269  option trades 3781  best 5/6  signals 0
+2026/07/01  options 587  perp trades 49784  option trades 3082  best 5/6  signals 0
+2026/08/01  options 581  perp trades 22943  option trades 1807  best 5/6  signals 0
+2026/09/01  options 659  perp trades 66378  option trades 3866  best 5/6  signals 0
+2026/10/01  options 639  perp trades 87840  option trades 3539  best 5/6  signals 0
+
+36 days, 2880 checks (every 15 min, 04:00–24:00 UTC)
+rules met per check: 0/6: 594  1/6: 1021  2/6: 468  3/6: 358  4/6: 337  5/6: 96  6/6: 6
+5/6 checks, the one rule missing: {"gamma":38,"edge":41,"premium":14,"exhaustion":3}
+
+6/6 signals: 2
+  2024/11/01 06:22 UTC  BUY at 2,506, stop 2,496, target 2,517 (1.1R)  ->  stop after 45 min, -1.00R (best 0.5R)
+  2026/03/01 07:22 UTC  BUY at 2,005, stop 1,987, target 2,025 (1.1R)  ->  stop after 89 min, -1.00R (best 0.3R)
+  total -2.00R, average -1.00R per signal; targets 0, stops 2

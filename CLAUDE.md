@@ -200,7 +200,18 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   in; pivot at VAL; call-heavy premium; above the flip). The card says BUY is not
   from the video. Rule keys: retest, exhaustion, stepping, edge, premium, gamma.
 - Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
-- Not backtested.
+- Backtest (asked "test it on past data", 1 Nov 2026): `test/tactics-backtest.mjs`.
+  Past option OI per strike is only free for the 1st of each month (Tardis free
+  sample days), so it tests those days: chain = first ~200 MB of Tardis
+  options_chain (00:00–00:20 snapshot, held for the day), perp trades = Tardis,
+  option trades = Deribit history API, 1-minute candles = Deribit chart data
+  (Node only). Runs the tab's own `buildTac()` (pulled out of `collectTac()` for
+  this) every 15 min at :07/:22/:37/:52, 04:00–24:00 UTC. Result over 36 days
+  (Nov 2023–Oct 2026, 2,880 checks): 6/6 on 6 checks, 2 alerts, both BUY, both
+  stopped out (−1R each, best +0.5R / +0.3R first); the video's SELL never fired.
+  5/6 on 96 checks; the missing rule was mostly the value-area edge (41) or the
+  gamma flip (38). Far too few signals to judge; offered to also test 5/6 and the
+  looser "Ready" for a bigger sample, and a forward log of every live check.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
   `collectTac()`, whose `decision` (= `decide(setup)`) is also what the tab's card
   shows, so they always agree. `sixOfSix()` in `model.js` rings only on the step
