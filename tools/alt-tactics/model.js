@@ -63,6 +63,25 @@ export function to15(c5) {
   return Array.from(by.values()).filter(function (x) { return x.n === 3; }).sort(function (a, b) { return a.t - b.t; });
 }
 
+// Levels as [{ price, oi }] sorted by price; plain numbers are accepted (oi unknown).
+function asLevels(levels) {
+  return levels.map(function (x) { return typeof x === 'number' ? { price: x, oi: 0 } : x; })
+    .sort(function (a, b) { return a.price - b.price; });
+}
+
+// The target from level L, going up (dir 1) or down (-1). cfg.target:
+//   'next'    = the nearest huge level that way (the first version);
+//   'biggest' = the huge level that way with the most open contracts (the owner: "huge
+//               biggest level above", e.g. ~2,500 rather than ~2,300 from ~2,200).
+// Levels closer than cfg.minTargetPct to L are skipped ("100 points is too small").
+export function pickTarget(levels, L, dir, cfg) {
+  const min = (cfg.minTargetPct || 0) / 100;
+  const c = levels.filter(function (x) { return dir > 0 ? x.price >= L * (1 + min) && x.price > L : x.price <= L * (1 - min) && x.price < L; });
+  if (!c.length) return null;
+  if (cfg.target === 'biggest') return c.reduce(function (a, b) { return b.oi > a.oi ? b : a; }).price;
+  return dir > 0 ? c[0].price : c[c.length - 1].price;
+}
+
 // Every cross through every level, followed until it confirms (signal), breaks
 // through, lapses, or the data ends (still waiting). BUY: price was above a level and
 // dips below it; the low is the stop; the Ichimoku score crossing up through scoreBuy
@@ -72,10 +91,10 @@ export function to15(c5) {
 // { t, h, l, c } oldest first; levels = [numbers].
 export function findSetups(c5, levels, cfg) {
   const c15 = to15(c5), ich = ichimoku(c5), bar = cfg.candleMinutes * 6e4, win = cfg.windowHours * 36e5;
-  const lv = levels.slice().sort(function (a, b) { return a - b; });
+  const all = asLevels(levels), lv = all.map(function (x) { return x.price; });
   const out = [];
   lv.forEach(function (L) {
-    const up = lv.filter(function (x) { return x > L; })[0] || null, down = lv.filter(function (x) { return x < L; }).pop() || null;
+    const up = pickTarget(all, L, 1, cfg), down = pickTarget(all, L, -1, cfg);
     let pos = null;
     for (let i = 0; i < c15.length; i++) {
       const c = c15[i];
@@ -166,8 +185,9 @@ export function decideAlt(c5, levels, cfg) {
   const spot = c5.length ? c5[c5.length - 1].c : null;
   const open = setups.filter(function (s) { return s.taken && s.trade.result === 'open'; }).pop() || null;
   const waiting = setups.filter(function (s) { return s.state === 'waiting' && !s.used && !s.noWin && (!cfg.sides || cfg.sides[s.side]); }).pop() || null;
-  const below = levels.filter(function (L) { return L <= spot; }).pop() || null;
-  const above = levels.filter(function (L) { return L > spot; })[0] || null;
+  const lv = asLevels(levels).map(function (x) { return x.price; });
+  const below = lv.filter(function (L) { return L <= spot; }).pop() || null;
+  const above = lv.filter(function (L) { return L > spot; })[0] || null;
   // A buy that reached its target lately: a sell at that level is allowed until `until`
   // (only shown while no sell setup has started there yet).
   const lastT = c5.length ? c5[c5.length - 1].t : 0, after = (cfg.afterWinHours || 48) * 36e5;

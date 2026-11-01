@@ -396,6 +396,17 @@ The owner's own method, built from the version that tested best
 - Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
   that window are known, so once-per-level starts fresh each load.
 - `node test/alt.mjs` is offline and must pass.
+- **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
+  "huge biggest level above, 100 points is too small". `pickTarget()` in
+  `model.js`, `cfg.target` 'next' (live) / 'biggest', `cfg.minTargetPct`. Owner
+  asked to test first: `node test/alt-backtest.mjs 36 .bt-cache` runs the tab's own
+  `findSetups` + `oncePerLevel` (Tardis 1st-of-month chains, Deribit 5-min), `LIST=next|biggest`
+  prints every trade; results in `test/results/alt-backtest-2026-11-01.txt`.
+  Buys: next 41 trades, 22% hit, +0.24R (the tab's own code; the card's 43 / 26% /
+  +0.47R came from the older test script), biggest 42, 14% hit, +0.78R, but 2024
+  all 11 lost, worst run 18, and two July 2025 trades (+19R, +35R) are the whole
+  profit (without them −0.53R/trade). ≥3% / ≥5% / ≥8% minimum changed little.
+  Sells after a winning buy: 7 (next) / 3 (biggest), all lost. Waiting for his call.
 - No phone alert for Alt Tactics. Asked, the owner said "I did explain it to
   you": he wants only zone, dealers and Tactics 6/6. Don't offer it again.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.

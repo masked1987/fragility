@@ -22,7 +22,12 @@ export const ALT_CONFIG = {
   candleMinutes: 5,
   scoreBuy: 80,
   scoreSell: 20,           // SELL: the score crosses down through this (mirror image)
-  afterWinHours: 48,       // SELL only at the level a buy reached as its target, within this long
+  afterWinHours: 48,
+  // Target: 'next' = the nearest huge level that way; 'biggest' = the one with the most
+  // open contracts (owner's wish, Nov 2026; backtest in test/alt-backtest.mjs). Levels
+  // closer than minTargetPct are skipped.
+  target: 'next',
+  minTargetPct: 0,       // SELL only at the level a buy reached as its target, within this long
   sides: { buy: true, sell: true },
   candles: 1000,           // Gate 5-minute candles fetched (~3.5 days, Ichimoku needs 78 to warm up)
   chartHours: 48,

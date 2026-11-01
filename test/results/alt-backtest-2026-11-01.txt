@@ -1,0 +1,97 @@
+Alt Tactics backtest, ETH 2023-11 to now, huge levels 70%, 5-min Ichimoku, once per level, 0.1% costs
+Levels per month: 23-11 1600/1650/1700/1800/1900, 23-12 1900/2000/2200/2300/2500, 24-01 2400/2500/3000, 24-02 2300/2400/3000, 24-03 3000, 24-04 3000/4000, 24-05 3500/3600/4000, 24-06 3000/3500/4000/5000, 24-07 4000, 24-08 4000, 24-09 2600/3000/3200, 24-10 2400/2600/3000, 24-11 2400/3000, 24-12 4000, 25-01 2800/3300/3800/4000, 25-02 2800/3300/3800/4000, 25-03 2200/2800/3000, 25-04 1800/2000, 25-05 1500/1800/2000, 25-06 2000/2400/2800/3000/3200, 25-07 2000/2200/2400/2500/2600/3000/3200, 25-08 3000/3200/3500/3800/4000, 25-09 4000, 25-10 4000, 25-11 3000/4000/5000, 25-12 3000/4000, 26-01 3000, 26-02 2000/2400/2500/2600/3000, 26-03 2000/2200, 26-04 2000/2200/2500, 26-05 2000/2200/2500, 26-06 2000/2200/2500, 26-07 1400/1500/1600/1700/1800/2000, 26-08 2000/2200/2500, 26-09 2000/2200/2500/3000/3200, 26-10 2200/2500/3200, 26-11 
+
+== Target: next huge level (the tab so far)
+  BUY    41 trades  22% reached target  +0.24R/trade  total +10.0R  typical target 6.5R  worst losing run 10  top-5 wins 33R  median days in trade 0.8  open 1
+        by year  2023: 8 -0.09R  2024: 11 +0.63R  2025: 12 +0.76R  2026: 10 -0.53R
+  SELL    7 trades   0% reached target  -1.08R/trade  total -7.6R  typical target 6.1R  worst losing run 7  top-5 wins -5R  median days in trade 0.3  open 0
+        by year  2023: 1 -1.05R  2024: 2 -1.11R  2025: 3 -1.08R  2026: 1 -1.05R   (only after a buy reached its target)
+  BOTH   48 trades  19% reached target  +0.05R/trade  total +2.4R  typical target 6.5R  worst losing run 10  top-5 wins 33R  median days in trade 0.7  open 1
+        by year  2023: 9 -0.20R  2024: 13 +0.36R  2025: 15 +0.39R  2026: 11 -0.58R
+
+== Target: next huge level, at least 5% away
+  BUY    40 trades  18% reached target  +0.63R/trade  total +25.3R  typical target 7.8R  worst losing run 16  top-5 wins 54R  median days in trade 0.9  open 1
+        by year  2023: 7 -1.09R  2024: 11 +0.63R  2025: 12 +2.61R  2026: 10 -0.53R
+  SELL    7 trades   0% reached target  -1.08R/trade  total -7.6R  typical target 6.1R  worst losing run 7  top-5 wins -5R  median days in trade 0.3  open 0
+        by year  2024: 2 -1.11R  2025: 4 -1.07R  2026: 1 -1.05R   (only after a buy reached its target)
+  BOTH   47 trades  15% reached target  +0.38R/trade  total +17.8R  typical target 7.8R  worst losing run 16  top-5 wins 54R  median days in trade 0.7  open 1
+        by year  2023: 7 -1.09R  2024: 13 +0.36R  2025: 16 +1.69R  2026: 11 -0.58R
+
+== Target: biggest huge level that way
+  BUY    42 trades  14% reached target  +0.78R/trade  total +32.9R  typical target 9.5R  worst losing run 18  top-5 wins 68R  median days in trade 0.8  open 1
+        by year  2023: 8 -0.09R  2024: 11 -1.07R  2025: 13 +3.61R  2026: 10 -0.15R
+  SELL    3 trades   0% reached target  -1.09R/trade  total -3.3R  typical target 14.5R  worst losing run 3  top-5 wins -3R  median days in trade 0.3  open 0
+        by year  2023: 1 -1.05R  2025: 1 -1.14R  2026: 1 -1.09R   (only after a buy reached its target)
+  BOTH   45 trades  13% reached target  +0.66R/trade  total +29.6R  typical target 9.5R  worst losing run 18  top-5 wins 68R  median days in trade 0.8  open 1
+        by year  2023: 9 -0.20R  2024: 11 -1.07R  2025: 14 +3.27R  2026: 11 -0.24R
+
+== Target: biggest huge level, at least 5% away
+  BUY    41 trades  10% reached target  +0.63R/trade  total +26.0R  typical target 10.5R  worst losing run 24  top-5 wins 65R  median days in trade 0.9  open 1
+        by year  2023: 7 -1.09R  2024: 11 -1.07R  2025: 13 +3.61R  2026: 10 -0.15R
+  SELL    2 trades   0% reached target  -1.11R/trade  total -2.2R  typical target 18.3R  worst losing run 2  top-5 wins -2R  median days in trade 1.1  open 0
+        by year  2025: 1 -1.14R  2026: 1 -1.09R   (only after a buy reached its target)
+  BOTH   43 trades   9% reached target  +0.55R/trade  total +23.8R  typical target 10.8R  worst losing run 24  top-5 wins 65R  median days in trade 0.9  open 1
+        by year  2023: 7 -1.09R  2024: 11 -1.07R  2025: 14 +3.27R  2026: 11 -0.24R
+
+== Target: biggest huge level, at least 3% away
+  BUY    42 trades  14% reached target  +0.78R/trade  total +32.9R  typical target 9.5R  worst losing run 18  top-5 wins 68R  median days in trade 0.8  open 1
+        by year  2023: 8 -0.09R  2024: 11 -1.07R  2025: 13 +3.61R  2026: 10 -0.15R
+  SELL    3 trades   0% reached target  -1.09R/trade  total -3.3R  typical target 14.5R  worst losing run 3  top-5 wins -3R  median days in trade 0.3  open 0
+        by year  2023: 1 -1.05R  2025: 1 -1.14R  2026: 1 -1.09R   (only after a buy reached its target)
+  BOTH   45 trades  13% reached target  +0.66R/trade  total +29.6R  typical target 9.5R  worst losing run 18  top-5 wins 68R  median days in trade 0.8  open 1
+        by year  2023: 9 -0.20R  2024: 11 -1.07R  2025: 14 +3.27R  2026: 11 -0.24R
+
+== Target: biggest huge level, at least 8% away
+  BUY    38 trades   8% reached target  +0.65R/trade  total +24.8R  typical target 12.0R  worst losing run 23  top-5 wins 60R  median days in trade 1.0  open 1
+        by year  2023: 6 -1.08R  2024: 11 -1.07R  2025: 11 +4.05R  2026: 10 -0.15R
+  SELL    1 trades   0% reached target  -1.09R/trade  total -1.1R  typical target 14.5R  worst losing run 1  top-5 wins -1R  median days in trade 1.1  open 0
+        by year  2026: 1 -1.09R   (only after a buy reached its target)
+  BOTH   39 trades   8% reached target  +0.61R/trade  total +23.7R  typical target 12.0R  worst losing run 23  top-5 wins 60R  median days in trade 1.1  open 1
+        by year  2023: 6 -1.08R  2024: 11 -1.07R  2025: 11 +4.05R  2026: 11 -0.24R
+
+-- every trade, target = biggest huge level
+2023-11-01T08:25 buy  1800 -> 1900 in 1809 stop 1799 stopped -1.18R 0.1d
+2023-12-05T13:00 buy  2200 -> 2300 in 2213 stop 2189 target  +3.52R 0.2d
+2023-12-05T20:20 sell 2300 -> 1900 in 2266 stop 2312 stopped -1.05R 0.2d
+2023-12-11T20:50 buy  2200 -> 2300 in 2194 stop 2152 stopped -1.05R 1.3d
+2023-12-15T09:00 buy  2300 -> 2500 in 2279 stop 2258 stopped -1.11R 0.2d
+2023-12-16T01:25 buy  2200 -> 2300 in 2243 stop 2199 stopped -1.05R 1.9d
+2023-12-23T08:40 buy  2300 -> 2500 in 2292 stop 2268 stopped -1.10R 1.6d
+2023-12-26T20:05 buy  2200 -> 2300 in 2216 stop 2179 target  +2.26R 0.7d
+2023-12-30T00:00 buy  2300 -> 2500 in 2300 stop 2252 stopped -1.05R 4.5d
+2024-01-02T22:00 buy  2400 -> 2500 in 2368 stop 2344 stopped -1.10R 0.5d
+2024-01-13T02:10 buy  2500 -> 3000 in 2530 stop 2456 stopped -1.03R 5.7d
+2024-02-01T23:50 buy  2300 -> 2400 in 2303 stop 2286 stopped -1.14R 0.6d
+2024-04-14T17:35 buy  3000 -> 4000 in 3052 stop 2979 stopped -1.04R 2.9d
+2024-05-23T21:05 buy  3600 -> 4000 in 3813 stop 3501 stopped -1.01R 18.4d
+2024-06-11T10:40 buy  3500 -> 5000 in 3539 stop 3498 stopped -1.08R 0.2d
+2024-09-24T16:50 buy  2600 -> 3000 in 2623 stop 2591 stopped -1.08R 1.0d
+2024-10-03T01:20 buy  2400 -> 3000 in 2383 stop 2351 stopped -1.07R 0.3d
+2024-10-15T07:15 buy  2600 -> 3000 in 2620 stop 2590 stopped -1.09R 0.2d
+2024-10-26T01:50 buy  2400 -> 3000 in 2439 stop 2380 stopped -1.04R 9.8d
+2024-10-30T02:20 buy  2600 -> 3000 in 2636 stop 2599 stopped -1.07R 1.5d
+2025-01-08T21:45 buy  3300 -> 4000 in 3301 stop 3207 stopped -1.04R 0.9d
+2025-02-04T17:15 buy  2800 -> 3800 in 2837 stop 2775 stopped -1.05R 0.1d
+2025-03-01T16:40 buy  2200 -> 2800 in 2187 stop 2142 stopped -1.05R 2.1d
+2025-04-03T04:35 buy  1800 -> 2000 in 1832 stop 1781 stopped -1.04R 0.3d
+2025-06-06T03:20 buy  2400 -> 3000 in 2435 stop 2383 stopped -1.05R 14.6d
+2025-06-11T07:15 buy  2800 -> 3000 in 2799 stop 2781 stopped -1.16R 0.0d
+2025-07-02T02:05 buy  2400 -> 3200 in 2414 stop 2373 target  +19.43R 14.5d
+2025-07-04T21:50 buy  2500 -> 3200 in 2495 stop 2475 target  +34.85R 11.7d
+2025-07-08T21:50 buy  2600 -> 3200 in 2611 stop 2599 stopped -1.21R 0.2d
+2025-07-14T21:35 buy  3000 -> 3200 in 3011 stop 2983 stopped -1.11R 0.2d
+2025-08-02T00:55 buy  3500 -> 4000 in 3510 stop 3428 stopped -1.04R 0.7d
+2025-08-07T19:00 buy  3800 -> 4000 in 3831 stop 3783 target  +3.46R 0.8d
+2025-08-08T21:55 sell 4000 -> 3500 in 4043 stop 4073 stopped -1.14R 0.3d
+2025-11-18T00:10 buy  3000 -> 4000 in 3035 stop 2958 stopped -1.04R 0.1d
+2026-02-01T09:45 buy  2400 -> 3000 in 2424 stop 2391 stopped -1.08R 0.0d
+2026-02-07T12:10 buy  2000 -> 3000 in 2047 stop 1993 stopped -1.04R 3.1d
+2026-03-06T22:00 buy  2000 -> 2200 in 1984 stop 1955 stopped -1.07R 0.9d
+2026-03-27T19:30 buy  2000 -> 2200 in 1988 stop 1964 stopped -1.08R 2.1d
+2026-04-08T17:40 buy  2200 -> 2500 in 2232 stop 2187 stopped -1.05R 0.2d
+2026-05-28T09:50 buy  2000 -> 2500 in 1991 stop 1965 stopped -1.07R 4.2d
+2026-07-02T03:15 buy  1600 -> 1800 in 1622 stop 1596 target  +6.83R 2.6d
+2026-07-02T21:00 buy  1700 -> 1800 in 1704 stop 1695 stopped -1.17R 0.0d
+2026-07-04T20:20 sell 1800 -> 1500 in 1786 stop 1806 stopped -1.09R 1.1d
+2026-09-04T00:25 buy  2500 -> 3200 in 2510 stop 2491 stopped -1.13R 0.5d
+2026-10-30T03:50 buy  2200 -> 2500 in 2233 stop 2170 open    +0.34R 
