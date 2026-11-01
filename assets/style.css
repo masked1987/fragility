@@ -1,15 +1,18 @@
 :root {
-  --bg: #07090e;
-  --card: #10141c;
-  --line: #1f2733;
-  --text: #e9edf4;
-  --muted: #8a95a6;
-  --accent: #4d8bff;
-  /* The look: white fading into electric blue, glowing on near-black. */
-  --grad: linear-gradient(120deg, #ffffff 0%, #b9d4ff 30%, #4d8bff 68%, #2b4dff 100%);
-  --glow: rgba(61, 110, 255, .35);
-  --halo: rgba(43, 77, 255, .20);
-  --card-top: #141a25;
+  --bg: #070b0c;
+  --card: #0e1415;
+  --card-top: #121b1c;
+  --line: #1d2a2b;
+  --text: #e8f0ef;
+  --muted: #8b9a9a;
+  /* The look: teal fading into lime on near-black (owner's pick, Nov 2026).
+     --accent is the teal end and marks selection, "ready" and "preferred". */
+  --accent: #2cc9b5;
+  --lime: #b4e33d;
+  --grad: linear-gradient(110deg, #2cc9b5 0%, #5fd69a 50%, #b4e33d 100%);
+  --halo: rgba(44, 201, 181, .13);
+  --halo-2: rgba(180, 227, 61, .07);
+  --shadow: rgba(0, 0, 0, .55);
   --calm: #2fa37a;
   --building: #d99a2b;
   --primed: #e0524f;
@@ -27,16 +30,18 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f2f5fb;
+    --bg: #f3f6f4;
     --card: #ffffff;
-    --line: #dde3ee;
-    --text: #141a26;
-    --muted: #5f6b7d;
-    --accent: #2f62f0;
-    --grad: linear-gradient(120deg, #0b1633 0%, #1d3fb8 45%, #2f62f0 75%, #5b8dff 100%);
-    --glow: rgba(47, 98, 240, .22);
-    --halo: rgba(47, 98, 240, .10);
-    --card-top: #f7f9ff;
+    --card-top: #f8fbf9;
+    --line: #dce5e1;
+    --text: #12201d;
+    --muted: #5a6b67;
+    --accent: #0b8c7d;
+    --lime: #5b8a00;
+    --grad: linear-gradient(110deg, #0b8c7d 0%, #2f8f55 50%, #5b8a00 100%);
+    --halo: rgba(11, 140, 125, .10);
+    --halo-2: rgba(91, 138, 0, .06);
+    --shadow: rgba(18, 40, 35, .12);
     --calm-soft: #dcf2e9;
     --building-soft: #f8ecd2;
     --primed-soft: #f9dcdb;
@@ -54,7 +59,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 15px/1.45 "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -410,10 +415,14 @@ details summary { cursor: pointer; }
 .tc-dec.buy .tc-dec-badge { background: var(--calm); }
 .tc-dec-head { margin: 2px 0 0; font-size: 16px; font-weight: 650; line-height: 1.3; }
 
-/* ---- Look: colours fading into each other (owner's request, Nov 2026) ----
-   Near-black page with a blue glow at the top, cards that fade from a lighter
-   top, gradient score numbers and active tab, coloured card edges that fade
-   into the card, and a gauge that blends green -> amber -> red. */
+/* ---- Look: teal fading into lime (owner's request, Nov 2026) ----
+   Gradients only where they mean something: the score, the active tab, the
+   selected coin and the gauge. Card tones fade in from the corner instead of
+   a thick side stripe. Charts and state colours are unchanged. */
+html { color-scheme: dark light; accent-color: var(--accent); scrollbar-color: var(--line) transparent; }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
 body::before {
   content: "";
   position: fixed;
@@ -421,114 +430,107 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(90% 45% at 85% -5%, var(--halo), transparent 70%),
-    radial-gradient(70% 35% at 0% 0%, rgba(124, 92, 255, .10), transparent 70%);
+    radial-gradient(80% 40% at 100% -5%, var(--halo), transparent 70%),
+    radial-gradient(60% 30% at 0% 0%, var(--halo-2), transparent 70%);
 }
 
 .top {
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border-bottom: 0;
 }
 .top::after {
   content: "";
   display: block;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent) 30%, #b9d4ff 50%, var(--accent) 70%, transparent);
-  opacity: .7;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 55%, transparent) 35%, color-mix(in srgb, var(--lime) 45%, transparent) 65%, transparent);
 }
-.tabs a { position: relative; transition: color .2s; }
-.tabs a.active {
-  background: none;
-  background-image: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 700;
-}
+.tabs { gap: 2px; }
+.tabs a { position: relative; transition: color .18s ease-out; }
+.tabs a:hover { color: var(--text); }
+.tabs a.active { background: none; color: var(--text); font-weight: 650; }
 .tabs a.active::after {
   content: "";
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 0;
+  bottom: -1px;
   height: 3px;
-  border-radius: 3px;
+  border-radius: 3px 3px 0 0;
   background: var(--grad);
-  box-shadow: 0 0 12px var(--glow);
 }
 
 .card {
-  background: linear-gradient(180deg, var(--card-top), var(--card) 140px);
-  border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 10px 30px -18px var(--glow);
+  background: linear-gradient(180deg, var(--card-top), var(--card) 160px);
+  border-color: var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 8px 24px -12px var(--shadow);
 }
+h2, h3 { letter-spacing: -.01em; }
 
-/* Coloured edge that fades into the card. */
+/* Tone fades in from the top-left corner (replaces the 4px side stripe). */
 .verdict, .pb-plan, .tc-dec {
-  border-left: 4px solid var(--tone);
-  background: linear-gradient(100deg, color-mix(in srgb, var(--tone) 16%, var(--card)) 0%, var(--card) 55%);
+  border-left: 1px solid color-mix(in srgb, var(--tone) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tone) 20%, transparent), transparent 65%),
+    var(--card);
 }
+.verdict-head, .tc-dec-head { letter-spacing: -.015em; }
 
+/* Signature: the score fades teal into lime. */
 .big {
   background-image: var(--grad);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 18px var(--glow));
+  letter-spacing: -.035em;
 }
-.big .of { -webkit-text-fill-color: var(--muted); }
-.mid-num {
-  background-image: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.label { color: color-mix(in srgb, var(--accent) 35%, var(--muted)); }
+.big .of { -webkit-text-fill-color: var(--muted); letter-spacing: 0; }
+.mid-num { letter-spacing: -.02em; }
+.label { color: color-mix(in srgb, var(--accent) 30%, var(--muted)); letter-spacing: .06em; }
 
-/* Zone badge and pills: two tones of the same colour. */
-.zone {
-  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-  box-shadow: 0 0 18px -6px currentColor;
-}
-.zone.calm { background: linear-gradient(135deg, color-mix(in srgb, var(--calm) 30%, var(--card)), var(--calm-soft)); }
-.zone.building { background: linear-gradient(135deg, color-mix(in srgb, var(--building) 30%, var(--card)), var(--building-soft)); }
-.zone.primed { background: linear-gradient(135deg, color-mix(in srgb, var(--primed) 30%, var(--card)), var(--primed-soft)); }
-.pill { background-image: linear-gradient(135deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 70%); }
+.zone { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.zone.calm { background: linear-gradient(135deg, color-mix(in srgb, var(--calm) 26%, var(--card)), var(--calm-soft)); }
+.zone.building { background: linear-gradient(135deg, color-mix(in srgb, var(--building) 26%, var(--card)), var(--building-soft)); }
+.zone.primed { background: linear-gradient(135deg, color-mix(in srgb, var(--primed) 26%, var(--card)), var(--primed-soft)); }
+.pill { font-weight: 600; background-image: linear-gradient(135deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 70%); }
 
-/* Gauge: one blended strip instead of three blocks. */
+/* Gauge: one blended strip, green fading through amber into red. */
 .zones {
-  background: linear-gradient(90deg, var(--calm-soft) 0%, color-mix(in srgb, var(--calm) 35%, var(--calm-soft)) 25%,
-    color-mix(in srgb, var(--building) 40%, var(--building-soft)) 47%, color-mix(in srgb, var(--primed) 35%, var(--primed-soft)) 72%,
-    color-mix(in srgb, var(--primed) 55%, var(--primed-soft)) 100%);
+  background: linear-gradient(90deg, var(--calm-soft) 0%, color-mix(in srgb, var(--calm) 32%, var(--calm-soft)) 26%,
+    color-mix(in srgb, var(--building) 36%, var(--building-soft)) 47%, color-mix(in srgb, var(--primed) 30%, var(--primed-soft)) 72%,
+    color-mix(in srgb, var(--primed) 50%, var(--primed-soft)) 100%);
 }
 .seg-zone.calm, .seg-zone.building, .seg-zone.primed { background: none; }
-.marker { background: #fff; box-shadow: 0 0 10px 2px var(--glow), 0 0 0 1px rgba(0, 0, 0, .35); }
+.marker { background: var(--text); box-shadow: 0 2px 6px var(--shadow); }
 
-/* Score bars: a shine over each colour. */
+/* Score bars: each colour fades lighter toward its end. */
 .stack div, .input .bar div { position: relative; }
 .stack div::after, .input .bar div::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .38));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .32));
 }
-.input .bar div { box-shadow: 0 0 10px -2px var(--glow); }
 
 /* Controls */
-.btn, .seg {
-  background: linear-gradient(180deg, var(--card-top), var(--card));
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
-}
+.btn, .seg { background: var(--card); border-color: var(--line); border-radius: 12px; }
+.btn { transition: border-color .18s ease-out, background-color .18s ease-out; }
+.btn:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.btn:active:not(:disabled) { background: var(--card-top); }
+.seg button { border-radius: 9px; transition: color .18s ease-out; }
+.seg button:hover { color: var(--text); }
 .seg button.on {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, var(--card)), color-mix(in srgb, #7c5cff 18%, var(--card)));
-  box-shadow: 0 0 14px -4px var(--glow);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 24%, var(--card)), color-mix(in srgb, var(--lime) 16%, var(--card)));
+  color: var(--text);
 }
-.tile { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 9%, var(--bg)), var(--bg)); }
+.tile { border: 1px solid var(--line); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 7%, var(--bg)), var(--bg)); }
+.pb-calc input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 
-/* Tactics decision badge: HOLD grey, SELL red to pink, BUY green to cyan, glowing. */
-.tc-dec-badge { background: linear-gradient(135deg, #a3adbd, #626c7c); }
-.tc-dec.sell .tc-dec-badge { background: linear-gradient(135deg, #ff6a5e, #d6246e); box-shadow: 0 0 22px -4px #e0524f; }
-.tc-dec.buy .tc-dec-badge { background: linear-gradient(135deg, #3fe0a0, #11a3c4); box-shadow: 0 0 22px -4px #2fa37a; }
-.embed-bar { background: linear-gradient(180deg, var(--card-top), var(--card)); }
+/* Tactics decision badge: HOLD grey, SELL red into pink, BUY green into lime. */
+.tc-dec-badge { background: linear-gradient(135deg, #9aa7a6, #5d6968); }
+.tc-dec.sell .tc-dec-badge { background: linear-gradient(135deg, #ff6b5c, #d6246e); box-shadow: 0 6px 16px -6px #e0524f; }
+.tc-dec.buy .tc-dec-badge { background: linear-gradient(135deg, #22b07d, #8fd13a); box-shadow: 0 6px 16px -6px #2fa37a; }
+.embed-bar { background: var(--card); }
