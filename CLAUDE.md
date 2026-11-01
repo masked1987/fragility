@@ -30,7 +30,11 @@ the file layout. Tabs, in order:
 - Has said yes to publishing: after a change is tested, push the work branch,
   then publish (fragility: `main` and `gh-pages`; gamma-detrite: `main`).
   Bump `V` in `assets/app.js` and both `?v=` in `index.html` on every fragility
-  change, or phones keep old files for up to 10 minutes.
+  change, or phones keep old files for up to 10 minutes. Every other module
+  (tools/, shared/) gets the same `?v=` through an import map built in
+  `index.html` from a file list: a NEW .js file must be added to that list
+  (`node test/importmap.mjs` fails otherwise). Without it, a phone once mixed a
+  new view.js with an old cached `shared/head.js` and four tabs went blank.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" rings once. "Tactics 6/6
@@ -124,7 +128,7 @@ the file layout. Tabs, in order:
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
   `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
-  `node test/tactics.mjs` are offline and must pass. `node test/playbook.mjs`
+  `node test/tactics.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
   and `node test/tactics-live.mjs` print the live tabs.
 - Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
   from a start time ran out of pages on BTC and silently dropped the newest trades.
