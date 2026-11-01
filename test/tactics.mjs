@@ -93,7 +93,7 @@ assert.equal(dd.met, 6);
 dd = decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg));
 assert.equal(dd.action, 'hold');
 assert.equal(dd.met, 5);
-assert.deepEqual(dd.rules.filter(r => !r.ok).map(r => r.key), ['puts']);
+assert.deepEqual(dd.rules.filter(r => !r.ok).map(r => r.key), ['premium']);
 // ...or the pivot not at the value area high (the "ready" status alone would still allow it).
 r = setup({ ...st, profile: { poc: 2232, vah: 2275, val: 2215 } }, cfg);
 assert.equal(r.status, 'ready');
@@ -103,21 +103,51 @@ const noEx = footprint(trades.map(x => x.price === 2250 ? { ...x, usd: x.dir > 0
 dd = decide(setup({ ...st, candles: noEx }, cfg));
 assert.equal(dd.action, 'hold');
 assert.ok(dd.rules.find(x => x.key === 'exhaustion').ok === false);
-// Price above the pivot: the video's setup is a sell only -> hold, nothing met.
+// Price above the pivot with the short-side data: the buy rules apply, and they don't hold.
 dd = decide(setup({ ...st, spot: 2256 }, cfg));
 assert.equal(dd.action, 'hold');
-assert.equal(dd.met, 0);
+assert.equal(dd.short, false);
+assert.ok(dd.met < 6);
+
+// BUY: the mirror image (prices flipped around 2,250, buyers and sellers swapped).
+const M = x => 4500 - x;
+const fpL = footprint(trades.map(x => ({ ...x, price: M(x.price), dir: -x.dir })), 15 * 6e4, 2);
+const sL = signals(fpL[0], cfg);
+assert.equal(sL.sellersExhausted, true);
+assert.equal(sL.buyersIn, true);
+const stL = {
+  spot: M(2243), pivot: { strike: 2250, net: 5e6 }, flip: M(2262), nodes: [{ strike: 2250, net: 5e6 }, { strike: 2300, net: -4e6 }, { strike: 2275, net: 1e6 }],
+  profile: { poc: M(2232), vah: M(2215), val: M(2251) }, drift: { calls: 300e3, puts: -80e3 }, candles: fpL,
+};
+r = setup(stL, cfg);
+assert.equal(r.side, 'long');
+dd = decide(r);
+assert.equal(dd.action, 'buy');
+assert.equal(dd.met, 6);
+assert.ok(r.stop < 2250 && r.targets[0].price > r.entry);
+// One buy rule missing -> hold: put-heavy premium, or price below the flip.
+dd = decide(setup({ ...stL, drift: { calls: -80e3, puts: 300e3 } }, cfg));
+assert.equal(dd.action, 'hold');
+assert.deepEqual(dd.rules.filter(r => !r.ok).map(r => r.key), ['premium']);
+dd = decide(setup({ ...stL, flip: 2270 }, cfg));
+assert.equal(dd.action, 'hold');
+assert.deepEqual(dd.rules.filter(r => !r.ok).map(r => r.key), ['gamma']);
 // No pivot at all -> hold.
 assert.equal(decide(setup({ ...st, pivot: null }, cfg)).action, 'hold');
 
 // 7. Phone alert: rings only on the step from 5 or fewer to 6, re-arms below 6.
-const ring = (seq, prev = null) => seq.map(m => { const t = sixOfSix(m, prev); prev = t.met; return t.fire; });
-assert.deepEqual(ring([3, 5, 6, 6, 6]), [false, false, true, false, false]);   // once, not every check
-assert.deepEqual(ring([6, 5, 6]), [true, false, true]);                         // drop re-arms it
-assert.deepEqual(ring([6, 0, 4, 6]), [true, false, false, true]);
-assert.deepEqual(ring([6], 6), [false]);                                         // already at 6 last time
+const D = (met, action = met === 6 ? 'sell' : 'hold') => ({ met, action });
+const ring = (seq, prev = null) => seq.map(d => { const t = sixOfSix(d, prev); prev = t.state; return t.fire; });
+assert.deepEqual(ring([D(3), D(5), D(6), D(6), D(6)]), [false, false, true, false, false]);   // once, not every check
+assert.deepEqual(ring([D(6), D(5), D(6)]), [true, false, true]);                               // drop re-arms it
+assert.deepEqual(ring([D(6), D(0), D(4), D(6)]), [true, false, false, true]);
+assert.deepEqual(ring([D(6)], { met: 6, action: 'sell' }), [false]);                           // already at 6 last time
+assert.deepEqual(ring([D(5), D(6, 'buy'), D(6, 'buy'), D(4)]), [false, true, false, false]);   // buys ring the same way
+assert.deepEqual(ring([D(6, 'buy'), D(6, 'sell')]), [true, true]);                             // straight flip to the other side
+assert.deepEqual(ring([D(6)], 2), [true]);                                                     // older state: a bare count
 // It counts the same decide() result the tab shows.
-assert.equal(sixOfSix(decide(setup(st, cfg)).met, 5).fire, true);
-assert.equal(sixOfSix(decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg)).met, 4).fire, false);
+assert.equal(sixOfSix(decide(setup(st, cfg)), { met: 5, action: 'hold' }).fire, true);
+assert.equal(sixOfSix(decide(setup(stL, cfg)), { met: 5, action: 'hold' }).fire, true);
+assert.equal(sixOfSix(decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg)), { met: 4 }).fire, false);
 
 console.log('tactics: all checks passed');

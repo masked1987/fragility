@@ -35,7 +35,7 @@ the file layout. Tabs, in order:
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" and key-level crossings
   (ETH 2,250 / 2,200 / 2,170, in `tools/fragility/config.js`) ring once, and
-  so does "Tactics 6/6" (all six Tactics SELL rules, ETH).
+  so does "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH).
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
@@ -164,12 +164,16 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   the video, hold or sell": SELL only when all 6 hold at once (short side; retest
   rejected; buyers exhausted AND sellers in; pivot at VAH; put-heavy premium; below
   the flip), otherwise HOLD with the rules met / missing. Stricter than "Ready",
-  which stays as the looser checklist and still tracks the long mirror image.
+  which stays as the looser checklist. Later asked to "add buy side too": BUY is
+  the mirror image (price above the pivot; retest held; sellers exhausted AND buyers
+  in; pivot at VAL; call-heavy premium; above the flip). The card says BUY is not
+  from the video. Rule keys: retest, exhaustion, stepping, edge, premium, gamma.
 - Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
 - Not backtested.
-- Phone alert "Tactics 6/6" (asked for later): `jobs/monitor.mjs` runs `collectTac()`,
-  whose `decision` (= `decide(setup)`) is also what the tab's card shows, so they
-  always agree. `sixOfSix()` in `model.js` rings only on the step from ≤5 to 6 and
-  re-arms below 6; last count in `state.json` (`tactics`). ETH only
+- Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
+  `collectTac()`, whose `decision` (= `decide(setup)`) is also what the tab's card
+  shows, so they always agree. `sixOfSix()` in `model.js` rings only on the step
+  from ≤5 to 6 (or a straight flip from 6/6 one side to the other) and re-arms
+  below 6; last `{ met, action }` in `state.json` (`tactics`). ETH only
   (`alertAssets` in `tools/tactics/config.js`). Rings once. A one-time test push in
   the same format (`welcomedTac`) confirmed the setup.

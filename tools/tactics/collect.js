@@ -46,7 +46,7 @@ export async function collectTac(asset, cfg) {
     nodes: nodes, pivot: pivot, flip: flip, grid: gexGrid(chain.options, spot, now, cfg),
     minutes: minutes, profile: prof, drift: dr, candles: candles, rowSize: rowSize,
     setup: s,
-    decision: decide(s), // the six video rules: the tab's SELL / HOLD card and the phone alert both read this
+    decision: decide(s), // the six video rules: the tab's BUY / SELL / HOLD card and the phone alert both read this
     missing: [res[1].status !== 'fulfilled' ? 'volume profile (Gate)' : null, res[2].status !== 'fulfilled' ? 'premium drift (Deribit)' : null,
       res[3].status !== 'fulfilled' ? 'order flow (Deribit)' : null].filter(Boolean),
   };

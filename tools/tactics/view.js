@@ -114,48 +114,54 @@ export function mount(el) {
     drawFootprint(bodyEl.querySelector('.tc-fp'), d);
   }
 
-  // SELL or HOLD, by the video's rules only (all six at once = SELL).
+  // SELL, BUY or HOLD, by the video's rules (all six at once; BUY is the mirror image).
   function decisionHtml(d) {
-    const s = d.setup, dec = d.decision, sell = dec.action === 'sell', a = esc(d.asset);
-    const P = s.pivot ? px(s.pivot) : null, dp = pdec(d.spot);
-    const names = {
+    const s = d.setup, dec = d.decision, act = dec.action, go = act !== 'hold', a = esc(d.asset);
+    const short = dec.short !== false, P = s.pivot ? px(s.pivot) : null, dp = pdec(d.spot);
+    const names = short ? {
       retest: 'Price retested the ' + (P || 'pivot') + ' pivot from below and was rejected',
       exhaustion: 'Buyers ran out at the retest (exhaustion)',
-      sellers: 'Sellers stepped in',
-      vah: 'The pivot sits at the value area high' + (d.profile ? ' (' + px(d.profile.vah) + ')' : ''),
-      puts: 'Option premium is put-heavy',
+      stepping: 'Sellers stepped in',
+      edge: 'The pivot sits at the value area high' + (d.profile ? ' (' + px(d.profile.vah) + ')' : ''),
+      premium: 'Option premium is put-heavy',
       gamma: 'Price is below the gamma flip' + (d.flip ? ' (' + px(d.flip) + ')' : '') + ': dealers add to drops',
+    } : {
+      retest: 'Price retested the ' + (P || 'pivot') + ' pivot from above and it held',
+      exhaustion: 'Sellers ran out at the retest (exhaustion)',
+      stepping: 'Buyers stepped in',
+      edge: 'The pivot sits at the value area low' + (d.profile ? ' (' + px(d.profile.val) + ')' : ''),
+      premium: 'Option premium is call-heavy',
+      gamma: 'Price is above the gamma flip' + (d.flip ? ' (' + px(d.flip) + ')' : '') + ': dealers lean against moves',
     };
     const list = dec.rules.length ? '<ul class="tc-checks small">' + dec.rules.map(function (r) {
       return '<li class="' + (r.ok ? 'ok' : 'no') + '"><span class="tc-ic">' + (r.ok ? ICON.ok : ICON.no) + '</span><span>' + esc(names[r.key]) + '</span></li>';
     }).join('') + '</ul>' : '';
     let head, body;
-    if (sell) {
+    if (go) {
       const tg = s.targets.map(function (t) { return px(t.price) + ' (' + t.r.toFixed(1) + 'R)'; }).join(', ');
-      head = 'Sell ' + a + ': all 6 rules from the video are met';
+      head = (short ? 'Sell ' : 'Buy ') + a + ': all 6 rules ' + (short ? 'from the video' : '(the video\'s, mirrored)') + ' are met';
       body = '<dl class="pb-dl">' +
-        '<dt>Sell at</dt><dd><b class="num">' + num(s.entry, dp) + '</b> <span class="muted">(price now)</span></dd>' +
-        '<dt>Stop</dt><dd><b class="num">' + num(s.stop, dp) + '</b> <span class="muted">(just above the retest)</span></dd>' +
+        '<dt>' + (short ? 'Sell' : 'Buy') + ' at</dt><dd><b class="num">' + num(s.entry, dp) + '</b> <span class="muted">(price now)</span></dd>' +
+        '<dt>Stop</dt><dd><b class="num">' + num(s.stop, dp) + '</b> <span class="muted">(just ' + (short ? 'above' : 'below') + ' the retest)</span></dd>' +
         '<dt>Targets</dt><dd>' + (tg || '<span class="muted">nothing mapped at least 1R away</span>') + '</dd>' +
         '<dt>Size</dt><dd>' + sizeText(s) + '</dd></dl>' +
-        '<p class="small">Hold the sell while price stays under ' + P + '. Out if a ' + CFG.candleMinutes + '-minute candle closes back above it.</p>';
+        '<p class="small">Hold the ' + (short ? 'sell while price stays under ' : 'buy while price stays over ') + P + '. Out if a ' + CFG.candleMinutes +
+        '-minute candle closes back ' + (short ? 'above' : 'below') + ' it.</p>';
     } else if (dec.noPivot) {
-      head = 'Hold: no big gamma node near the price, so no pivot to sell from';
+      head = 'Hold: no big gamma node near the price, so no pivot to trade from';
       body = '<p class="small">The video\'s setup starts from a pivot. Without one, there is nothing to do.</p>';
-    } else if (!dec.short) {
-      head = 'Hold: price is above the ' + P + ' pivot';
-      body = '<p class="small">The video\'s sell needs the pivot overhead, with price coming back up to it and failing. ' +
-        'Hold until price is back under a pivot and all six rules line up.</p>';
     } else {
       const miss = dec.rules.length - dec.met;
-      head = 'Hold: ' + dec.met + ' of 6 rules met, ' + miss + ' missing';
-      body = '<p class="small">No sell yet. SELL shows only when all six line up at the same time, as in the video.</p>';
+      head = 'Hold: ' + dec.met + ' of 6 ' + (short ? 'sell' : 'buy') + ' rules met, ' + miss + ' missing';
+      body = '<p class="small">Price is ' + (short ? 'below' : 'above') + ' the ' + P + ' pivot, so the ' + (short ? 'sell' : 'buy') +
+        ' rules apply. ' + (short ? 'SELL' : 'BUY') + ' shows only when all six line up at the same time.</p>';
     }
-    return '<section class="card tc-dec ' + (sell ? 'sell' : 'hold') + '">' +
-      '<div class="tc-dec-top"><span class="tc-dec-badge">' + (sell ? 'SELL' : 'HOLD') + '</span>' +
+    return '<section class="card tc-dec ' + act + '">' +
+      '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
         '<div><div class="label">' + a + ' decision · video rules</div><p class="tc-dec-head">' + esc(head) + '</p></div></div>' +
       list + body +
-      '<p class="muted small">Only the video\'s rules: a sell at a gamma pivot overhead. Hold means don\'t sell or short yet. Context, not a trade signal.</p>' +
+      '<p class="muted small">The video\'s rules: sell when price fails at a gamma pivot overhead; buy is the mirror image (holds at a pivot underneath), ' +
+      'not shown in the video. Hold means don\'t trade yet. Context, not a trade signal.</p>' +
     '</section>';
   }
 

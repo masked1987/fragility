@@ -1,6 +1,6 @@
 // Scheduled job (GitHub Actions): score BTC/ETH, push a phone alert on zone
 // change, when ETH dealers start or stop losing (Market Maker), when ETH
-// crosses a key level, and when all 6 Tactics SELL rules are met; append to
+// crosses a key level, and when all 6 Tactics BUY or SELL rules are met; append to
 // the hourly log.
 //
 //   node jobs/monitor.mjs <store dir>
@@ -81,14 +81,14 @@ for (const asset of CONFIG.assets) {
     }
   }
 
-  // Tactics: ring when the SELL rules met go from 5 or fewer to all 6 (same
-  // decide() as the tab); re-arms once below 6. A failed fetch keeps the old count.
+  // Tactics: ring when the BUY or SELL rules met go from 5 or fewer to all 6
+  // (same decide() as the tab); re-arms once below 6. A failed fetch keeps the old state.
   if (TAC_CONFIG.alertAssets.includes(asset)) {
     try {
       const d = await collectTac(asset, TAC_CONFIG);
-      const t = sixOfSix(d.decision.met, state.tactics[asset] ?? null);
-      state.tactics[asset] = t.met;
-      console.log(`${asset} tactics: ${t.met}/${RULES_TOTAL}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
+      const t = sixOfSix(d.decision, state.tactics[asset] ?? null);
+      state.tactics[asset] = t.state;
+      console.log(`${asset} tactics: ${d.decision.met}/${RULES_TOTAL} ${d.decision.side || ''} -> ${d.decision.action}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
       if (t.fire) pushes.push(tacticsMessage(d));
       if (!tacNow) tacNow = d;
     } catch (e) {
@@ -175,22 +175,22 @@ function dealerMessage(asset, from, to, mm, zone, r) {
   };
 }
 
-// "Tactics 6/6" with asset, UK time and price. test = the one-time setup check.
+// "Tactics 6/6 BUY|SELL" with asset, UK time and price. test = the one-time setup check.
 function tacticsMessage(d, test) {
   const at = new Date(d.fetched);
   const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
   const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
-  const s = d.setup, met = d.decision.met;
+  const s = d.setup, dec = d.decision, act = dec.action.toUpperCase();
   const tg = (s.targets || [])[0];
   const levels = s.pivot ? `Pivot ~${px(s.pivot)}, stop ~${px(s.stop)}` + (tg ? `, first target ~${px(tg.price)} (${tg.r.toFixed(1)}R)` : '') + '.\n' : '';
   return {
-    title: `Tactics 6/6${test ? ' [test]' : ''} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
+    title: test ? `Tactics 6/6 [test] - ${d.asset} ${px(d.spot)} at ${uk} UK` : `Tactics 6/6 ${act} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
     body: (test
-      ? `Test: alerts for the Tactics tab are on. You will get this message when all 6 SELL rules are met at once (right now: ${met}/${RULES_TOTAL}).\n`
-      : `All ${RULES_TOTAL} SELL rules on the Tactics tab are met.\n` + levels) +
+      ? `Test: alerts for the Tactics tab are on. You will get this message when all 6 BUY or all 6 SELL rules are met at once (right now: ${dec.met}/${RULES_TOTAL} ${dec.short === false ? 'buy' : 'sell'} rules).\n`
+      : `All ${RULES_TOTAL} ${act} rules on the Tactics tab are met.\n` + levels) +
       `${d.asset} ${px(d.spot)} at ${uk} UK time (${day}).\nContext, not a trade signal.`,
     priority: test ? 3 : 4,
-    tags: test ? 'white_check_mark' : 'chart_with_downwards_trend',
+    tags: test ? 'white_check_mark' : dec.action === 'buy' ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
     click: '#tactics',
   };
 }

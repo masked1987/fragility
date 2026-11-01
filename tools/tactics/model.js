@@ -213,14 +213,17 @@ export function setup(st, cfg) {
   };
 }
 
-// The decision, by the video's rules only: SELL when all six hold at once,
-// otherwise HOLD. The video trades the short side only:
-//   1. the pivot is above the price and was just retested and rejected,
-//   2. buyers ran out at the retest (exhaustion),
-//   3. sellers stepped in,
-//   4. the pivot sits at the session value area high,
-//   5. option premium is put-heavy,
-//   6. price is below the gamma flip (under the gamma nodes; dealers add to drops).
+// The decision, by the video's rules: SELL when all six hold at once on the short
+// side, BUY when all six hold on the long side (the mirror image; the video only
+// showed the sell), otherwise HOLD.
+//   Sell (pivot above the price)            Buy (pivot below the price)
+//   1. retested from below and rejected     1. retested from above and held
+//   2. buyers ran out (exhaustion)          2. sellers ran out (exhaustion)
+//   3. sellers stepped in                   3. buyers stepped in
+//   4. pivot at the value area high         4. pivot at the value area low
+//   5. option premium put-heavy             5. option premium call-heavy
+//   6. price below the gamma flip           6. price above the gamma flip
+// setup() already works each check out for the side the price is on.
 // s = setup() result.
 export function decide(s) {
   if (!s || s.status === 'none') return { action: 'hold', met: 0, rules: [], noPivot: true };
@@ -228,21 +231,24 @@ export function decide(s) {
   s.checks.forEach(function (x) { c[x.key] = x; });
   const short = s.side === 'short';
   const rules = [
-    { key: 'retest', ok: short && c.level.ok === true },
-    { key: 'exhaustion', ok: short && c.flow.ok != null && c.flow.exhausted === true },
-    { key: 'sellers', ok: short && c.flow.ok != null && c.flow.stepping === true },
-    { key: 'vah', ok: short && c.va.ok === true },
-    { key: 'puts', ok: short && c.drift.ok === true },
-    { key: 'gamma', ok: short && c.gamma.ok === true },
+    { key: 'retest', ok: c.level.ok === true },
+    { key: 'exhaustion', ok: c.flow.ok != null && c.flow.exhausted === true },
+    { key: 'stepping', ok: c.flow.ok != null && c.flow.stepping === true },
+    { key: 'edge', ok: c.va.ok === true },
+    { key: 'premium', ok: c.drift.ok === true },
+    { key: 'gamma', ok: c.gamma.ok === true },
   ];
   const met = rules.filter(function (r) { return r.ok; }).length;
-  return { action: met === rules.length ? 'sell' : 'hold', met: met, rules: rules, short: short };
+  return { action: met === rules.length ? (short ? 'sell' : 'buy') : 'hold', met: met, rules: rules, short: short, side: s.side };
 }
 
-// Phone alert for the decision above: ring when the count of rules met goes from
-// 5 or fewer to all 6, not on every check; re-arms once it drops below 6.
-// prevMet = the count at the last check (null on the first one: armed).
+// Phone alert for the decision above: ring when the rules met go from 5 or fewer
+// to all 6 (BUY or SELL), not on every check; re-arms once it drops below 6, or
+// when 6/6 flips straight to the other side. prev = { met, action } from the last
+// check (null on the first one: armed; a bare number from older state = met).
 export const RULES_TOTAL = 6;
-export function sixOfSix(met, prevMet) {
-  return { fire: met === RULES_TOTAL && prevMet !== RULES_TOTAL, met: met };
+export function sixOfSix(dec, prev) {
+  const p = typeof prev === 'number' ? { met: prev } : prev || {};
+  const fire = dec.met === RULES_TOTAL && !(p.met === RULES_TOTAL && p.action === dec.action);
+  return { fire: fire, state: { met: dec.met, action: dec.action } };
 }
