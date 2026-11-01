@@ -83,7 +83,12 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
   rings 3 times), and once when they stop (1-point buffer);
 - ETH crosses a key level, 2,250 / 2,200 / 2,170 (must close 0.15% past it; rings once).
   Levels live in `tools/fragility/config.js` (`levels`); dealer settings in
-  `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`).
+  `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`);
+- all 6 SELL rules on the Tactics tab are met for ETH ("Tactics 6/6", with UK time and
+  price; rings once). It uses the tab's own `decide()`, rings only when the count goes
+  from 5 or fewer to 6, and re-arms once it drops below 6. Assets in
+  `tools/tactics/config.js` (`alertAssets`). The rules need a retest in the last 3
+  fifteen-minute candles, so a late GitHub run can miss a short-lived 6/6.
 
 It also appends an hourly row to `log.csv` on the `data` branch. The Fragility tab charts that log and shows how big the
 next-day moves were after each zone.

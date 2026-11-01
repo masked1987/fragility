@@ -5,7 +5,7 @@
 import { TAC_CONFIG as CFG } from './config.js';
 import { collectTac } from './collect.js';
 import { readTac, checkLines, money } from './read.js';
-import { signals, decide } from './model.js';
+import { signals } from './model.js';
 import { load, save } from '../../shared/storage.js';
 
 function esc(s) {
@@ -116,7 +116,7 @@ export function mount(el) {
 
   // SELL or HOLD, by the video's rules only (all six at once = SELL).
   function decisionHtml(d) {
-    const s = d.setup, dec = decide(s), sell = dec.action === 'sell', a = esc(d.asset);
+    const s = d.setup, dec = d.decision, sell = dec.action === 'sell', a = esc(d.asset);
     const P = s.pivot ? px(s.pivot) : null, dp = pdec(d.spot);
     const names = {
       retest: 'Price retested the ' + (P || 'pivot') + ' pivot from below and was rejected',

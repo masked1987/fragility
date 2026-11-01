@@ -1,6 +1,7 @@
 // Scheduled job (GitHub Actions): score BTC/ETH, push a phone alert on zone
-// change, when ETH dealers start or stop losing (Market Maker), and when ETH
-// crosses a key level; append to the hourly log.
+// change, when ETH dealers start or stop losing (Market Maker), when ETH
+// crosses a key level, and when all 6 Tactics SELL rules are met; append to
+// the hourly log.
 //
 //   node jobs/monitor.mjs <store dir>
 //
@@ -15,6 +16,9 @@ import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
 import { readMM, readCarry, dealerSide } from '../tools/market-maker/read.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
+import { collectTac } from '../tools/tactics/collect.js';
+import { sixOfSix, RULES_TOTAL } from '../tools/tactics/model.js';
+import { TAC_CONFIG } from '../tools/tactics/config.js';
 
 const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
@@ -29,12 +33,14 @@ const firstRun = !existsSync(STATE);
 const state = firstRun ? { zones: {}, lastLog: {} } : JSON.parse(readFileSync(STATE, 'utf8'));
 state.dealers = state.dealers || {};
 state.levels = state.levels || {};
+state.tactics = state.tactics || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
 const now = Date.now();
 const summary = [];
 const mmSummary = [];
 const pushes = [];
+let tacNow = null; // latest Tactics reading, for the one-time test push
 
 for (const asset of CONFIG.assets) {
   const data = await collect(asset);
@@ -75,6 +81,21 @@ for (const asset of CONFIG.assets) {
     }
   }
 
+  // Tactics: ring when the SELL rules met go from 5 or fewer to all 6 (same
+  // decide() as the tab); re-arms once below 6. A failed fetch keeps the old count.
+  if (TAC_CONFIG.alertAssets.includes(asset)) {
+    try {
+      const d = await collectTac(asset, TAC_CONFIG);
+      const t = sixOfSix(d.decision.met, state.tactics[asset] ?? null);
+      state.tactics[asset] = t.met;
+      console.log(`${asset} tactics: ${t.met}/${RULES_TOTAL}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
+      if (t.fire) pushes.push(tacticsMessage(d));
+      if (!tacNow) tacNow = d;
+    } catch (e) {
+      console.log(`${asset} tactics unavailable: ${e.message}`);
+    }
+  }
+
   if (!state.lastLog[asset] || now - state.lastLog[asset] >= LOG_EVERY_MS) {
     const sub = Object.fromEntries(r.inputs.map(i => [i.key, i.score == null ? '' : i.score.toFixed(1)]));
     const row = [new Date(now).toISOString(), asset, price == null ? '' : price, r.score.toFixed(1), zone,
@@ -96,6 +117,12 @@ if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
   const lv = Object.entries(CONFIG.levels).map(([a, l]) => `${a} crosses ${l.map(px).join(' / ')}`).join(', ');
   pushes.push({ title: 'Dealer and level alerts are on', priority: 3, tags: 'white_check_mark', click: '#mm',
     body: `You will also get a message when ${MM_CONFIG.alertAssets.join(' or ')} dealers start losing (and when they stop), and when ${lv}.\nNow: ` + mmSummary.join(' · ') });
+}
+
+// And the Tactics alert: a test push in the alert's own format, sent once.
+if (!state.welcomedTac && process.env.NTFY_TOPIC && tacNow) {
+  state.welcomedTac = true;
+  pushes.push(tacticsMessage(tacNow, true));
 }
 
 writeFileSync(STATE, JSON.stringify(state, null, 2) + '\n');
@@ -145,6 +172,26 @@ function dealerMessage(asset, from, to, mm, zone, r) {
     tags: to === 'lose' ? 'warning' : 'white_check_mark',
     repeats: to === 'lose' ? ZONE_REPEATS : 1,
     click: '#mm',
+  };
+}
+
+// "Tactics 6/6" with asset, UK time and price. test = the one-time setup check.
+function tacticsMessage(d, test) {
+  const at = new Date(d.fetched);
+  const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+  const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
+  const s = d.setup, met = d.decision.met;
+  const tg = (s.targets || [])[0];
+  const levels = s.pivot ? `Pivot ~${px(s.pivot)}, stop ~${px(s.stop)}` + (tg ? `, first target ~${px(tg.price)} (${tg.r.toFixed(1)}R)` : '') + '.\n' : '';
+  return {
+    title: `Tactics 6/6${test ? ' [test]' : ''} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
+    body: (test
+      ? `Test: alerts for the Tactics tab are on. You will get this message when all 6 SELL rules are met at once (right now: ${met}/${RULES_TOTAL}).\n`
+      : `All ${RULES_TOTAL} SELL rules on the Tactics tab are met.\n` + levels) +
+      `${d.asset} ${px(d.spot)} at ${uk} UK time (${day}).\nContext, not a trade signal.`,
+    priority: test ? 3 : 4,
+    tags: test ? 'white_check_mark' : 'chart_with_downwards_trend',
+    click: '#tactics',
   };
 }
 

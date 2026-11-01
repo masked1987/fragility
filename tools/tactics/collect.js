@@ -2,7 +2,7 @@
 import * as deribit from '../../shared/sources/deribit.js';
 import { gammaFlip } from '../../shared/gamma.js';
 import { optionTrades, perpTrades, minuteCandles } from './sources.js';
-import { gexNodes, gexGrid, pickPivot, profile, drift, footprint, niceStep, setup } from './model.js';
+import { gexNodes, gexGrid, pickPivot, profile, drift, footprint, niceStep, setup, decide } from './model.js';
 
 export async function collectTac(asset, cfg) {
   const now = Date.now();
@@ -40,11 +40,13 @@ export async function collectTac(asset, cfg) {
   const candles = footprint(perp, cfg.candleMinutes * 6e4, rowSize);
 
   const st = { spot: spot, pivot: pivot, flip: flip, nodes: nodes, profile: prof, drift: dr, candles: candles };
+  const s = setup(st, cfg);
   return {
     asset: asset, fetched: now, spot: spot, session: { from: from, today: today, young: young },
     nodes: nodes, pivot: pivot, flip: flip, grid: gexGrid(chain.options, spot, now, cfg),
     minutes: minutes, profile: prof, drift: dr, candles: candles, rowSize: rowSize,
-    setup: setup(st, cfg),
+    setup: s,
+    decision: decide(s), // the six video rules: the tab's SELL / HOLD card and the phone alert both read this
     missing: [res[1].status !== 'fulfilled' ? 'volume profile (Gate)' : null, res[2].status !== 'fulfilled' ? 'premium drift (Deribit)' : null,
       res[3].status !== 'fulfilled' ? 'order flow (Deribit)' : null].filter(Boolean),
   };

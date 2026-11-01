@@ -1,6 +1,6 @@
 // Run: node test/tactics.mjs  — offline checks of the Tactics model with made-up data (no network).
 import assert from 'node:assert/strict';
-import { gexNodes, pickPivot, profile, drift, footprint, niceStep, signals, setup, decide } from '../tools/tactics/model.js';
+import { gexNodes, pickPivot, profile, drift, footprint, niceStep, signals, setup, decide, sixOfSix } from '../tools/tactics/model.js';
 import { TAC_CONFIG as cfg } from '../tools/tactics/config.js';
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, a + ' vs ' + b);
@@ -109,5 +109,15 @@ assert.equal(dd.action, 'hold');
 assert.equal(dd.met, 0);
 // No pivot at all -> hold.
 assert.equal(decide(setup({ ...st, pivot: null }, cfg)).action, 'hold');
+
+// 7. Phone alert: rings only on the step from 5 or fewer to 6, re-arms below 6.
+const ring = (seq, prev = null) => seq.map(m => { const t = sixOfSix(m, prev); prev = t.met; return t.fire; });
+assert.deepEqual(ring([3, 5, 6, 6, 6]), [false, false, true, false, false]);   // once, not every check
+assert.deepEqual(ring([6, 5, 6]), [true, false, true]);                         // drop re-arms it
+assert.deepEqual(ring([6, 0, 4, 6]), [true, false, false, true]);
+assert.deepEqual(ring([6], 6), [false]);                                         // already at 6 last time
+// It counts the same decide() result the tab shows.
+assert.equal(sixOfSix(decide(setup(st, cfg)).met, 5).fire, true);
+assert.equal(sixOfSix(decide(setup({ ...st, drift: { calls: 300e3, puts: -50e3 } }, cfg)).met, 4).fire, false);
 
 console.log('tactics: all checks passed');

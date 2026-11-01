@@ -238,3 +238,11 @@ export function decide(s) {
   const met = rules.filter(function (r) { return r.ok; }).length;
   return { action: met === rules.length ? 'sell' : 'hold', met: met, rules: rules, short: short };
 }
+
+// Phone alert for the decision above: ring when the count of rules met goes from
+// 5 or fewer to all 6, not on every check; re-arms once it drops below 6.
+// prevMet = the count at the last check (null on the first one: armed).
+export const RULES_TOTAL = 6;
+export function sixOfSix(met, prevMet) {
+  return { fire: met === RULES_TOTAL && prevMet !== RULES_TOTAL, met: met };
+}

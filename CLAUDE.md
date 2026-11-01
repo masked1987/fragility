@@ -34,7 +34,8 @@ the file layout. Tabs, in order:
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" and key-level crossings
-  (ETH 2,250 / 2,200 / 2,170, in `tools/fragility/config.js`) ring once.
+  (ETH 2,250 / 2,200 / 2,170, in `tools/fragility/config.js`) ring once, and
+  so does "Tactics 6/6" (all six Tactics SELL rules, ETH).
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
@@ -165,4 +166,10 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   the flip), otherwise HOLD with the rules met / missing. Stricter than "Ready",
   which stays as the looser checklist and still tracks the long mirror image.
 - Account and risk % are shared with the Playbook (`playbook.account`, `playbook.riskPct`).
-- Not backtested. No phone alerts for it: the owner said not yet.
+- Not backtested.
+- Phone alert "Tactics 6/6" (asked for later): `jobs/monitor.mjs` runs `collectTac()`,
+  whose `decision` (= `decide(setup)`) is also what the tab's card shows, so they
+  always agree. `sixOfSix()` in `model.js` rings only on the step from ≤5 to 6 and
+  re-arms below 6; last count in `state.json` (`tactics`). ETH only
+  (`alertAssets` in `tools/tactics/config.js`). Rings once. A one-time test push in
+  the same format (`welcomedTac`) confirmed the setup.
