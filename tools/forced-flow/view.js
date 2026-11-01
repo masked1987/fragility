@@ -2,7 +2,7 @@
 import { FLOW_CONFIG as CFG } from './config.js';
 import { collectFlow } from './collect.js';
 import { readFlow } from './read.js';
-import { headHtml } from '../../shared/head.js';
+import { headHtml, moreHtml } from '../../shared/head.js';
 
 const ZONE_CLASS = { Calm: 'calm', Building: 'building', Primed: 'primed' };
 
@@ -85,8 +85,8 @@ export function mount(el) {
     return '<section class="card verdict ' + r.tone + '">' +
       '<div class="label">' + esc(d.asset) + ' reading</div>' +
       headHtml(r.headline) + urg +
-      '<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
+      moreHtml('<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>', r.lines.length) +
       '<p class="muted small">Worked out automatically from the estimates below. Context, not a trade signal.</p>' +
     '</section>';
   }

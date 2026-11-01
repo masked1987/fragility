@@ -80,6 +80,10 @@ the file layout. Tabs, in order:
   big Dela title and the details in normal text under it (asked "short punchy
   titles"); keep new headlines in that shape. Tactics decision card shows only
   the details, since the badge already says HOLD / BUY / SELL.
+  Reading-card bullets are folded under a "Details · N" button (`moreHtml()` in
+  `shared/head.js`, asked "collapse the bullets"); order is headline, "What it
+  means", then Details. Open/closed is remembered per phone (`readingOpen`), so
+  refreshes keep it. The Tactics HOLD/BUY/SELL card keeps its 6 rules visible.
   Tab bar on phones (≤600px) shows short names so all six fit without scrolling:
   Gamma, Score, Flow, Dealers, Plan, Tactics (`short` in `TOOLS`, `assets/app.js`);
   full names on wider screens. Edge fade only if a phone is narrower still.
