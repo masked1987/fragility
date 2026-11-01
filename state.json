@@ -4,8 +4,8 @@
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793527101726,
-    "ETH": 1793527101726
+    "BTC": 1793550140876,
+    "ETH": 1793550140876
   },
   "welcomed": true,
   "dealers": {
@@ -18,5 +18,9 @@
       "2250": "above"
     }
   },
-  "welcomedMM": true
+  "welcomedMM": true,
+  "tactics": {
+    "ETH": 2
+  },
+  "welcomedTac": true
 }
