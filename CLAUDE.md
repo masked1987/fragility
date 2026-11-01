@@ -83,6 +83,14 @@ the file layout. Tabs, in order:
   Tab bar on phones (≤600px) shows short names so all six fit without scrolling:
   Gamma, Score, Flow, Dealers, Plan, Tactics (`short` in `TOOLS`, `assets/app.js`);
   full names on wider screens. Edge fade only if a phone is narrower still.
+  **Style switcher** (asked "add a choice in the top corner", Nov 2026): round
+  swatch at the right end of the tab bar opens a menu: Teal & lime (default),
+  Fire (gold→orange→crimson), Blue moonlight (white→pale blue→electric blue).
+  Saved per phone in localStorage `look` ('fire' / 'moon'; teal = no key), set
+  before first paint by a small script in `index.html` `<head>`; only look tokens
+  change (`:root[data-look=…]` in `style.css`, dark and light each), state and
+  chart colours never. Gamma Detrite reads the same key (same site address) and
+  follows live through the `storage` event; keep its palettes in sync.
   Gamma Detrite has the same look in its own `index.html`. Built using the
   Impeccable design rules (Operate mode: dashboards stay easy to scan).
   To show a change before publishing: copy the site into `preview/` on

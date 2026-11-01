@@ -4,17 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#070b0c">
+  <script>
+    // Saved colour style (teal / fire / moon); shared with Gamma Detrite (same site address).
+    try { var lk = localStorage.getItem('look'); if (lk === 'fire' || lk === 'moon') document.documentElement.setAttribute('data-look', lk); } catch (e) {}
+  </script>
   <title>Fragility Score</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Geist:wght@400..800&display=swap">
-  <link rel="stylesheet" href="assets/style.css?v=29">
+  <link rel="stylesheet" href="assets/style.css?v=30">
 </head>
 <body>
   <header class="top">
     <nav class="tabs" id="tabs" aria-label="Tools"></nav>
+    <button class="look-btn" id="look-btn" type="button" aria-label="Colour style" aria-haspopup="true" aria-expanded="false"></button>
+    <div class="look-menu" id="look-menu" role="menu" hidden></div>
   </header>
   <main id="view"></main>
-  <script type="module" src="assets/app.js?v=29"></script>
+  <script type="module" src="assets/app.js?v=30"></script>
 </body>
 </html>
