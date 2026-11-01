@@ -3,6 +3,7 @@
 import { PLAY_CONFIG as CFG } from './config.js';
 import { collectPlay } from './collect.js';
 import { load, save } from '../../shared/storage.js';
+import { headHtml } from '../../shared/head.js';
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
@@ -119,7 +120,7 @@ export function mount(el) {
     return '<section class="card verdict pb-' + p.mode.tone + '">' +
       '<div class="label">' + esc(d.asset) + ' playbook</div>' +
       '<p class="small verdict-urgency"><span class="pill pb-' + p.mode.tone + '">' + esc(p.mode.name) + '</span> ' + fr + '</p>' +
-      '<p class="verdict-head">' + esc(t.head) + '</p>' +
+      headHtml(t.head) +
       '<ul class="verdict-lines small">' + lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(t.action) + '</p>' +
       '<p class="muted small">Worked out automatically from the other tabs. Context, not a trade signal; not financial advice.</p>' +

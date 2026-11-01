@@ -76,6 +76,13 @@ the file layout. Tabs, in order:
   wanted "like FIRE or BLEED"): headlines, h2/h3, big numbers, the HOLD/BUY/SELL
   badge, uppercase, weight 400 only. Body text, labels and tables stay **Geist**.
   Chart and state colours (calm/building/primed, gamma blue/pink) unchanged.
+  Headlines: `headHtml()` in `shared/head.js` splits "Short label: details" into a
+  big Dela title and the details in normal text under it (asked "short punchy
+  titles"); keep new headlines in that shape. Tactics decision card shows only
+  the details, since the badge already says HOLD / BUY / SELL.
+  Tab bar on phones (≤600px) shows short names so all six fit without scrolling:
+  Gamma, Score, Flow, Dealers, Plan, Tactics (`short` in `TOOLS`, `assets/app.js`);
+  full names on wider screens. Edge fade only if a phone is narrower still.
   Gamma Detrite has the same look in its own `index.html`. Built using the
   Impeccable design rules (Operate mode: dashboards stay easy to scan).
   To show a change before publishing: copy the site into `preview/` on
