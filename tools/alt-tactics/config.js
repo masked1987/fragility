@@ -21,10 +21,14 @@ export const ALT_CONFIG = {
   // Confirmation: the Ichimoku score on candleMinutes candles crosses up through scoreBuy.
   candleMinutes: 5,
   scoreBuy: 80,
+  scoreSell: 20,           // SELL: the score crosses down through this (mirror image)
+  afterWinHours: 48,       // SELL only at the level a buy reached as its target, within this long
+  sides: { buy: true, sell: true },
   candles: 1000,           // Gate 5-minute candles fetched (~3.5 days, Ichimoku needs 78 to warm up)
   chartHours: 48,
 
   // Backtest summary shown on the tab (huge 70%, 5-min score, once per level, 0.1% costs).
   backtest: { from: 'Nov 2023', trades: 43, hitPct: 26, avgR: 0.47, worstRun: 8,
-    years: '2024 +0.81R, 2025 +0.86R, 2026 +0.09R per trade' },
+    years: '2024 +0.81R, 2025 +0.86R, 2026 +0.09R per trade',
+    sell: { trades: 6, won: 0 } }, // sells after a buy hit target (test/levels-once.py): 6, all lost
 };

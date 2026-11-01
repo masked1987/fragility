@@ -54,6 +54,8 @@ c = candles([...flat(2260, 120), ...line(2260, 2120, 40), ...line(2120, 2240, 40
 s = findSetups(c, levels, cfg);
 assert.equal(s[0].state, 'broken');
 assert.equal(decideAlt(c, levels, cfg).action, 'wait');
+// (Coming back up through 2,200 from below is not a sell: no buy reached its target there.)
+assert.ok(oncePerLevel(findSetups(c, levels, cfg), c, null, cfg).filter(x => x.side === 'sell').every(x => x.noWin));
 
 // 6. Once per level: stopped at 2,200, a second dip through 2,200 is not traded
 //    until price has crossed another level.
@@ -75,5 +77,57 @@ d = decideAlt(c, levels, cfg);
 assert.equal(d.action, 'wait');
 assert.equal(d.below, 2200);
 assert.equal(d.above, 2500);
+
+// 8. SELL only after a successful buy ("sells only after a successful buy and vice
+//    versa"). A spike over 2,200 with no buy behind it is not a sell.
+const spike = [...flat(2140, 120), ...line(2140, 2230, 30), ...flat(2230, 6), ...line(2230, 2160, 30), ...flat(2160, 10)];
+c = candles(spike);
+s = findSetups(c, levels, cfg).filter(x => x.side === 'sell');
+assert.equal(s.length, 1);
+assert.equal(s[0].state, 'signal');                            // the mechanics still find it...
+assert.ok(Math.abs(s[0].signal.stop - Math.max(...c.map(x => x.h))) < 1e-9, 'stop at the highest price of the spike');
+assert.equal(s[0].signal.target, 2000);
+d = decideAlt(c, levels, cfg);
+assert.equal(d.action, 'wait');                                // ...but it is not traded
+assert.ok(d.setups.find(x => x.side === 'sell').noWin);
+assert.equal(d.sellReady, null);
+
+//    Buy at 2,200 reaches 2,300; price spikes over 2,300 and sellers come back: SELL,
+//    stop at the high, target back at 2,200.
+const lv3 = [2000, 2200, 2300];
+const toTarget = [...dip, ...line(2240, 2290, 40), ...line(2290, 2305, 6)];
+c = candles(toTarget);
+d = decideAlt(c, lv3, cfg);
+assert.equal(d.setups.find(x => x.taken).trade.result, 'target');
+assert.equal(d.action, 'watch');                               // touching 2,300 counts as a spike over it:
+assert.equal(d.waiting.side, 'sell');                          // waiting for sellers
+assert.equal(d.waiting.win.level, 2300);
+// If that spike broke out (>3% over), a later spike within 48 h still counts.
+let up = candles([...toTarget, ...line(2305, 2380, 20), ...line(2380, 2280, 40), ...flat(2280, 20)]);
+d = decideAlt(up, lv3, cfg);
+assert.equal(d.sellReady.level, 2300);
+assert.equal(d.sellReady.from, 2200);
+const win = [...toTarget, ...line(2305, 2330, 15), ...flat(2330, 6), ...line(2330, 2260, 30), ...flat(2260, 6)];
+c = candles(win);
+d = decideAlt(c, lv3, cfg);
+assert.equal(d.action, 'sell');
+assert.equal(d.open.level, 2300);
+assert.equal(d.open.signal.target, 2200);
+assert.ok(d.open.win && d.open.win.level === 2300);
+assert.ok(Math.abs(d.open.signal.stop - Math.max(...c.map(x => x.h))) < 1e-9);
+assert.equal(decideAlt(c, lv3, { ...cfg, sides: { buy: true } }).action, 'wait');   // can be switched off
+
+//    ...and vice versa: the sell reaches 2,200, and a dip through 2,200 is a buy again.
+const back = [...win, ...line(2260, 2195, 20), ...flat(2195, 6), ...line(2195, 2175, 10), ...flat(2175, 6), ...line(2175, 2245, 30), ...flat(2245, 10)];
+c = candles(back);
+s = oncePerLevel(findSetups(c, lv3, cfg), c, null, cfg);
+const tk = s.filter(x => x.taken);
+assert.deepEqual(tk.map(x => x.side + ' ' + x.level + ' ' + x.trade.result), ['buy 2200 target', 'sell 2300 target', 'buy 2200 open']);
+
+//    Too late: a spike over 2,300 more than 48 h after the target hit is not a sell.
+c = candles([...toTarget, ...line(2305, 2280, 10), ...flat(2280, 600), ...line(2280, 2330, 20), ...flat(2330, 6), ...line(2330, 2260, 30), ...flat(2260, 6)]);
+d = decideAlt(c, lv3, cfg);
+assert.equal(d.action, 'wait');
+assert.equal(d.sellReady, null);
 
 console.log('alt: all checks passed');
