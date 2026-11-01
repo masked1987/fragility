@@ -13,10 +13,11 @@
   },
   "levels": {
     "ETH": {
+      "2000": "above",
       "2200": "above",
-      "2260": "above",
-      "2280": "below",
-      "2300": "below"
+      "2300": "below",
+      "2400": "below",
+      "2500": "below"
     }
   },
   "welcomedMM": true,
@@ -30,13 +31,17 @@
   "keyLevels": {
     "ETH": {
       "levels": [
+        2000,
         2200,
-        2260,
-        2280,
-        2300
+        2300,
+        2400,
+        2500
       ],
-      "picked": 1793551701151,
-      "method": "calls+puts"
+      "picked": 1793552015970,
+      "method": "oi-top"
     }
+  },
+  "breaks": {
+    "ETH": []
   }
 }
