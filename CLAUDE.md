@@ -392,7 +392,7 @@ The owner's own method, built from the version that tested best
   late means a wider stop), WATCH (dipped, waiting for 80), WAIT (nearest huge
   levels). Then the Ichimoku checklist, the huge levels with their status, a
   chart (since the dip / spike when one is live, with the stop), and the backtest card
-  (43 trades, 26% hit, +0.47R, worst run 8). Size uses the Playbook account.
+  (see the latest numbers below). Size uses the Playbook account.
 - Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
   that window are known, so once-per-level starts fresh each load.
 - After a stop (owner, 1 Nov 2026: "if price hit my SL during this buy we only re
@@ -401,6 +401,76 @@ The owner's own method, built from the version that tested best
   `nextBuy` (nearest level under the price still open). WAIT card then says "The
   buy at ~2,200 was stopped ... used until price crosses another huge level" and
   points at `nextBuy`; levels table says "Bought, stopped: used until ...". v=40.
+- Tweak grid (asked "how about if change and tweak a rule a bit", 1 Nov 2026):
+  `GRID=1 node test/alt-backtest.mjs 36 .bt-cache`, one change at a time, buys
+  only, first 2 years vs last year (unseen). Base 43 buys +0.74R (first 2y +1.14R,
+  last year −0.31R). Stop 0.5% under the low +1.03R (last year +0.10R, without
+  best 2 ≈ 0R); dip ≤2% deep +1.01R (last year +0.32R); half at next level +0.28R;
+  Ichimoku 70 = same as 80, 60 −0.49R, 90 +0.07R; wait 24/72 h no change.
+  `cfg.stopBufferPct` exists (default 0). Owner then said "stop, don't modify
+  anything yet" and asked about Fibonacci: wait for his rule before changing the tab.
+- **Fibonacci 0.62 entry** (1 Nov 2026, screen recording): after the cross of a huge
+  level and a "noticeable reverse" (2,169 on Oct 30), he draws the fib with 1 = the
+  low, 0 = the top of the bounce, entry at the grey 0.62 line (~2,203); asked for
+  the stop he said "at 62 where is still grey" (read as: entry 0.62, stop at the
+  low; the blue 0.79 is not used). `test/alt-fib.mjs` (LIST=ichi|bounce1), results
+  in `test/results/alt-fib-2026-11-01.txt`. Same footing as the tab (biggest target,
+  once per level, crosses up count for re-arming): tab entry 43 buys +0.74R; fib
+  0.62 after Ichimoku 80: 41, 10% hit, −0.15R (last year +1.10R on 11); after a 1%
+  bounce: 44, 9%, +0.13R, worst run 27. The fib entry misses the big runners (July
+  2025 never pulled back to 0.62) and pullbacks that reach 0.62 mostly go on to the
+  low. Oct 30: 0.62 ~2,203 never filled after the real low. Tab not changed.
+  Then "instead of Ichimoku ... SL 2169 ... at least 4 candles 15 minutes
+  reversal": `up4` (4 rising 15-min closes after the low) 42 buys, 7% hit,
+  −0.47R; `hold4` (low holds 4 candles) 45, 7%, −0.58R (bought Oct 30's fake first
+  dip ~2,204, stopped). Both worse than the tab's Ichimoku entry (+0.74R).
+  Owner's decision: **"keep ichimoku entry"**. Don't re-offer the fib entry.
+  Asked "so the 4 candle rule is not working?": also tested buying at once after
+  the 4 candles (no fib): `up4now` 46 buys, 11% hit, −0.58R; `hold4now` 47, 9%,
+  −0.66R. up4now caught Oct 30's real low (in ~2,233, like the tab).
+  Then "4 candle rule then we apply Fibonacci and then wait for entry" = what up4 /
+  hold4 test (fib 0 moving up with new highs). Also with the fib drawn once at the
+  4th candle (`up4fix` / `hold4fix`): 41 / 44 buys, 5% hit, −0.53R / −0.64R, worst
+  run 36–37. Every 4-candle version loses; Ichimoku entry stays.
+  Then "how many candles is optimal for applying Fibonacci": `GRIDN=1 node
+  test/alt-fib.mjs`, results `test/results/alt-fib-candles-2026-11-01.txt`. 1–6
+  rising candles: −0.70 to −0.22R (best 3); low holds 1–12 candles: −0.73 to −0.16R
+  (5+ all about −0.2R). Every count loses over 3 years and in the first 2 years;
+  the last year is +0.9 to +1.1R for some, from the two July 2026 trades.
+  Then "try 79" (`FIB=0.79`), results `test/results/alt-fib79-2026-11-01.txt`:
+  0.79 after a 1% bounce 42 buys, 10% hit, +0.88R (first 2y +1.04R, last year
+  +0.43R), better than the tab on paper, but only 4 wins and one (+49R, 9 Jul 2025,
+  2,603 → 3,200) is more than the whole profit: without it −0.30R/buy (the tab
+  without its best: −0.07R). Other 0.79 versions lose (after Ichimoku −0.72R, after
+  4 candles −0.64 to −0.79R, 6 rising candles +0.32R on 23).
+  Then "and 0.705" (`FIB=0.705`, `test/results/alt-fib705-2026-11-01.txt`): after
+  a 1% bounce 43 buys, 9% hit, +0.50R (first 2y +0.11R, last year +1.49R), 4 wins,
+  the 9 Jul 2025 trade +35R (without it −0.32R/buy); all other 0.705 versions lose
+  (−0.11 to −1.04R). By level, after a 1% bounce: 0.62 +0.13R, 0.705 +0.50R,
+  0.79 +0.88R; the tab's Ichimoku entry +0.74R.
+- "So what's the best version": `test/results/alt-best-2026-11-01.txt`. Tab's
+  Ichimoku entry + stop 0.5% under the low + skip dips deeper than 2%: 41 buys, 22%
+  hit, +1.20R (first 2y +1.46R, last year +0.58R), the only version still positive
+  without its best 2 trades (+0.11R). Stop room is jumpy (0.2% +0.50R, 0.3% +1.36R,
+  0.5% +1.03R, 0.7% +0.80R, 1% +0.63R): read as "some room helps", not an exact
+  number. Recommended to him; not applied (he said don't change until he says).
+  Finer steps: 0.25% +0.52R, then a jump at 0.3% (+1.36R; 2 more trades reach
+  target), then smoothly down (0.35% +1.26, 0.4% +1.18, 0.5% +1.03, 0.6% +0.91R).
+  0.3% sits on the edge of that jump, so 0.4–0.5% suggested for a safety margin.
+  With dips ≤2%: 0.3% +1.55R, 0.4% +1.36R, 0.5% +1.20R.
+  **Owner: "Ok let's do it 0.4%"** → live (v=41): `stopBufferPct: 0.4`, `maxDepthPct:
+  2` (was 3; part of the suggested version). Stop 0.4% under the low (sells: over
+  the high). Card: 40 buys, 23% hit, +1.42R, worst run 16, 2024 −1.05R / 2025
+  +4.48R / 2026 +1.01R, catch box (two July 2025 trades +26R / +23R; the other 38
+  +0.2R; the old stop-at-the-low rule +0.78R), sells 4, none hit. `test/alt.mjs`
+  checks 1–10 run with the old mechanics (buffer 0, 3%), check 11 the live ones.
+- Ichimoku settings (asked "adjust how many candles is optimal for applying
+  ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
+  `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
+  lengths and `cfg.ichSeries` swaps the series (backtests only; tab unchanged).
+  5-min 9/26/52 (tab) +0.74R is best; 10-min +0.23R, 15-min −0.01R, 30-min −0.03R,
+  1-hour −0.38R; 5-min 6/18/36 +0.50R, 12/36/72 +0.31R, 18/52/104 +0.29R,
+  20/60/120 +0.33R. None better in the last year (all −0.39 to +0.01R).
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in

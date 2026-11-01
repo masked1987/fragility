@@ -1,0 +1,11 @@
+Alt Tactics: Ichimoku candle size and look-back lengths (buys, target the biggest huge level, 0.1% costs)
+tweak                              buys hit  per-buy  total   worst | first 2 years      | last year (unseen) | 
+5-min candles, 9/26/52 (the tab now)  43  14%  +0.74R  +31.81R  run 18 | first 2y  +1.14R (31) | last year  -0.31R (12) | without best 2  -0.55R
+10-min candles                      37  16%  +0.23R   +8.50R  run 16 | first 2y  +0.49R (26) | last year  -0.39R (11) | without best 2  -0.52R
+15-min candles                      34  15%  -0.01R   -0.25R  run 15 | first 2y  -0.01R (24) | last year  -0.01R (10) | without best 2  -0.73R
+30-min candles                      30  20%  -0.03R   -0.87R  run 16 | first 2y  +0.06R (22) | last year  -0.26R (8) | without best 2  -0.69R
+1-hour candles                      26  19%  -0.38R   -9.79R  run 12 | first 2y  -0.17R (20) | last year  -1.08R (6) | without best 2  -0.81R
+5-min, faster 6/18/36               44  11%  +0.50R  +22.09R  run 20 | first 2y  +0.82R (32) | last year  -0.33R (12) | without best 2  -0.73R
+5-min, slower 12/36/72              41  15%  +0.31R  +12.84R  run 18 | first 2y  +0.48R (30) | last year  -0.15R (11) | without best 2  -0.49R
+5-min, slower 18/52/104             37  16%  +0.29R  +10.81R  run 16 | first 2y  +0.52R (26) | last year  -0.25R (11) | without best 2  -0.48R
+5-min, crypto 20/60/120             36  17%  +0.33R  +11.88R  run 16 | first 2y  +0.45R (26) | last year  +0.01R (10) | without best 2  -0.44R

@@ -1,0 +1,17 @@
+How many 15-minute reversal candles before the fib (0.62 entry, stop at the low, biggest target, once per level, 0.1% costs)
+candles before the fib                     buys  hit  per-buy   total  worst | first 2 years   | last year       | without best 2
+1 rising candles, then fib 0.62              45   4%  -0.70R  -31.37R    20 |  -0.80R (33) |  -0.40R (12) |  -1.23R
+2 rising candles, then fib 0.62              45   7%  -0.58R  -25.90R    20 |  -0.65R (33) |  -0.37R (12) |  -1.11R
+3 rising candles, then fib 0.62              45   9%  -0.22R   -9.78R    20 |  -0.63R (33) |  +0.91R (12) |  -0.84R
+4 rising candles, then fib 0.62              42   7%  -0.47R  -19.90R    19 |  -0.60R (33) |  -0.02R ( 9) |  -1.04R
+5 rising candles, then fib 0.62              33   9%  -0.29R   -9.51R    16 |  -0.40R (24) |  -0.00R ( 9) |  -1.01R
+6 rising candles, then fib 0.62              26  12%  -0.37R   -9.58R    20 |  -0.92R (19) |  +1.12R ( 7) |  -0.95R
+low holds 1 candles, then fib 0.62           45   4%  -0.73R  -33.02R    20 |  -0.84R (33) |  -0.44R (12) |  -1.27R
+low holds 2 candles, then fib 0.62           45   4%  -0.69R  -30.99R    20 |  -0.81R (33) |  -0.36R (12) |  -1.22R
+low holds 3 candles, then fib 0.62           45   7%  -0.59R  -26.42R    20 |  -0.67R (33) |  -0.37R (12) |  -1.12R
+low holds 4 candles, then fib 0.62           45   7%  -0.58R  -26.00R    20 |  -0.65R (33) |  -0.38R (12) |  -1.11R
+low holds 5 candles, then fib 0.62           44   9%  -0.21R   -9.17R    20 |  -0.63R (33) |  +1.06R (11) |  -0.84R
+low holds 6 candles, then fib 0.62           44   9%  -0.20R   -8.70R    20 |  -0.62R (33) |  +1.08R (11) |  -0.83R
+low holds 8 candles, then fib 0.62           44   9%  -0.20R   -8.59R    20 |  -0.62R (33) |  +1.07R (11) |  -0.83R
+low holds 10 candles, then fib 0.62          44   9%  -0.18R   -7.94R    20 |  -0.61R (33) |  +1.12R (11) |  -0.81R
+low holds 12 candles, then fib 0.62          43   9%  -0.16R   -6.90R    19 |  -0.60R (32) |  +1.12R (11) |  -0.81R

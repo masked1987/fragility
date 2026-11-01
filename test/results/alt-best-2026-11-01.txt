@@ -1,0 +1,24 @@
+Alt Tactics: best tweaks of the tab's Ichimoku entry, alone and together (buys, biggest target, 0.1% costs)
+tweak                              buys hit  per-buy  total   worst | first 2 years      | last year (unseen) | 
+the tab now                         43  14%  +0.74R  +31.81R  run 18 | first 2y  +1.14R (31) | last year  -0.31R (12) | without best 2  -0.55R
+stop 0.2% under the low             43  14%  +0.50R  +21.35R  run 18 | first 2y  +0.83R (31) | last year  -0.36R (12) | without best 2  -0.59R
+stop 0.3% under                     43  21%  +1.36R  +58.38R  run 18 | first 2y  +1.79R (31) | last year  +0.24R (12) | without best 2  +0.09R
+stop 0.5% under the low             43  21%  +1.03R  +44.43R  run 18 | first 2y  +1.39R (31) | last year  +0.10R (12) | without best 2  -0.01R
+stop 0.7% under                     43  21%  +0.80R  +34.43R  run 18 | first 2y  +1.11R (31) | last year  -0.00R (12) | without best 2  -0.09R
+stop 1% under                       43  23%  +0.63R  +27.15R  run 14 | first 2y  +0.92R (31) | last year  -0.11R (12) | without best 2  -0.09R
+dip at most 2% deep                 41  17%  +1.01R  +41.27R  run 16 | first 2y  +1.29R (29) | last year  +0.32R (12) | without best 2  -0.33R
+both together (0.5% + 2%)           41  22%  +1.20R  +49.25R  run 16 | first 2y  +1.46R (29) | last year  +0.58R (12) | without best 2  +0.11R
+
+-- stop room, finer steps
+tweak                              buys hit  per-buy  total   worst | first 2 years      | last year (unseen) | 
+stop at the low                     43  14%  +0.74R  +31.81R  run 18 | first 2y  +1.14R (31) | last year  -0.31R (12) | without best 2  -0.55R
+0.25% under                         43  16%  +0.52R  +22.45R  run 18 | first 2y  +0.87R (31) | last year  -0.37R (12) | without best 2  -0.52R
+0.3% under                          43  21%  +1.36R  +58.38R  run 18 | first 2y  +1.79R (31) | last year  +0.24R (12) | without best 2  +0.09R
+0.35% under                         43  21%  +1.26R  +54.39R  run 18 | first 2y  +1.68R (31) | last year  +0.20R (12) | without best 2  +0.06R
+0.4% under                          43  21%  +1.18R  +50.77R  run 18 | first 2y  +1.57R (31) | last year  +0.16R (12) | without best 2  +0.04R
+0.45% under                         43  21%  +1.10R  +47.46R  run 18 | first 2y  +1.48R (31) | last year  +0.13R (12) | without best 2  +0.01R
+0.5% under                          43  21%  +1.03R  +44.43R  run 18 | first 2y  +1.39R (31) | last year  +0.10R (12) | without best 2  -0.01R
+0.6% under                          43  21%  +0.91R  +39.05R  run 18 | first 2y  +1.24R (31) | last year  +0.05R (12) | without best 2  -0.05R
+0.3% + dips ≤ 2%                    41  22%  +1.55R  +63.58R  run 16 | first 2y  +1.87R (29) | last year  +0.77R (12) | without best 2  +0.23R
+0.4% + dips ≤ 2%                    41  22%  +1.36R  +55.77R  run 16 | first 2y  +1.65R (29) | last year  +0.67R (12) | without best 2  +0.17R
+0.5% + dips ≤ 2%                    41  22%  +1.20R  +49.25R  run 16 | first 2y  +1.46R (29) | last year  +0.58R (12) | without best 2  +0.11R
