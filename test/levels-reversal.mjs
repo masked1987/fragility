@@ -29,6 +29,10 @@ import { CONFIG } from '../tools/fragility/config.js';
 
 const MONTHS = +(process.argv[2] || 36);
 const CACHE = process.argv[3] || '.bt-cache';
+// Which levels: 'key' = the live key levels (5 biggest within ±15%); 'huge60' / 'huge70' =
+// only the huge strikes, at least 60% / 70% the size of the biggest within ±35% (the owner:
+// "I take only levels which are huge", e.g. 2,000 / 2,200 / 2,500 / 3,000).
+const MODE = process.argv[4] || 'key';
 setCache(CACHE);
 const KL = CONFIG.keyLevels;
 const DEPTH = 3, BOUNCE = 0.5, WINDOW = 48 * 36e5, HOLD = 7 * DAY, M5 = 5 * 6e4, M15 = 15 * 6e4;
@@ -82,6 +86,17 @@ const flowMap = await taker();
 const flowFrom = Math.min(...flowMap.keys());
 console.log(`5-minute candles ${c5.length} (${ymd(c5[0].t)}–${ymd(c5.at(-1).t)}), 15-minute ${c15.length}, taker rows ${flowMap.size} from ${ymd(flowFrom)}`);
 
+// Huge strikes: open contracts (calls + puts, expiring after 2 days) within ±35%, at
+// least `share` of the biggest one, and at least 0.5% apart.
+function pickHuge(chain, spot, now, share) {
+  const by = {};
+  chain.forEach(o => { if (o.expiry - now > 2 * DAY && Math.abs(o.strike / spot - 1) <= 0.35) by[o.strike] = (by[o.strike] || 0) + o.oi; });
+  const rows = Object.entries(by).map(([k, v]) => ({ k: +k, v })).sort((a, b) => b.v - a.v);
+  const top = rows.length ? rows[0].v : 0, out = [];
+  rows.forEach(r => { if (r.v >= share * top && !out.some(x => Math.abs(x / r.k - 1) < 0.005)) out.push(r.k); });
+  return out.sort((a, b) => a - b);
+}
+
 // Levels per month.
 const levelsBy = [];
 for (const M of months) {
@@ -89,7 +104,7 @@ for (const M of months) {
   try { chain = await chainAt(M); } catch (e) { console.log('no chain', ymd(M), e.message); continue; }
   const first = c15.find(c => c.t >= M);
   if (!first || chain.length < 100) continue;
-  const lv = pickLevels(chain, first.o, M, KL).map(x => x.price);
+  const lv = MODE === 'key' ? pickLevels(chain, first.o, M, KL).map(x => x.price) : pickHuge(chain, first.o, M, +MODE.slice(4) / 100);
   levelsBy.push({ from: M, levels: lv });
 }
 levelsBy.forEach((x, i) => { x.to = i + 1 < levelsBy.length ? levelsBy[i + 1].from : now; });
@@ -201,4 +216,4 @@ if (ex.length) {
   console.log('\nThe owner\'s Oct 30 example:');
   ex.forEach(x => console.log(`  ${x.how.padEnd(7)} ${x.side.toUpperCase()} level ${px(x.level)}  crossed ${new Date(x.t0).toISOString().slice(5, 16)}  in ${new Date(x.T).toISOString().slice(5, 16)} at ${px(x.entry)}  stop ${px(x.stop)}  target ${px(x.target)} (${x.rr.toFixed(1)}R)  -> ${x.out.result} ${x.out.R >= 0 ? '+' : ''}${x.out.R.toFixed(2)}R`));
 }
-writeFileSync(join(CACHE, 'levels-reversal.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, trades }, null, 1));
+writeFileSync(join(CACHE, 'levels-reversal-' + MODE + '.json'), JSON.stringify({ levelsBy, setups, breakdowns, timeouts, noTarget, trades }, null, 1));
