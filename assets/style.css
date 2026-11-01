@@ -789,7 +789,12 @@ details.tc-fold[open] .chev { transform: translateY(1px) rotate(-135deg); }
 @media (max-width: 600px) { .tabs a { padding: 7px 4px; font-size: 14px; } }
 @media (max-width: 380px) { .tabs a { padding: 7px 3px; font-size: 13.5px; } }
 .chart .al-stop { stroke: var(--primed); stroke-width: 1; stroke-dasharray: 2 3; }
-.chart .al-stopt { fill: var(--primed); font-size: 10px; font-weight: 700; }
+.chart .al-stopt { fill: var(--primed); font-size: 11px; font-weight: 700; }
+/* Stop loss box on the Alt Tactics card: the number to type into the order. */
+.al-sl { display: grid; gap: 2px; padding: 10px 12px; margin: 4px 0 12px; border-radius: 12px;
+  background: color-mix(in srgb, var(--primed) 12%, transparent); border: 1px solid color-mix(in srgb, var(--primed) 45%, var(--line)); }
+.al-sl .label { color: var(--primed); text-transform: uppercase; letter-spacing: .06em; font-size: 12px; font-weight: 700; }
+.al-sl-num { font-family: "Dela Gothic One", "Geist", sans-serif; font-weight: 400; font-synthesis: none; font-size: 30px; line-height: 1.1; color: var(--text); }
 .chart .al-sell { fill: var(--primed); }
 .legend .al-tri.dn { border-bottom: 0; border-top: 8px solid var(--primed); }
 .al-warn { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--building) 14%, transparent); border: 1px solid color-mix(in srgb, var(--building) 40%, var(--line)); }

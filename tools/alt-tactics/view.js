@@ -68,6 +68,19 @@ export function mount(el) {
       (risk / per).toFixed(per > 100 ? 3 : 2) + ' ' + esc(selected) + '</b>';
   }
 
+  // The stop loss as a number to type into the order, worked out from live prices:
+  // CFG.stopBufferPct under the low (buys) / over the high (sells). from = the entry,
+  // or the price now while a setup is still waiting.
+  function stopBox(stop, ext, buy, from, fromWord, note) {
+    const dist = Math.abs(from - stop);
+    return '<div class="al-sl"><div class="label">' + (note ? 'Stop loss so far' : 'Your stop loss') + '</div>' +
+      '<div class="al-sl-num num">' + num(stop) + '</div>' +
+      '<div class="small">' + CFG.stopBufferPct + '% ' + (buy ? 'under the low ' : 'over the high ') + num(ext) + ' · ' +
+        num(dist) + ' points (' + (dist / from * 100).toFixed(1) + '%) ' + (buy ? 'under ' : 'over ') + fromWord + '</div>' +
+      (note ? '<div class="small muted">' + note + '</div>' : '') +
+      '<div class="small muted">From Gate\'s ETH price; your exchange can differ by a few points.</div></div>';
+  }
+
   function decisionHtml(d) {
     const dec = d.decision, a = esc(d.asset), b = CFG.backtest;
     // A signal is BUY / SELL for its first hour; after that the trade shows as OPEN, so an
@@ -85,9 +98,9 @@ export function mount(el) {
       const how = buy ? 'dipped through ' : 'spiked over ';
       head = fresh ? word + ': ' + a + ' ' + how + px(o.level) + (buy ? ' and buyers are back' : ' and sellers are back')
         : 'Open: the ' + word.toLowerCase() + ' from the ' + (buy ? 'dip through ' : 'spike over ') + px(o.level) + ' is still running';
-      body = '<dl class="pb-dl">' +
+      body = stopBox(g.stop, o.ext, buy, g.entry, 'the entry') + '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(g.entry) + '</b> <span class="muted">(' + hhmm(g.t) + ', price now ' + num(d.spot) + ')</span></dd>' +
-        '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">' + CFG.stopBufferPct + '% ' + (buy ? 'under the low' : 'over the high') + ' of the ' + (buy ? 'dip (' : 'spike (') + num(o.ext) + ', ' + o.depth.toFixed(1) + '% ' + (buy ? 'under ' : 'over ') + px(o.level) + ')</span></dd>' +
+        '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike') + ' was ' + num(o.ext) + ', ' + o.depth.toFixed(1) + '% ' + (buy ? 'under ' : 'over ') + px(o.level) + '</span></dd>' +
         '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the biggest huge level ' + (buy ? 'up' : 'down') + (g.rr ? ', ' + g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
         '<dt>Size</dt><dd>' + sizeText(g.entry, g.stop) + '</dd></dl>' +
         (fresh ? '' : '<p class="small">Signal from ' + hhmm(g.t) + '. Entering now instead means a wider stop and less reward; the stop stays at ' + num(g.stop) + ' either way.</p>') +
@@ -97,7 +110,10 @@ export function mount(el) {
     } else if (act === 'watch') {
       const w = dec.waiting, buy = w.side === 'buy', now = dec.ichimoku ? dec.ichimoku.score : null;
       head = 'Watch: ' + a + (buy ? ' dipped through ' : ' spiked over ') + px(w.level) + ', waiting for ' + (buy ? 'buyers' : 'sellers');
-      body = '<dl class="pb-dl">' +
+      const pre = w.ext * (1 + (buy ? -1 : 1) * CFG.stopBufferPct / 100);
+      body = stopBox(pre, w.ext, buy, d.spot, 'the price now', 'It moves ' + (buy ? 'down if the low goes lower' : 'up if the high goes higher') +
+          ' before ' + (buy ? 'buyers' : 'sellers') + ' are back; the ' + (buy ? 'BUY' : 'SELL') + ' card then shows the final number.') +
+        '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Dipped' : 'Spiked') + '</dt><dd>' + hhmm(Math.max(w.t0, w.win ? w.win.at : 0)) + ', ' + (buy ? 'low' : 'high') + ' so far <b class="num">' + num(w.ext) + '</b> <span class="muted">(' + w.depth.toFixed(1) + '% ' + (buy ? 'under' : 'over') + ', a real break past ' + CFG.maxDepthPct + '%)</span></dd>' +
         '<dt>Waiting for</dt><dd>the ' + CFG.candleMinutes + '-minute Ichimoku score to ' + (buy ? 'reach ' + CFG.scoreBuy : 'drop to ' + CFG.scoreSell) + ' <span class="muted">(now ' + (now == null ? '–' : now) + ')</span></dd>' +
         '<dt>Then</dt><dd>' + (buy ? 'buy, stop ' + CFG.stopBufferPct + '% under the low' : 'sell, stop ' + CFG.stopBufferPct + '% over the high') + ', target ' + (w.target ? px(w.target) : '<span class="muted">no huge level ' + (buy ? 'above' : 'below') + '</span>') + '</dd></dl>' +
@@ -176,7 +192,7 @@ export function mount(el) {
     const lv = d.huge.map(function (h) { return h.price; });
     let lo = Math.min.apply(null, c.map(function (x) { return x.l; })), hi = Math.max.apply(null, c.map(function (x) { return x.h; }));
     // Always show the huge level under and over the price (and the trade's level and stop).
-    [dec.below, dec.above, live && live.level, live && isFinite(live.ext) && live.ext, dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
+    [dec.below, dec.above, live && live.level, live && isFinite(live.ext) && live.ext * (1 + (live.side === 'buy' ? -1 : 1) * CFG.stopBufferPct / 100), dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
     const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
     const x = function (t) { return padL + (t - c[0].t) / (c[c.length - 1].t - c[0].t) * (W - padL - padR); };
     const y = function (p) { return H - (p - lo) / (hi - lo) * H; };
@@ -186,10 +202,13 @@ export function mount(el) {
       s += '<line class="al-lv" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(L).toFixed(1) + '" y2="' + y(L).toFixed(1) + '"/>' +
         '<text class="al-lvt" x="' + (W - padR + 4) + '" y="' + (y(L) + 3).toFixed(1) + '">' + Math.round(L).toLocaleString('en-US') + '</text>';
     });
-    if (dec.open) {
-      const st = dec.open.signal.stop;
-      s += '<line class="al-stop" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(st).toFixed(1) + '" y2="' + y(st).toFixed(1) + '"/>' +
-        '<text class="al-stopt" x="' + (W - padR + 4) + '" y="' + (y(st) + 3).toFixed(1) + '">stop</text>';
+    // Stop loss line with its price: the trade's stop, or while waiting the stop so far.
+    const stopAt = dec.open ? dec.open.signal.stop
+      : dec.waiting && isFinite(dec.waiting.ext) ? dec.waiting.ext * (1 + (dec.waiting.side === 'buy' ? -1 : 1) * CFG.stopBufferPct / 100) : null;
+    if (stopAt) {
+      const ys = y(stopAt), ty = ys > 16 ? ys - 4 : ys + 12; // label above the line unless at the very top
+      s += '<line class="al-stop" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + ys.toFixed(1) + '" y2="' + ys.toFixed(1) + '"/>' +
+        '<text class="al-stopt" text-anchor="end" x="' + (W - padR - 2) + '" y="' + ty.toFixed(1) + '">SL ' + num(stopAt) + (dec.open ? '' : ' so far') + '</text>';
     }
     s += '<polyline class="al-px" points="' + c.map(function (k) { return x(k.t).toFixed(1) + ',' + y(k.c).toFixed(1); }).join(' ') + '"/>';
     d.decision.setups.forEach(function (st) {
@@ -199,7 +218,7 @@ export function mount(el) {
         : '<path class="al-sell" d="M' + x(st.signal.t).toFixed(1) + ',' + (y(st.signal.entry) - 12).toFixed(1) + ' l-5,-8 h10 z"/>';
     });
     return '<section class="card"><h3>' + (live ? (live.side === 'sell' ? 'Since the spike' : 'Since the dip') : 'Last ' + CFG.chartHours + ' hours') + '</h3>' +
-      '<div class="legend small"><span><i class="ln al-lvl"></i>Huge level</span><span><i class="dot al-lowdot"></i>Low / high (the stop)</span><span><i class="al-tri"></i>Buy</span><span><i class="al-tri dn"></i>Sell</span></div>' +
+      '<div class="legend small"><span><i class="ln al-lvl"></i>Huge level</span><span><i class="dot al-lowdot"></i>Low / high of the dip</span><span><i class="al-tri"></i>Buy</span><span><i class="al-tri dn"></i>Sell</span></div>' +
       '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Price and the huge levels, last ' + CFG.chartHours + ' hours">' + s + '</svg></div></section>';
   }
 

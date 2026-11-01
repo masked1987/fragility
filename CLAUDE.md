@@ -464,6 +464,12 @@ The owner's own method, built from the version that tested best
   +4.48R / 2026 +1.01R, catch box (two July 2025 trades +26R / +23R; the other 38
   +0.2R; the old stop-at-the-low rule +0.78R), sells 4, none hit. `test/alt.mjs`
   checks 1–10 run with the old mechanics (buffer 0, 3%), check 11 the live ones.
+- Stop loss as a number (asked "show the number on stop loss, I wanna see where
+  I should set my SL, not just stop line", v=42): `stopBox()` in `view.js`, a red
+  "Your stop loss" box with the price in Dela at the top of BUY / OPEN / SELL
+  cards (0.4% under the low N · X points (Y%) under the entry), and "Stop loss so
+  far" on WATCH (moves with the low). Chart line labelled "SL 2,164.7" (or "so
+  far"). Note under the box: prices are Gate's, his exchange can differ a little.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
