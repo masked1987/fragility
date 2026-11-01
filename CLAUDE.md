@@ -432,6 +432,11 @@ The owner's own method, built from the version that tested best
   hold4 test (fib 0 moving up with new highs). Also with the fib drawn once at the
   4th candle (`up4fix` / `hold4fix`): 41 / 44 buys, 5% hit, −0.53R / −0.64R, worst
   run 36–37. Every 4-candle version loses; Ichimoku entry stays.
+  Then "how many candles is optimal for applying Fibonacci": `GRIDN=1 node
+  test/alt-fib.mjs`, results `test/results/alt-fib-candles-2026-11-01.txt`. 1–6
+  rising candles: −0.70 to −0.22R (best 3); low holds 1–12 candles: −0.73 to −0.16R
+  (5+ all about −0.2R). Every count loses over 3 years and in the first 2 years;
+  the last year is +0.9 to +1.1R for some, from the two July 2026 trades.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back

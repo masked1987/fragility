@@ -52,12 +52,12 @@ const monthLevels = months.map((m, i) => {
 const ICH = ichimoku(c5);
 // 15-minute candles for the "4 candles" reversal (owner: "let's at least 4 candles 15 minutes reversal").
 const C15 = to15(c5), I15 = new Map(C15.map((c, i) => [c.t, i])), M15 = 9e5;
-function fourCandles(how, lowT, x) {
+function fourCandles(how, lowT, x, n = 4) {
   if ((x.t + M5) % M15 !== 0) return false;              // only when a 15-minute candle has just closed
   const j = I15.get(x.t + M5 - M15), j0 = I15.get(Math.floor(lowT / M15) * M15);
-  if (j === undefined || j0 === undefined || j - j0 < 4) return false;
+  if (j === undefined || j0 === undefined || j - j0 < n) return false;
   if (how === 'hold4') return true;                       // 4 closed candles after the low's candle, no lower low
-  for (let q = j - 3; q <= j; q++) if (!(C15[q].c > C15[q - 1].c)) return false;
+  for (let q = j - n + 1; q <= j; q++) if (!(C15[q].c > C15[q - 1].c)) return false;
   return true;                                            // 'up4': the last 4 closes each higher than the one before
 }
 
@@ -84,7 +84,7 @@ function fibSetups(i, how, cfg, now0, fixed) {
           if ((L - s.low) / L * 100 > cfg.maxDepthPct) { s.state = 'broken'; endT = x.t; break; }
           const p = ICH[k - 1], n = ICH[k];
           conf = how === 'ichi' ? !!(p && n && p.score < cfg.scoreBuy && n.score >= cfg.scoreBuy)
-            : how === 'bounce1' ? x.c >= s.low * 1.01 : fourCandles(how, s.lowT, x);
+            : how === 'bounce1' ? x.c >= s.low * 1.01 : fourCandles(how, s.lowT, x, cfg.nCandles || 4);
           if (conf) { hi = Math.max(...c5.slice(s.lowK, k + 1).map(y => y.h)); s.confT = x.t; } // 0 = the top since the low
           if (conf && now0) { // buy at once at that close (no fib pullback)
             s.state = 'signal';
@@ -151,6 +151,23 @@ const versions = {
   up4now: ['Buy at once after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg, true).concat(ups(i)), cfg)],
   hold4now: ['Buy at once after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg, true).concat(ups(i)), cfg)],
 };
+// GRIDN=1: how many 15-minute reversal candles before drawing the fib (owner, after the
+// 4-candle test: "how many candles is optimal for applying Fibonacci").
+if (process.env.GRIDN) {
+  console.log('candles before the fib                     buys  hit  per-buy   total  worst | first 2 years   | last year       | without best 2');
+  for (const how of ['up4', 'hold4']) for (const n of [1, 2, 3, 4, 5, 6, 8, 10, 12]) {
+    if (how === 'up4' && n > 6) continue;
+    const c2 = { ...cfg, nCandles: n }, t = run(i => fibSetups(i, how, c2).concat(ups(i)), c2);
+    if (!t.length) { console.log(`${how} ${n}: no trades`); continue; }
+    let r = 0, worst = 0; t.slice().sort((a, b) => a.signal.t - b.signal.t).forEach(x => { r = x.net < 0 ? r + 1 : 0; worst = Math.max(worst, r); });
+    const a = t.filter(x => x.signal.t < SPLIT), b = t.filter(x => x.signal.t >= SPLIT), rest = t.slice().sort((x, y) => y.net - x.net).slice(2);
+    const hit = t.filter(x => x.trade.result === 'target').length;
+    const name = (how === 'up4' ? n + ' rising candles' : 'low holds ' + n + ' candles') + ', then fib 0.62';
+    console.log(`${name.padEnd(42)} ${String(t.length).padStart(4)} ${String(Math.round(hit / t.length * 100)).padStart(3)}% ${f(avg(t)).padStart(6)}R ${f(t.reduce((s, x) => s + x.net, 0)).padStart(7)}R ${String(worst).padStart(5)} | ` +
+      `${f(avg(a)).padStart(6)}R (${String(a.length).padStart(2)}) | ${f(avg(b)).padStart(6)}R (${String(b.length).padStart(2)}) | ${f(avg(rest)).padStart(6)}R`);
+  }
+  process.exit(0);
+}
 if (process.env.LIST) {
   versions[process.env.LIST][1]().forEach(t => console.log(new Date(t.signal.t).toISOString().slice(0, 16), Math.round(t.level), '-> ' + Math.round(t.target),
     'low', t.low.toFixed(0), 'top', (t.signal.hi || 0).toFixed(0), 'in', t.signal.entry.toFixed(0), t.trade.result.padEnd(7), f(t.net) + 'R'));
