@@ -470,6 +470,8 @@ The owner's own method, built from the version that tested best
   cards (0.4% under the low N · X points (Y%) under the entry), and "Stop loss so
   far" on WATCH (moves with the low). Chart line labelled "SL 2,164.7" (or "so
   far"). Note under the box: prices are Gate's, his exchange can differ a little.
+  Owner on that: "it may be small difference but that's ok, I accept"; no need
+  to match his exchange's prices.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
