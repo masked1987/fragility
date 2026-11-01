@@ -419,9 +419,9 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **Alt Tactics sells + biggest-level target: in PREVIEW, waiting for his OK**
-  (see the Alt Tactics section). Preview: https://masked1987.github.io/fragility/preview/#alt
-  If he approves: publish (main + gh-pages, v=39) and delete `preview/`.
+- **Alt Tactics sells (only after a winning buy) + biggest-level target:
+  published 1 Nov 2026 (v=39)**, after he checked the preview ("publish it").
+  See the Alt Tactics section.
 - **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
   Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
   is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,
