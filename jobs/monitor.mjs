@@ -28,7 +28,7 @@ const LOG = join(DIR, 'log.csv');
 const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
 const ZONE_REPEATS = 3;           // a zone change rings this many times...
 const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
-const TACTICS_REPEATS = 5;        // Tactics 6/6 rings 5 times (owner asked), same gap
+const TACTICS_REPEATS = 3;        // Tactics 6/6 rings 3 times (owner tried 5, then "3 is enough"), same gap
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
@@ -174,7 +174,7 @@ if (TEST) {
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
       `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
   }
-  if (tacNow) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings 5 times, like the real one
+  if (tacNow) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
   console.log('test alerts queued:', pushes.length);
 }
 
