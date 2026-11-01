@@ -395,6 +395,12 @@ The owner's own method, built from the version that tested best
   (43 trades, 26% hit, +0.47R, worst run 8). Size uses the Playbook account.
 - Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
   that window are known, so once-per-level starts fresh each load.
+- After a stop (owner, 1 Nov 2026: "if price hit my SL during this buy we only re
+  enter by all our rules in next gamma level"): that is the once-per-level rule.
+  `oncePerLevel()` leaves `setups.locked`; `decideAlt()` gives `stopped` and
+  `nextBuy` (nearest level under the price still open). WAIT card then says "The
+  buy at ~2,200 was stopped ... used until price crosses another huge level" and
+  points at `nextBuy`; levels table says "Bought, stopped: used until ...". v=40.
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in

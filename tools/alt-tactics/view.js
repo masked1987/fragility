@@ -104,9 +104,12 @@ export function mount(el) {
         (buy ? '' : whyHere(w.win)) + (buy ? '' : unproven) +
         '<p class="verdict-action"><b>What it means:</b> the setup is live. Don\'t ' + (buy ? 'buy' : 'sell') + ' yet: the ' + (buy ? 'low can still go lower until buyers' : 'high can still go higher until sellers') + ' take over.</p>';
     } else {
-      head = 'Wait: no cross of a huge level';
-      body = '<p class="verdict-action"><b>What it means:</b> nothing to do. A buy setup starts when price dips below a huge level' +
-        (dec.below ? ' (nearest <b>' + px(dec.below) + '</b>, ' + pct(dec.below, d.spot) + ')' : '') +
+      const st = dec.stopped;
+      head = st ? 'Wait: the buy at ' + px(st.level) + ' was stopped' : 'Wait: no cross of a huge level';
+      body = (st ? '<p class="small">Stopped at ' + num(st.signal.stop) + ' (' + hhmm(st.trade.at) + '). ' + px(st.level) +
+          ' is used: no new buy there until price crosses another huge level. You re-enter at the next level, by all the rules.</p>' : '') +
+        '<p class="verdict-action"><b>What it means:</b> nothing to do. The next buy starts when price dips below ' +
+        (dec.nextBuy ? '<b>' + px(dec.nextBuy) + '</b> (' + pct(dec.nextBuy, d.spot) + ')' : 'a huge level (none open under the price now)') +
         (dec.above ? '. Next one up: ' + px(dec.above) + ' (' + pct(dec.above, d.spot) + ')' : '') + '.</p>' +
         (dec.sellReady ? '<p class="small">The buy from ' + px(dec.sellReady.from) + ' reached its target at ' + px(dec.sellReady.level) + ' (' + hhmm(dec.sellReady.at) +
           '). Until ' + hhmm(dec.sellReady.until) + ', a spike over ' + px(dec.sellReady.level) + ' with sellers coming back is a sell.</p>'
@@ -148,12 +151,13 @@ export function mount(el) {
       if (!last) return L <= d.spot ? 'Watching for a dip through' : 'Above the price';
       const buy = last.side === 'buy';
       if (last.used) return 'Used (once per level)';
+      if (last.taken && last.trade.result === 'stopped' && (d.decision.locked || []).indexOf(L) >= 0) return (buy ? 'Bought' : 'Sold') + ', stopped: used until price crosses another level';
       if (last.taken) return last.trade.result === 'open' ? (buy ? 'In a buy' : 'In a sell') : (buy ? 'Bought, ' : 'Sold, ') + (last.trade.result === 'target' ? 'target hit' : 'stopped');
       return { waiting: buy ? 'Dipped, waiting for buyers' : 'Spiked, waiting for sellers', broken: 'Broke through (more than ' + CFG.maxDepthPct + '%)',
         lapsed: buy ? 'Dipped, no buyers in ' + CFG.windowHours + ' h' : 'Spiked, no sellers in ' + CFG.windowHours + ' h', signal: 'Signal, no level beyond' }[last.state] || '';
     };
     const rows = d.huge.slice().reverse().map(function (h) {
-      return '<tr' + (h.price === d.decision.below ? ' class="al-near"' : '') + '><td class="num"><b>' + px(h.price) + '</b></td>' +
+      return '<tr' + (h.price === (d.decision.nextBuy || d.decision.below) ? ' class="al-near"' : '') + '><td class="num"><b>' + px(h.price) + '</b></td>' +
         '<td><span class="al-bar"><i style="width:' + Math.round(h.share * 100) + '%"></i></span></td>' +
         '<td class="num">' + pct(h.price, d.spot) + '</td><td>' + esc(status(h.price)) + '</td></tr>';
     }).join('');
