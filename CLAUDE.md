@@ -428,6 +428,10 @@ The owner's own method, built from the version that tested best
   Asked "so the 4 candle rule is not working?": also tested buying at once after
   the 4 candles (no fib): `up4now` 46 buys, 11% hit, −0.58R; `hold4now` 47, 9%,
   −0.66R. up4now caught Oct 30's real low (in ~2,233, like the tab).
+  Then "4 candle rule then we apply Fibonacci and then wait for entry" = what up4 /
+  hold4 test (fib 0 moving up with new highs). Also with the fib drawn once at the
+  4th candle (`up4fix` / `hold4fix`): 41 / 44 buys, 5% hit, −0.53R / −0.64R, worst
+  run 36–37. Every 4-candle version loses; Ichimoku entry stays.
 - `node test/alt.mjs` is offline and must pass.
 - **Target rule, asked 1 Nov 2026:** "I wouldn't aim 2300 ... most likely 2500",
   "huge biggest level above, 100 points is too small". `pickTarget()` in

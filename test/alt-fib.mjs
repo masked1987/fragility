@@ -63,7 +63,7 @@ function fourCandles(how, lowT, x) {
 
 // Dips through each huge level (price was above on 15-minute candles, one trades below),
 // with the low followed until the reversal is confirmed ('how'), then the 0.62 order.
-function fibSetups(i, how, cfg, now0) {
+function fibSetups(i, how, cfg, now0, fixed) {
   const m = months[i], end = i + 1 < months.length ? months[i + 1] : now, lv = monthLevels[i];
   const a = idx(m - 2 * DAY), b = idx(end + 3 * DAY), part = c5.slice(a, b), c15 = to15(part), win = cfg.windowHours * 36e5;
   const out = [];
@@ -103,7 +103,7 @@ function fibSetups(i, how, cfg, now0) {
           break;
         }
         if (target && x.h >= target) { s.state = 'missed'; endT = x.t; break; }
-        hi = Math.max(hi, x.h);
+        if (!fixed) hi = Math.max(hi, x.h); // fixed: the fib is drawn once, when the reversal is confirmed
       }
       if (s.state === 'waiting') { s.state = 'lapsed'; endT = c5[Math.min(k, c5.length - 1)].t; }
       out.push(s);
@@ -146,6 +146,8 @@ const versions = {
   bounce1: ['Fib 0.62 after a 1% bounce', () => run(i => fibSetups(i, 'bounce1', cfg).concat(ups(i)), cfg)],
   up4: ['Fib 0.62 after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg).concat(ups(i)), cfg)],
   hold4: ['Fib 0.62 after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg).concat(ups(i)), cfg)],
+  up4fix: ['4 rising candles, fib drawn once, 0.62', () => run(i => fibSetups(i, 'up4', cfg, false, true).concat(ups(i)), cfg)],
+  hold4fix: ['Low holds 4 candles, fib drawn once, 0.62', () => run(i => fibSetups(i, 'hold4', cfg, false, true).concat(ups(i)), cfg)],
   up4now: ['Buy at once after 4 rising 15-min candles', () => run(i => fibSetups(i, 'up4', cfg, true).concat(ups(i)), cfg)],
   hold4now: ['Buy at once after the low holds 4 candles', () => run(i => fibSetups(i, 'hold4', cfg, true).concat(ups(i)), cfg)],
 };
