@@ -392,7 +392,7 @@ The owner's own method, built from the version that tested best
   late means a wider stop), WATCH (dipped, waiting for 80), WAIT (nearest huge
   levels). Then the Ichimoku checklist, the huge levels with their status, a
   chart (since the dip / spike when one is live, with the stop), and the backtest card
-  (43 trades, 26% hit, +0.47R, worst run 8). Size uses the Playbook account.
+  (see the latest numbers below). Size uses the Playbook account.
 - Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
   that window are known, so once-per-level starts fresh each load.
 - After a stop (owner, 1 Nov 2026: "if price hit my SL during this buy we only re
@@ -458,6 +458,12 @@ The owner's own method, built from the version that tested best
   target), then smoothly down (0.35% +1.26, 0.4% +1.18, 0.5% +1.03, 0.6% +0.91R).
   0.3% sits on the edge of that jump, so 0.4–0.5% suggested for a safety margin.
   With dips ≤2%: 0.3% +1.55R, 0.4% +1.36R, 0.5% +1.20R.
+  **Owner: "Ok let's do it 0.4%"** → live (v=41): `stopBufferPct: 0.4`, `maxDepthPct:
+  2` (was 3; part of the suggested version). Stop 0.4% under the low (sells: over
+  the high). Card: 40 buys, 23% hit, +1.42R, worst run 16, 2024 −1.05R / 2025
+  +4.48R / 2026 +1.01R, catch box (two July 2025 trades +26R / +23R; the other 38
+  +0.2R; the old stop-at-the-low rule +0.78R), sells 4, none hit. `test/alt.mjs`
+  checks 1–10 run with the old mechanics (buffer 0, 3%), check 11 the live ones.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back

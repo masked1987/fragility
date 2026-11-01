@@ -1,7 +1,10 @@
 // Run: node test/alt.mjs  — offline checks of the Alt Tactics model (made-up data).
 import assert from 'node:assert/strict';
 import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget } from '../tools/alt-tactics/model.js';
-import { ALT_CONFIG as cfg } from '../tools/alt-tactics/config.js';
+import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
+// Checks 1-10 test the mechanics with the stop right at the low and 3% dips (the
+// rules they were written for); check 11 tests the live settings.
+const cfg = { ...ALT_CONFIG, stopBufferPct: 0, maxDepthPct: 3 };
 
 const M5 = 5 * 6e4, T0 = Date.UTC(2026, 9, 29, 12);
 // 5-minute candles along a path of closes (each candle spans its open to close ±0.5).
@@ -166,5 +169,18 @@ c = candles([...dip, ...line(2240, 2160, 25), ...line(2160, 2230, 30), ...flat(2
 d = decideAlt(c, levels, cfg);
 assert.equal(d.setups.filter(x => x.taken).length, 1, 'a second dip through 2,200 is not traded');
 assert.ok(d.setups.some(x => x.used && x.level === 2200));
+
+// 11. Live settings (1 Nov 2026, "let's do it 0.4%"): stop 0.4% under the low,
+//     dips more than 2% under the level are a breakdown.
+assert.equal(ALT_CONFIG.stopBufferPct, 0.4);
+assert.equal(ALT_CONFIG.maxDepthPct, 2);
+c = candles(dip);
+s = findSetups(c, levels, ALT_CONFIG);
+const lowest = Math.min(...c.map(x => x.l));
+assert.ok(Math.abs(s[0].signal.stop - lowest * 0.996) < 1e-6, 'stop 0.4% under the low');
+assert.ok(Math.abs(s[0].low - lowest) < 1e-9, 'the low itself is kept');
+c = candles([...flat(2260, 120), ...line(2260, 2150, 35), ...flat(2150, 6), ...line(2150, 2240, 40), ...flat(2240, 10)]);
+assert.equal(findSetups(c, levels, ALT_CONFIG)[0].state, 'broken');                  // 2.3% under 2,200
+assert.equal(findSetups(c, levels, cfg)[0].state, 'signal');                          // fine under the old 3%
 
 console.log('alt: all checks passed');

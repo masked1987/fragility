@@ -15,7 +15,8 @@ export const ALT_CONFIG = {
   // The setup: price was above a huge level, trades below it (a dip through), makes a
   // low, and turns. More than maxDepthPct past the level = a real breakdown; no
   // confirmation within windowHours = the setup lapses.
-  maxDepthPct: 3,
+  maxDepthPct: 2,           // was 3; 2 tested better (owner OK'd 1 Nov 2026)
+  stopBufferPct: 0.4,       // stop 0.4% past the low / high, not right at it (owner: "let's do it 0.4%")
   windowHours: 48,
 
   // Confirmation: the Ichimoku score on candleMinutes candles crosses up through scoreBuy.
@@ -34,8 +35,10 @@ export const ALT_CONFIG = {
 
   // Backtest summary shown on the tab (huge 70%, 5-min score, once per level, 0.1% costs).
   // From test/alt-backtest.mjs (the tab's own code), target = biggest huge level.
-  backtest: { from: 'Nov 2023', trades: 42, hitPct: 14, avgR: 0.78, worstRun: 18,
-    years: '2024 −1.07R, 2025 +3.61R, 2026 −0.15R per trade',
-    best2: '+19R and +35R, July 2025', without2: -0.53, // the other 40 buys, R per trade
-    sell: { trades: 3, won: 0 } }, // sells after a buy hit its target: 3, all lost
+  // Stop 0.4% under the low, dips up to 2% (test/results/alt-best-2026-11-01.txt).
+  backtest: { from: 'Nov 2023', trades: 40, hitPct: 23, avgR: 1.42, worstRun: 16,
+    years: '2024 −1.05R, 2025 +4.48R, 2026 +1.01R per trade',
+    best2: '+26R and +23R, July 2025', without2: 0.20, // the other 38 buys, R per trade
+    before: 'With the stop right at the low (the rule before 1 Nov 2026): +0.78R per trade, 14% reached target.',
+    sell: { trades: 4, won: 0 } }, // sells after a buy hit its target: 4, all lost
 };
