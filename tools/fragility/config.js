@@ -33,7 +33,9 @@ export const CONFIG = {
   // minDays. Re-picked daily after Deribit's 08:00 UTC expiry, or sooner if the
   // price runs past every level on one side.
   keyLevels: { assets: ['ETH'], rangePct: 15, count: 5, minDays: 2, minGapPct: 0.5, repickHourUtc: 8,
-    reversalHours: 48, quietMinutes: 60, candleMinutes: 15 },
+    reversalHours: 48, quietMinutes: 60, candleMinutes: 15,
+    alerts: false }, // owner: "I don't need crossing alert gamma" (only Tactics 6/6). Levels are still picked
+                     // and tracked for the Playbook; true turns the break / reversal / spike pushes back on.
   // The job saves the picked levels here; the Playbook reads them.
   stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',
 

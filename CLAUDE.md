@@ -33,10 +33,14 @@ the file layout. Tabs, in order:
   change, or phones keep old files for up to 10 minutes.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
-  so does "ETH dealers now losing". "No longer losing" and key-level breaks ring
-  once (a reversal back through the level rings once, louder), and
-  so does "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH).
-- Key gamma levels, picked automatically. The owner watches the big, noticeable
+  so does "ETH dealers now losing". "No longer losing" rings once, and so does
+  "Tactics 6/6 BUY / SELL" (all six Tactics rules on one side, ETH). Key gamma
+  level alerts are OFF (`keyLevels.alerts: false`): after learning they are not
+  part of the Tactics rules, the owner said "I don't need crossing alert gamma,
+  I will need just 6/6 alerts from tactics". Asked whether zone and dealer alerts
+  should also go; see the latest answer before changing them.
+- Key gamma levels, picked automatically (alerts now off, see above; levels still
+  picked for the Playbook). The owner watches the big, noticeable
   gamma strikes (2,200 / 2,300 / 2,500) and is "not strict to these levels", but
   waits for price to cross one and reverse, sometimes over a couple of days.
   `pickLevels()` in `shared/levels.js`: the 5 strikes with the most open contracts

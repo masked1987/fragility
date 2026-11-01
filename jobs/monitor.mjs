@@ -64,7 +64,10 @@ for (const asset of CONFIG.assets) {
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
-  // Key gamma levels, picked automatically (shared/levels.js). Finished 15-minute
+  // Key gamma levels, picked automatically (shared/levels.js). With KL.alerts off
+  // (the owner only wants Tactics 6/6) nothing here rings: the levels are still
+  // picked and saved for the Playbook, and breaks still tracked so state stays
+  // current if the alerts are turned back on. Finished 15-minute
   // Gate candles are walked in order since the last check (so nothing is missed
   // when GitHub runs late), and any trade through a level counts, spike or not:
   // a break rings once; trading back through within reversalHours rings louder (a
@@ -90,7 +93,7 @@ for (const asset of CONFIG.assets) {
       const end = c.t + KL.candleMinutes * 6e4; // when this candle closed
       const ev = levelEvents(c, prev, levels, breaks, quiet, end, KL.reversalHours * 36e5, KL.quietMinutes * 6e4);
       breaks = ev.breaks; quiet = ev.quiet;
-      for (const e of ev.events) pushes.push(levelEventMessage(asset, e, end, levels, zone, r, KL));
+      if (KL.alerts) for (const e of ev.events) pushes.push(levelEventMessage(asset, e, end, levels, zone, r, KL));
       prev = c.close;
     }
     if (todo.length) {
@@ -106,7 +109,7 @@ for (const asset of CONFIG.assets) {
         const changed = !stored || picked.join() !== stored.levels.join();
         state.keyLevels[asset] = { levels: picked, picked: now, method: METHOD };
         console.log(`${asset} key levels: ${picked.map(px).join(' / ')}${changed ? ' (new)' : ''}`);
-        if (changed) pushes.push(levelsMessage(asset, price, picked, stored));
+        if (changed && KL.alerts) pushes.push(levelsMessage(asset, price, picked, stored));
       }
     }
     mmSummary.push(`${asset} ${px(price)}`);

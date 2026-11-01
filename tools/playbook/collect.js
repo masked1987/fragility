@@ -13,8 +13,8 @@ import { getJson } from '../../shared/http.js';
 import * as deribit from '../../shared/sources/deribit.js';
 import { pickLevels } from '../../shared/levels.js';
 
-// The phone alert levels: the ones the alert job picked and saved (so this tab and
-// the alerts agree). If that file can't be read, pick them the same way now.
+// The key gamma levels: the ones the alert job picked and saved (so this tab and
+// the job agree). If that file can't be read, pick them the same way now.
 async function alertLevels(asset) {
   const KL = FRAGILITY.keyLevels;
   if (KL.assets.indexOf(asset) < 0) return [];

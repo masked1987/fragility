@@ -3,7 +3,7 @@
 export const TAC_CONFIG = {
   assets: ['ETH', 'BTC'],  // first one opens by default
   refreshSeconds: 60,
-  alertAssets: ['ETH'],    // phone alert (jobs/monitor.mjs) when all 6 SELL rules are met
+  alertAssets: ['ETH'],    // phone alert (jobs/monitor.mjs) when all 6 BUY or SELL rules are met
 
   // Dealer gamma nodes ("pre-market plan"): strikes within ±nodeRangePct of the price.
   nodeRangePct: 4,

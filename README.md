@@ -81,17 +81,14 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
 - a Fragility zone changes (3-point buffer so it doesn't flap; rings 3 times, a minute apart);
 - ETH dealers start losing on the Market Maker tab (implied − realized below −5 points;
   rings 3 times), and once when they stop (1-point buffer);
-- ETH trades through a key gamma level, spikes included (a finished 15-minute Gate
-  candle's high or low goes past it): rings once. Again, louder, if price then
-  trades back through that level within 48 hours (a reversal); through and back in
-  one candle rings once as a spike. Each level rings at most once an hour, but
-  breaks are always tracked, so a reversal is never missed. Every finished candle
-  since the last run is checked in order, so nothing between two late runs is lost.
-  Levels are picked automatically (`shared/levels.js`): the 5 strikes with the most
-  open calls + puts within ±15%, leaving out options that expire within 2 days;
-  re-picked each day after Deribit's 08:00 UTC expiry, or sooner if the price runs
-  past every level on one side. A quiet note (no sound) lists new levels when they
-  change; the Playbook reads the same saved list.
+- (Off for now, `keyLevels.alerts: false`: the owner only wants the Tactics 6/6
+  alert.) ETH trades through a key gamma level, spikes included (a finished
+  15-minute Gate candle's high or low goes past it): rings once. Again, louder, if
+  price then trades back through within 48 hours (a reversal); through and back in
+  one candle rings once as a spike. Each level rings at most once an hour. The
+  levels (the 5 strikes with the most open calls + puts within ±15%, leaving out
+  options expiring within 2 days, re-picked daily after Deribit's 08:00 UTC
+  expiry) are still picked and saved every run, because the Playbook uses them.
   Settings in `tools/fragility/config.js` (`keyLevels`); dealer settings in
   `tools/market-maker/config.js` (`alertAssets`, `flipBufferPts`);
 - all 6 BUY or all 6 SELL rules on the Tactics tab are met for ETH ("Tactics 6/6 BUY"

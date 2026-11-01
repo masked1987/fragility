@@ -155,7 +155,7 @@ export function mount(el) {
       const up = p.dir > 0, risk = Math.abs(p.entry - p.stop);
       const status = p.triggered
         ? a + ' just ' + (up ? 'closed back above ' : 'closed below ') + px(p.trigger) + '. Wait for a ' + (up ? 'dip to hold' : 'bounce to fail') + ' there; if it never comes back, skip it.'
-        : a + ' is ' + pts(s.spot - p.trigger) + ' points ' + (up ? 'below' : 'above') + ' the trigger.' + (s.levels.indexOf(p.trigger) >= 0 ? ' Your phone alert rings when it crosses.' : '');
+        : a + ' is ' + pts(s.spot - p.trigger) + ' points ' + (up ? 'below' : 'above') + ' the trigger.' + (s.levels.indexOf(p.trigger) >= 0 ? ' It\'s one of the key gamma levels.' : '');
       const tg = p.targets.map(function (t, i) {
         return '<li><b class="num">' + px(t.price) + '</b> <span class="muted">' + t.r.toFixed(1) + '× risk</span><br><span class="small">' +
           esc(cap(targetWhy(t, p.dir)) + (i === 0 && p.targets.length > 1 && t.kind !== 'strike' ? '. Take half here.' : '.')) + '</span></li>';
@@ -218,8 +218,8 @@ export function mount(el) {
       '<li><b>Trend</b>: price more than ' + CFG.flipBandPct + '% below the gamma flip, or dealers losing on the moves.</li>' +
       '<li><b>Range</b>: price more than ' + CFG.flipBandPct + '% above the gamma flip.</li>' +
       '<li><b>No edge</b>: anything else, usually price sitting on the flip.</li></ul>' +
-      '<p class="small">Triggers are your phone alert levels and round numbers, and never on the wrong side of the flip. A level crossed in the last few hourly closes shows as Triggered. ' +
-      'Alert levels are picked automatically each day after the 08:00 UTC option expiry: the five big gamma strikes within 15% (most open calls + puts, leaving out options about to expire). Your phone rings when price trades through one, spikes included (a break), and again, louder, if it trades back through within 48 hours (a reversal); each level rings at most once an hour' +
+      '<p class="small">Triggers are the key gamma levels and round numbers, and never on the wrong side of the flip. A level crossed in the last few hourly closes shows as Triggered. ' +
+      'Key gamma levels are picked automatically each day after the 08:00 UTC option expiry: the five big gamma strikes within 15% (most open calls + puts, leaving out options about to expire)' +
       (d.s.levels.length ? '. ' + esc(d.asset) + ' now: ' + d.s.levels.map(px).join(' / ') : '') + '. ' +
       'Stops are ½ of a day\'s implied move past the trigger: over the last 41 days that survived 79% of days that went the right way. ' +
       'Targets are liquidation clusters and dealers\' biggest long-gamma strikes within two days\' moves.</p>' +
