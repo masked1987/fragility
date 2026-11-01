@@ -48,6 +48,9 @@ const summary = [];
 const mmSummary = [];
 const pushes = [];
 let tacNow = null; // latest Tactics reading, for the one-time test push
+// Started by hand with "send test alerts" ticked: one [test] message per alert kind.
+const TEST = process.env.TEST_ALERTS === 'true';
+const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
   const data = await collect(asset);
@@ -57,6 +60,7 @@ for (const asset of CONFIG.assets) {
   if (r.score == null) continue;
 
   const prev = state.zones[asset] || null;
+  if (!testNow.zone) testNow.zone = { asset, r };
   const zone = stickyZone(Math.round(r.score), CONFIG.zones, prev, CONFIG.hysteresis) || r.zone;
   state.zones[asset] = zone;
   summary.push(`${asset} ${r.score.toFixed(0)} ${zone}`);
@@ -124,6 +128,7 @@ for (const asset of CONFIG.assets) {
       state.dealers[asset] = side;
       console.log(`${asset} dealers: ${side} (gap ${(mm.ivWeek - mm.rvWeek).toFixed(1)})`);
       mmSummary.push(`${asset} dealers ${SIDE_WORDS[side]}`);
+      if (!testNow.mm) testNow.mm = { asset, side, mm, zone, r };
       if (prevSide && prevSide !== side && (side === 'lose' || prevSide === 'lose')) pushes.push(dealerMessage(asset, prevSide, side, mm, zone, r));
     } catch (e) {
       console.log(`${asset} market maker unavailable: ${e.message}`);
@@ -152,6 +157,23 @@ for (const asset of CONFIG.assets) {
     appendFileSync(LOG, row.join(',') + '\n');
     state.lastLog[asset] = now;
   }
+}
+
+// Test run: the real format of each alert that is on, marked [test], sent once each.
+if (TEST) {
+  const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: 1 });
+  if (testNow.zone) {
+    const { asset, r } = testNow.zone, zone = state.zones[asset];
+    const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
+    pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 3 times, a minute apart.`));
+  }
+  if (testNow.mm) {
+    const { asset, side, mm, zone, r } = testNow.mm;
+    pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
+      `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
+  }
+  if (tacNow) pushes.push(tacticsMessage(tacNow, 'sell'));
+  console.log('test alerts queued:', pushes.length);
 }
 
 // Confirms the phone setup: sent once, on the first run that has a topic.

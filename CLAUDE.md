@@ -39,7 +39,9 @@ the file layout. Tabs, in order:
   part of the Tactics rules, the owner said "I don't need crossing alert gamma,
   I will need just 6/6 alerts from tactics". Asked about the zone and dealer
   alerts: "keep those two on". So the phone gets: zone changes, ETH dealers
-  losing / no longer losing, and Tactics 6/6.
+  losing / no longer losing, and Tactics 6/6. "Test them now": the workflow has a
+  `test_alerts` input (Run workflow → tick it; `TEST_ALERTS` in the job) that sends
+  one [test] message per alert that is on, in its real format.
 - Key gamma levels, picked automatically (alerts now off, see above; levels still
   picked for the Playbook). The owner watches the big, noticeable
   gamma strikes (2,200 / 2,300 / 2,500) and is "not strict to these levels", but

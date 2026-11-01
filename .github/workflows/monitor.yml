@@ -5,6 +5,11 @@ on:
     # Every 15 minutes, off the round minutes that GitHub delays most.
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+    inputs:
+      test_alerts:
+        description: 'Send one [test] message for each phone alert'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -32,6 +37,7 @@ jobs:
       - name: Score, alert, log
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TEST_ALERTS: ${{ inputs.test_alerts }}
         run: node jobs/monitor.mjs store
 
       - name: Save log

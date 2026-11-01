@@ -98,6 +98,10 @@ GitHub Actions. It sends a push via [ntfy](https://ntfy.sh) when:
   `tools/tactics/config.js` (`alertAssets`). The rules need a retest in the last 3
   fifteen-minute candles, so a late GitHub run can miss a short-lived 6/6.
 
+To test the phone: GitHub → Actions → "Fragility log and alerts" → Run workflow →
+tick "Send one [test] message for each phone alert". You get one message per alert
+that is on (zone change, dealers losing, Tactics 6/6), marked [test].
+
 It also appends an hourly row to `log.csv` on the `data` branch. The Fragility tab charts that log and shows how big the
 next-day moves were after each zone.
 
