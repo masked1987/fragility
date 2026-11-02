@@ -441,6 +441,11 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   untitled prio-3 messages at 15:11 UK that the job did not send (maybe him testing
   from the app). So delivery to ntfy works; the problem is on the phone (app
   subscription name / server, notifications, battery, instant delivery).
+  Topic in his app was right, but the app received nothing (CPU 0s, Xiaomi). Fixed by
+  uninstall + reinstall, allow notifications, subscribe with **Instant delivery**
+  ticked, battery "No restrictions". If alerts stop again, start there. A quick
+  "ntfy check" can be posted straight to the topic from a session (don't put the
+  topic in the repo).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
