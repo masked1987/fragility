@@ -11,6 +11,14 @@ the file layout. Tabs, in order:
 
 1. **Gamma Detrite**: embedded from the separate repo `masked1987/gamma-detrite`
    (single `index.html`; heat map of dealer gamma by strike × expiry, Near/Wide ±25%).
+   **Expiry tabs** (asked 2 Nov 2026, "like tab selector"): Daily (the very next
+   expiry) / Weekly (nearest Friday) / Monthly (nearest last Friday of a month) /
+   All, each with its date under the name and a gliding gradient underline. Heat
+   map, flip, key readings and put/call use only the chosen expiries (`parse()` once,
+   `view(P, wide, pick)`). One expiry = a bar per strike; All = every expiry, after
+   9 columns the last ("later") adds up the rest. Saved per phone (`gd.exp`). The
+   saved-snapshot fallback only has its 10 nearest columns (dates from the "Nd"
+   labels). Checked against the old calculation: same numbers.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
