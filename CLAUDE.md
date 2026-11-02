@@ -255,6 +255,9 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   alert (~7 trades a year). TradingView can't take orders from outside. Suggested 1 if
   MetaApi is still free, else 3, demo account first. Owner chose **3: "I will follow
   alerts and execute manually"**. Nothing built; don't re-offer auto-trading unless he asks.
+  Explained: exit only on the SELL (daily close under the dashed 50-day line, closed by
+  hand), no SL order, buys only. Size: his MT5 account is 1:20; warned off 100% margin.
+  He settled on a Trend position worth **40% of the account, no leverage**.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
