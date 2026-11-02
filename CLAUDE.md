@@ -207,6 +207,23 @@ How much dealers collect per day from time decay against what re-hedging costs.
 
 The Market Maker plan is complete.
 
+### Market Maker entries backtest (asked 2 Nov 2026)
+"Choose the best entry for market maker model and do the backtest ... comparing to
+my strategy". `node test/mm-backtest.mjs 36 .bt-cache` (`ALL=1` prints every
+version), results `test/results/mm-backtest-2026-11-02.txt`. The tab's hourly
+reading over 3 years (DVOL vs 7-day realized, `dealerSide()`), sizes in the day's
+implied move, Deribit 5-min exits, 0.1% costs, 3 days max, picked on the first 2
+years, checked on the last year. Range fades when dealers win, breakouts when they
+lose, buying fear spikes: all lose or fade out (−0.05 to −0.37R; fear spike +0.37R
+first 2y, −0.35R last year). Only **"flip"** works: dealers just turned losing →
+trade the way of the last 24h, stop ½ day's move, target 2 day's moves: 38 trades,
+34% hit, +0.65R (first 2y +0.54R, last year +0.86R; 2024 +0.28 / 2025 +0.95 /
+2026 +0.81R), worst run 6, without best 2 still +0.47R (wins all ~+4R, no single
+trade carries it). Buys 13 (+1.25R), sells 25 (+0.34R; first 2y ~0). Picked from
+6 flip versions; trade-count floor lowered 30 → 20 after seeing it, so not fully
+blind. Compared with Alt Tactics (40 buys, 18%, +1.07R, run 16, without best 2
+−0.30R). Not on any tab; nothing changed on the site.
+
 ## Playbook tab
 
 Asked for after the Market Maker plan: "create a strategy from all our tools",
