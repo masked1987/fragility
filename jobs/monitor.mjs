@@ -21,6 +21,9 @@ import { MM_CONFIG } from '../tools/market-maker/config.js';
 import { collectTac } from '../tools/tactics/collect.js';
 import { sixOfSix, RULES_TOTAL } from '../tools/tactics/model.js';
 import { TAC_CONFIG } from '../tools/tactics/config.js';
+import { collectAlt, withPoints } from '../tools/alt-tactics/collect.js';
+import { altEvents } from '../tools/alt-tactics/model.js';
+import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 
 const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
@@ -29,6 +32,8 @@ const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
 const ZONE_REPEATS = 3;           // a zone change rings this many times...
 const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
 const TACTICS_REPEATS = 3;        // Tactics 6/6 rings 3 times (owner tried 5, then "3 is enough"), same gap
+const ALT_REPEATS = 3;            // Alt Tactics BUY / SELL rings like Tactics 6/6
+const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (the job can run hours late)
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
@@ -42,6 +47,7 @@ state.lastCandle = state.lastCandle || {};
 state.lastClose = state.lastClose || {};
 state.quiet = state.quiet || {};
 state.tactics = state.tactics || {};
+state.alt = state.alt || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
 const now = Date.now();
@@ -49,9 +55,10 @@ const summary = [];
 const mmSummary = [];
 const pushes = [];
 let tacNow = null; // latest Tactics reading, for the one-time test push
+let altNow = null; // latest Alt Tactics reading, for its one-time welcome push
 // Started by hand with "send test alerts" ticked: one [test] message per alert kind.
-// TEST_ALERTS: 'all' (or 'true') = zone, dealers and Tactics; 'tactics' = Tactics only.
-const TEST = ['true', 'all', 'tactics'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
+// TEST_ALERTS: 'all' (or 'true') = zone, dealers, Tactics and Alt; 'tactics' / 'alt' = that one only.
+const TEST = ['true', 'all', 'tactics', 'alt'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
 const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
@@ -153,6 +160,24 @@ for (const asset of CONFIG.assets) {
     }
   }
 
+  // Alt Tactics (asked 2 Nov 2026, "add the NTFY alert ... about our rules"): the same
+  // decideAlt() as the tab. BUY / SELL rings 3 times; WATCH, target hit and stopped once.
+  // Each event is pushed once (state.alt[asset].sent); nothing from before the first run.
+  if (ALT_CONFIG.alertAssets.includes(asset)) {
+    try {
+      const d = await collectAlt(asset, ALT_CONFIG);
+      const st = state.alt[asset] = state.alt[asset] || { since: now, sent: {} };
+      const ev = altEvents(d.decision, st.sent, st.since, now, ALT_MAX_AGE);
+      for (const e of ev) { st.sent[e.key] = now; pushes.push(altMessage(d, e)); }
+      for (const k of Object.keys(st.sent)) if (now - st.sent[k] > 10 * 864e5) delete st.sent[k];
+      const o = d.decision.open;
+      console.log(`${asset} alt: ${d.decision.action}` + (o ? ` (${o.side} from ~${px(o.level)}, stop ${num(o.signal.stop)})` : '') + (ev.length ? ` -> ${ev.map(e => e.kind).join(', ')}` : ''));
+      if (!altNow) altNow = d;
+    } catch (e) {
+      console.log(`${asset} alt tactics unavailable: ${e.message}`);
+    }
+  }
+
   if (!state.lastLog[asset] || now - state.lastLog[asset] >= LOG_EVERY_MS) {
     const sub = Object.fromEntries(r.inputs.map(i => [i.key, i.score == null ? '' : i.score.toFixed(1)]));
     const row = [new Date(now).toISOString(), asset, price == null ? '' : price, r.score.toFixed(1), zone,
@@ -165,17 +190,22 @@ for (const asset of CONFIG.assets) {
 // Test run: the real format of each alert that is on, marked [test], sent once each.
 if (TEST) {
   const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: 1 });
-  if (TEST !== 'tactics' && testNow.zone) {
+  if ((TEST === 'all' || TEST === 'true') && testNow.zone) {
     const { asset, r } = testNow.zone, zone = state.zones[asset];
     const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
     pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 3 times, a minute apart.`));
   }
-  if (TEST !== 'tactics' && testNow.mm) {
+  if ((TEST === 'all' || TEST === 'true') && testNow.mm) {
     const { asset, side, mm, zone, r } = testNow.mm;
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
       `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
   }
-  if (tacNow) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
+  if (tacNow && TEST !== 'alt') pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
+  if (altNow && TEST !== 'tactics') {
+    const s = altNow.decision.setups.filter(x => x.taken).pop();
+    if (s) pushes.push({ ...altMessage(altNow, { kind: 'signal', setup: s }), title: '[test] ' + altMessage(altNow, { kind: 'signal', setup: s }).title,
+      body: 'TEST ONLY: the last Alt signal in the format of a real one (rings ' + ALT_REPEATS + ' times).\n' + altMessage(altNow, { kind: 'signal', setup: s }).body });
+  }
   console.log('test alerts queued:', pushes.length);
 }
 
@@ -198,6 +228,17 @@ if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
 if (state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
   state.welcomedTac = 2;
   pushes.push(tacticsMessage(tacNow, 'buy'), tacticsMessage(tacNow, 'sell'));
+}
+
+// And the Alt Tactics alerts: one message saying what will come, with where things stand.
+if (!state.welcomedAlt && process.env.NTFY_TOPIC && altNow) {
+  state.welcomedAlt = true;
+  const o = altNow.decision.open, w = altNow.decision.waiting;
+  const nowLine = o ? `Now: ${o.side === 'buy' ? 'BUY' : 'SELL'} from ~${px(o.level)} running, entry ${num(o.signal.entry)}, stop loss ${num(o.signal.stop)}, target ~${px(o.signal.target)}.`
+    : w ? `Now: WATCH, ${altNow.asset} ${w.side === 'buy' ? 'dipped through' : 'spiked over'} ~${px(w.level)}.` : 'Now: WAIT, no dip through a huge level.';
+  pushes.push({ title: 'Alt Tactics alerts are on', priority: 3, tags: 'white_check_mark', click: '#alt',
+    body: `You will get a message here when your rules fire on ${ALT_CONFIG.alertAssets.join(', ')}:\n` +
+      `BUY / SELL (rings ${ALT_REPEATS} times) with entry, stop loss and target;\nWATCH when price dips through a huge level;\ntarget hit or stopped.\n` + nowLine });
 }
 
 writeFileSync(STATE, JSON.stringify(state, null, 2) + '\n');
@@ -315,6 +356,48 @@ function tacticsMessage(d, test) {
     click: '#tactics',
   };
 }
+
+// Alt Tactics messages. e = { kind: 'signal' | 'watch' | 'target' | 'stopped', setup }.
+function altMessage(d, e) {
+  const s = e.setup, g = s.signal, buy = s.side === 'buy', a = d.asset, L = px(s.level);
+  const pts = (ALT_CONFIG.stopPoints && ALT_CONFIG.stopPoints[a]) || 0;
+  const stopWhy = (pts ? `${pts} points ${buy ? 'under the low' : 'over the high'} ` : (buy ? 'the low ' : 'the high ')) + num(s.ext);
+  const end = '\nContext, not a trade signal.';
+  if (e.kind === 'signal') {
+    const late = now - g.t > 30 * 6e4;
+    return {
+      title: `Alt ${buy ? 'BUY' : 'SELL'} - ${a} ${num(g.entry)} at ${altUk(g.t)} UK`,
+      body: (buy ? `${a} dipped through ~${L} and buyers are back (5-min Ichimoku crossed ${ALT_CONFIG.scoreBuy}).`
+          : `${a} spiked over ~${L} after the buy from ~${px(s.win ? s.win.from : s.level)} reached its target, and sellers are back (5-min Ichimoku through ${ALT_CONFIG.scoreSell}). Sells are unproven.`) +
+        `\nEntry ${num(g.entry)}\nStop loss ${num(g.stop)} (${stopWhy}, ${num(Math.abs(g.entry - g.stop))} points)` +
+        `\nTarget ~${px(g.target)}` + (g.rr ? ` (${g.rr.toFixed(1)}x the risk)` : '') +
+        (late ? `\nThe signal was at ${altUk(g.t)} UK (${altDay(g.t)}); price now ${num(d.spot)}. Entering late means less reward, same stop.` : '') + end,
+      priority: 4, repeats: ALT_REPEATS, tags: buy ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend', click: '#alt',
+    };
+  }
+  if (e.kind === 'watch') {
+    const stop = buy ? s.ext - pts : s.ext + pts;
+    return {
+      title: `Alt WATCH - ${a} ${buy ? 'dipped through' : 'spiked over'} ~${L}`,
+      body: `${buy ? 'Low' : 'High'} so far ${num(s.ext)}; stop loss so far ${num(stop)} (moves if the ${buy ? 'low goes lower' : 'high goes higher'}).` +
+        `\nWaiting for ${buy ? 'buyers' : 'sellers'}: 5-min Ichimoku ${buy ? 'up through ' + ALT_CONFIG.scoreBuy : 'down through ' + ALT_CONFIG.scoreSell}.` +
+        (s.target ? ` Target if it triggers ~${px(s.target)}.` : '') + `\n${a} ${num(d.spot)} at ${altUk(now)} UK.` + end,
+      priority: 3, tags: 'eyes', click: '#alt',
+    };
+  }
+  const won = e.kind === 'target', R = won ? Math.abs(g.target - g.entry) / Math.abs(g.entry - g.stop) : -1;
+  const nb = d.decision.nextBuy;
+  return {
+    title: won ? `Alt target hit - ${a} ~${px(g.target)}` : `Alt stopped - ${a} ${num(g.stop)}`,
+    body: `The ${buy ? 'buy' : 'sell'} from ~${L} (entry ${num(g.entry)}) ${won ? 'reached ~' + px(g.target) : 'hit its stop loss ' + num(g.stop)} at ${altUk(s.trade.at)} UK, about ${R >= 0 ? '+' : ''}${R.toFixed(1)}R.` +
+      (won ? (buy ? `\nYour rule: a spike over ~${px(g.target)} in the next ${ALT_CONFIG.afterWinHours} h with sellers back is a sell.` : `\n~${px(g.target)} is open for a buy again.`)
+        : `\n~${L} is used now: the next ${buy ? 'buy' : 'sell'} only comes at another huge level` + (buy && nb ? ` (nearest ~${px(nb)})` : '') + '.') + end,
+    priority: won ? 4 : 3, tags: won ? 'tada' : 'x', click: '#alt',
+  };
+}
+function altUk(t) { return new Date(t).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }); }
+function altDay(t) { return new Date(t).toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }); }
+function num(x) { return x.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
 
 // Repeats are handed to ntfy now with a delivery time (At), so the job doesn't wait.
 async function send(p) {
