@@ -470,6 +470,14 @@ The owner's own method, built from the version that tested best
   cards (0.4% under the low N · X points (Y%) under the entry), and "Stop loss so
   far" on WATCH (moves with the low). Chart line labelled "SL 2,164.7" (or "so
   far"). Note under the box: prices are Gate's, his exchange can differ a little.
+  Owner on that: "it may be small difference but that's ok, I accept"; no need
+  to match his exchange's prices.
+- **2 Nov 2026: stop back at the low.** Owner: "set our SL as normal, not +0.4%,
+  just set at SL +0%". `stopBufferPct: 0` (v=43); dips up to 2% kept (he only
+  asked about the stop). Card: 40 buys, 18% hit, +1.07R, worst run 16, 2024 −1.07R
+  / 2025 +3.61R / 2026 +0.64R, two July 2025 trades +35R / +19R made all of it
+  (the other 38 −0.3R), "with 0.4% under it was +1.42R". `slWhere()` words the
+  stop as "at the low" when the buffer is 0. Don't re-suggest the buffer unasked.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back
@@ -501,9 +509,15 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **Alt Tactics sells (only after a winning buy) + biggest-level target:
-  published 1 Nov 2026 (v=39)**, after he checked the preview ("publish it").
-  See the Alt Tactics section.
+- **State (2 Nov 2026), all live, v=43:** Alt
+  Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
+  version), target the biggest huge level, stop at the low (0.4% room removed
+  2 Nov at his request), dips up to 2%,
+  sells only after a winning buy, once per level (after a stop: next level only),
+  stop loss shown as a number (box + chart label). Owner: "for now done, we gonna
+  work tomorrow more". Nothing open or half-built; ask what he wants next.
+- Results page for him: https://claude.ai/artifact/VZhutbD1Hsgz8oj26Vs6o7 (target
+  test; made before the 0.4% stop, so its numbers are the older stop-at-the-low ones).
 - **His indicator:** "Wyichi AI 4.0" (TradingView, WhaleTrade, protected).
   Enters when it crosses 80 on the 1-minute chart; says RSI won't work, closest
   is Ichimoku. Asked for screenshots of it on his chart (Oct 30 dip, settings,
