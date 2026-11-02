@@ -1,6 +1,7 @@
 // Run: node test/alt.mjs  — offline checks of the Alt Tactics model (made-up data).
 import assert from 'node:assert/strict';
-import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget } from '../tools/alt-tactics/model.js';
+import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget, stopFrom } from '../tools/alt-tactics/model.js';
+import { withPoints } from '../tools/alt-tactics/collect.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 // Checks 1-10 test the mechanics with the stop right at the low and 3% dips (the
 // rules they were written for); check 11 tests the live settings.
@@ -177,7 +178,12 @@ assert.equal(ALT_CONFIG.maxDepthPct, 2);
 c = candles(dip);
 s = findSetups(c, levels, ALT_CONFIG);
 const lowest = Math.min(...c.map(x => x.l));
-assert.ok(Math.abs(s[0].signal.stop - lowest) < 1e-6, 'stop at the low');
+assert.ok(Math.abs(s[0].signal.stop - lowest) < 1e-6, 'no points set: stop at the low');
+// 2 points under the low for ETH ("add like two points to every stop, 2170 -> 2168").
+assert.deepEqual(ALT_CONFIG.stopPoints, { ETH: 2, BTC: 60 });
+assert.ok(Math.abs(findSetups(c, levels, withPoints(ALT_CONFIG, 'ETH'))[0].signal.stop - (lowest - 2)) < 1e-6, 'ETH: 2 points under the low');
+assert.equal(stopFrom(2170, true, withPoints(ALT_CONFIG, 'ETH')), 2168);
+assert.equal(stopFrom(2400, false, withPoints(ALT_CONFIG, 'ETH')), 2402);              // sells: 2 points over the high
 assert.ok(Math.abs(findSetups(c, levels, { ...ALT_CONFIG, stopBufferPct: 0.4 })[0].signal.stop - lowest * 0.996) < 1e-6, 'room under the low still works');
 assert.ok(Math.abs(s[0].low - lowest) < 1e-9, 'the low itself is kept');
 c = candles([...flat(2260, 120), ...line(2260, 2150, 35), ...flat(2150, 6), ...line(2150, 2240, 40), ...flat(2240, 10)]);
