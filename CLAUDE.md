@@ -246,6 +246,15 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   Actions = 2,000 min/month, so alerts every 30 min). Owner: can't pay a subscription,
   "leave it as it is for now". Gave him a zip copy of both repos (all branches). Don't
   re-offer unless he asks.
+- Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
+  trades"): only **Trend** would be automatic, the rest he trades by hand; one IC Markets
+  **MT5** account, phone only (MT5 Android can't run EAs). Options given: (1) the alert
+  job places the trade via MetaApi (cloud MT5 link; free tier "for testing and personal
+  use", not guaranteed; needs his trading password; trades hours late with the job);
+  (2) Windows VPS ~$10–15/month + EA, set up via Remote Desktop app; (3) by hand from the
+  alert (~7 trades a year). TradingView can't take orders from outside. Suggested 1 if
+  MetaApi is still free, else 3, demo account first. Owner: "so it's up to me". Nothing
+  built; wait for his choice.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
