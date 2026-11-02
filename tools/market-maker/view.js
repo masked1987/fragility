@@ -8,6 +8,7 @@ import { collectMM } from './collect.js';
 import { readMM, readOverall, readShock, vegaSide, usd, signedUsd } from './read.js';
 import { dailyMove } from './model.js';
 import { headHtml, moreHtml } from '../../shared/head.js';
+import { load } from '../../shared/storage.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 
 function esc(s) {
@@ -55,7 +56,7 @@ export function mount(el) {
       bodyEl.innerHTML = '<section class="card"><p>Could not load: ' + esc(d.error) + '</p></section>';
       return;
     }
-    bodyEl.innerHTML = readingHtml(d) + dollarsHtml(d) + vegaHtml(d) + chartHtml(d) + notesHtml();
+    bodyEl.innerHTML = readingHtml(d) + flipHtml(d) + dollarsHtml(d) + vegaHtml(d) + chartHtml(d) + notesHtml();
     drawChart(bodyEl.querySelector('.chart'), d);
   }
 
@@ -71,6 +72,68 @@ export function mount(el) {
       '<p class="verdict-action"><b>What it means:</b> ' + esc(r.action) + '</p>' +
       moreHtml('<ul class="verdict-lines small">' + r.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>', r.lines.length) +
       '<p class="muted small">Worked out automatically from Deribit options, Gate prices and the Fragility score. Context, not a trade signal.</p>' +
+    '</section>';
+  }
+
+  // The flip: the hour dealers turn losing, trade the way of the last 24h (flip.js).
+  function flipHtml(d) {
+    const st = d.flip, f = CFG.flip, a = esc(d.asset);
+    if (!st) return '';
+    const r = st.now, o = st.open, b = f.backtest;
+    const px = function (v) { return '~' + Math.round(v).toLocaleString('en-US'); };
+    const num = function (v) { return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+    const when = function (t) { return new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+    const pc = function (v) { return (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%'; };
+    const sideWord = { win: 'winning', even: 'balanced', lose: 'losing' };
+    const size = function (entry, stop) {
+      const account = +load('playbook.account', 10000), riskPct = +load('playbook.riskPct', 1);
+      const risk = account * riskPct / 100, amt = risk / Math.abs(entry - stop);
+      return 'risking $' + Math.round(risk).toLocaleString('en-US') + ' (' + riskPct + '% of $' + Math.round(account).toLocaleString('en-US') + '): about <b class="num">' +
+        amt.toFixed(amt >= 10 ? 1 : 2) + ' ' + a + '</b> <span class="muted">(set on the Plan tab)</span>';
+    };
+    let act, head, body;
+    if (o) {
+      const fresh = d.fetched - o.t <= f.freshHours * 36e5, buy = o.buy, dist = Math.abs(o.entry - o.stop);
+      act = fresh ? (buy ? 'buy' : 'sell') : 'open';
+      head = fresh ? (buy ? 'Buy' : 'Sell') + ': dealers just turned losing, ' + a + ' went ' + (buy ? 'up ' : 'down ') + pc(o.ret24).replace(/^[+−]/, '') + ' in 24h'
+        : 'Open: the ' + (buy ? 'buy' : 'sell') + ' from the flip is still running';
+      body = '<div class="al-sl"><div class="label">Your stop loss</div><div class="al-sl-num num">' + num(o.stop) + '</div>' +
+          '<div class="small">½ of a day\'s move ' + (buy ? 'under' : 'over') + ' the entry · ' + num(dist) + ' points (' + (dist / o.entry * 100).toFixed(1) + '%)</div>' +
+          '<div class="small muted">From Gate hourly prices; your chart can differ by a few points.</div></div>' +
+        '<dl class="pb-dl">' +
+        '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(o.entry) + '</b> <span class="muted">(' + when(o.t) + ', price now ' + num(d.price) + ')</span></dd>' +
+        '<dt>Target</dt><dd><b class="num">' + num(o.target) + '</b> <span class="muted">2 day\'s moves ' + (buy ? 'up' : 'down') + ' (' + (Math.abs(o.target - o.entry) / o.entry * 100).toFixed(1) + '%), 4× the risk</span></dd>' +
+        '<dt>Ends</dt><dd>' + when(o.t + f.maxHours * 36e5) + ' <span class="muted">(out at the price then, if neither is hit)</span></dd>' +
+        '<dt>Size</dt><dd>' + size(o.entry, o.stop) + '</dd></dl>' +
+        (fresh ? '' : '<p class="small">Signal from ' + when(o.t) + '. Entering now instead means a different risk; the stop and target stay where they are.</p>') +
+        '<p class="verdict-action"><b>What it means:</b> ' + a + ' has started moving more than options priced, so dealers are losing and their hedging tends to push the move further. ' +
+          'The trade goes with the last day\'s direction. If price goes ' + (buy ? 'back under ' : 'back over ') + num(o.stop) + ' the move has failed.</p>';
+    } else {
+      act = 'wait';
+      const L = st.last, buy = r.ret24 >= 0, stopPts = f.stopMoves * r.m * r.price, tgtPts = f.targetMoves * r.m * r.price;
+      head = r.side === 'lose' ? 'Wait: dealers are already losing, the flip has fired' : 'Wait: no flip, dealers are ' + sideWord[r.side];
+      const lastTxt = L ? (L.buy ? 'BUY' : 'SELL') + ' at ' + px(L.entry) + ' on ' + when(L.t) + ': ' +
+          (L.trade.result === 'target' ? 'reached the target' : L.trade.result === 'stopped' ? 'stopped' : 'closed after 3 days') + ' (' +
+          pc(((L.buy ? 1 : -1) * (L.trade.exit - L.entry)) / L.entry) + ')' : 'none in the last 30 days';
+      body = '<dl class="pb-dl">' +
+        '<dt>Fires when</dt><dd>dealers turn losing: the 7-day gap drops below −' + CFG.gapPts + ' points <span class="muted">(now ' + (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ')</span></dd>' +
+        '<dt>Then</dt><dd>trade the way ' + a + ' went in the last 24h' + (r.side === 'lose' ? '' : ' <span class="muted">(now ' + pc(r.ret24) + ', so a ' + (buy ? 'BUY' : 'SELL') + ')</span>') + '</dd>' +
+        '<dt>Stop</dt><dd>½ of a day\'s move <span class="muted">(now ' + (f.stopMoves * r.m * 100).toFixed(1) + '%, ' + px(stopPts).slice(1) + ' points)</span></dd>' +
+        '<dt>Target</dt><dd>2 day\'s moves <span class="muted">(now ' + (f.targetMoves * r.m * 100).toFixed(1) + '%, ' + px(tgtPts).slice(1) + ' points), out after 3 days</span></dd>' +
+        '<dt>Last flip</dt><dd>' + lastTxt + '</dd></dl>' +
+        '<p class="verdict-action"><b>What it means:</b> ' + (r.side === 'lose'
+          ? 'dealers have been losing since ' + when(st.losingSince) + '. The flip only fires on the turn, so the next one comes after they stop losing and turn losing again.'
+          : 'nothing to do. The flip comes when ' + a + ' starts moving more than options priced, after a calmer stretch; your phone already rings for "' + a + ' dealers now losing".') + '</p>';
+    }
+    const cls = act === 'buy' || (act === 'open' && o.buy) ? 'buy' : act === 'sell' || act === 'open' ? 'sell' : 'hold';
+    return '<section class="card tc-dec ' + cls + '">' +
+      '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
+        '<div><div class="label">' + a + ' · the flip</div><p class="tc-dec-head">' + esc(head.slice(head.indexOf(': ') + 2)) + '</p></div></div>' +
+      body +
+      '<p class="small"><b>Backtest, ETH ' + b.from + ' to now</b>' + (d.asset === 'ETH' ? '' : ' (tested on ETH only)') + ' (buys and sells together, 0.1% costs): ' + b.trades + ' trades, ' + b.winPct + '% won, ' +
+        '+' + b.avgPct.toFixed(1) + '% a trade (wins +' + b.avgWin + '%, losses −' + Math.abs(b.avgLoss) + '%), +' + b.compounded + '% compounded, worst drop ' + b.maxDD + '%, ' +
+        'worst losing run ' + b.worstRun + ', profitable in ' + b.quarters + ' quarters (' + b.years + '). ' + b.trades + ' trades is a small sample.</p>' +
+      '<p class="muted small">Same rule as the backtest, run here on Gate hourly prices. Context, not a trade signal.</p>' +
     '</section>';
   }
 
@@ -153,6 +216,9 @@ export function mount(el) {
       '<p class="small">The overall line at the top adds up pressure: dealers losing on the moves or in dollars, their hedging chasing moves, ' +
       'a vol move costing them more than a day of decay, and Fragility leverage building or stretched. Dealers being well paid or hedging against moves counts the other way. ' +
       'Steady, on watch, or unstable, with the main reasons named.</p>' +
+      '<p class="small">The flip card: the hour dealers turn losing (the 7-day gap drops below −' + CFG.gapPts + ' points), trade the way the coin went over the last 24 hours. ' +
+      'Stop ½ of a day\'s move (today\'s implied vol ÷ √365), target 2 day\'s moves, out at the price after 3 days if neither is hit. One trade at a time. ' +
+      'It only fires on the turn, so it stays quiet while dealers keep losing.</p>' +
       '<p class="small">Vega is how much an option\'s price changes when implied vol moves 1 point. Long-dated options have the most of it, ' +
       'so whoever holds the quarterlies gains when fear rises and loses when it eases, even if the price itself doesn\'t move.</p></details></section>';
   }

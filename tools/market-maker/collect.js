@@ -6,6 +6,7 @@ import { collect as collectFragility } from '../fragility/collect.js';
 import { evaluate } from '../fragility/score.js';
 import { CONFIG as FRAGILITY } from '../fragility/config.js';
 import { analyse, carry } from './model.js';
+import { flipState } from './flip.js';
 
 // market: a Fragility collect() result if the caller already has one (the
 // scheduled job does); otherwise it is fetched here. The shared HTTP cache means
@@ -31,5 +32,12 @@ export async function collectMM(asset, cfg, market) {
     const fr = evaluate(m, FRAGILITY);
     if (fr.score != null) fragility = { score: fr.score, zone: fr.zone };
   }
-  return Object.assign({ asset: asset, fetched: Date.now(), gamma: gamma, carry: dollars, fragility: fragility }, a);
+  // The flip, on finished hours only (Gate's last candle is still forming).
+  let flip = null;
+  try {
+    const now = Date.now();
+    flip = flipState(new Map(res[0].value.map(function (p) { return [p.t, p.iv]; })),
+      res[1].value.filter(function (c) { return c.t + 36e5 <= now; }), cfg);
+  } catch (e) { flip = null; }
+  return Object.assign({ asset: asset, fetched: Date.now(), gamma: gamma, carry: dollars, fragility: fragility, flip: flip }, a);
 }

@@ -38,7 +38,8 @@ tools/forced-flow/         Forced Flow tab: estimated liquidation clusters + dea
   read.js                  plain-English reading at the top of the tab (runs in Node)
 tools/market-maker/        Market Maker tab: implied vs realized volatility (Deribit DVOL vs Gate hourly prices),
                            dealers' time decay vs re-hedging in dollars a day, and what a jump in
-                           implied vol makes or costs them (vega), by expiry group
+                           implied vol makes or costs them (vega), by expiry group, plus the flip
+                           card (flip.js: the hour dealers turn losing, trade the last 24h's way)
   model.js, read.js        pure calculation and plain-English reading (run in Node)
 tools/playbook/            Playbook tab: picks a trading mode from the other tabs and lays out the
                            possible decisions (trigger, entry, stop, targets, size)

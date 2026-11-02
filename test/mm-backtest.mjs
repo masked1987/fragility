@@ -22,6 +22,7 @@ import { setCache, cached, getJson, DAY } from './bt-data.mjs';
 import { realizedVol, dailyMove } from '../tools/market-maker/model.js';
 import { dealerSide } from '../tools/market-maker/read.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
+import { readings, flipTrades } from '../tools/market-maker/flip.js';
 
 const MONTHS = +(process.argv[2] || 36);
 setCache(process.argv[3] || '.bt-cache');
@@ -65,23 +66,8 @@ for (const c of c5) {
   if (!last || last.t !== h) hours.push({ t: h, close: c.c, high: c.h, low: c.l });
   else { last.close = c.c; last.high = Math.max(last.high, c.h); last.low = Math.min(last.low, c.l); }
 }
-// The tab's reading for every hour (t = the hour's close time).
-const rvH = MM_CONFIG.rvDays * 24;
-let side = 'even';
-const read = hours.map((p, i) => {
-  const iv = ivAt.get(p.t);
-  if (iv == null || i < rvH + 24) return null;
-  const rv = realizedVol(hours, i, rvH);
-  let ivs = 0, n = 0;
-  for (let j = i - rvH + 1; j <= i; j++) { const v = ivAt.get(hours[j].t); if (v != null) { ivs += v; n++; } }
-  const gap = ivs / n - rv;
-  const prev = side; side = dealerSide(gap, side, MM_CONFIG);
-  let hi = -Infinity, lo = Infinity;
-  for (let j = i - 24; j < i; j++) { hi = Math.max(hi, hours[j].high); lo = Math.min(lo, hours[j].low); }
-  const iv24 = ivAt.get(hours[i - 24].t);
-  return { t: p.t + H, price: p.close, iv, m: dailyMove(iv) / 100, gap, side, prev, hi, lo,
-    ret24: p.close / hours[i - 24].close - 1, dIv: iv24 == null ? 0 : iv - iv24 };
-}).filter(r => r && r.t >= FROM);
+// The tab's reading for every hour (t = the hour's close time), the tab's own code.
+const read = readings(ivAt, hours, MM_CONFIG).filter(r => r.t >= FROM);
 
 function c5idx(t) { let lo = 0, hi = c5.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c5[m].t < t) lo = m + 1; else hi = m; } return lo; }
 
@@ -169,5 +155,15 @@ console.log('  results: ' + ['target', 'stopped', 'time', 'open'].map(k => k + '
 
 console.log('\nTrades of the pick:');
 top.L.forEach(t => console.log(`  ${new Date(t.T).toISOString().slice(0, 16)} ${t.buy ? 'BUY ' : 'SELL'} ${t.entry.toFixed(0).padStart(5)} stop ${t.stop.toFixed(0).padStart(5)} target ${t.target.toFixed(0).padStart(5)}  ${t.result.padEnd(7)} ${f2(t.net)}R`));
+
+// The tab's own flip code (tools/market-maker/flip.js) on the same 5-minute exits: must match the pick above.
+{
+  const c = c5.map(x => ({ t: x.t, high: x.h, low: x.l, close: x.c }));
+  const T = flipTrades(read, c, M5, MM_CONFIG.flip).map(g => {
+    const risk = Math.abs(g.entry - g.stop), R = (g.buy ? g.trade.exit - g.entry : g.entry - g.trade.exit) / risk - FEE * g.entry / risk;
+    return { T: g.t, buy: g.buy, result: g.trade.result, net: R };
+  });
+  console.log('\n' + line('tab code (flip.js, config)', T));
+}
 
 if (process.env.ALL) { console.log('\nEvery version:'); grid.forEach(g => console.log(line(g.name, g.L))); }
