@@ -91,8 +91,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
 4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done),
    plus the flip card (trade the turn to dealers losing; see the backtest section).
 5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
-6. **Tactics**: a separate intraday tactic, the GEX pivot + order-flow exhaustion
-   setup from the owner's video. Keep it independent of the Playbook.
+6. ~~Tactics~~ **removed from the site 2 Nov 2026** (owner: "yes remove tactics tab", after
+   asking whether anything used it: nothing did). Was the GEX pivot + order-flow setup from
+   his video. The code stays in `tools/tactics/` (still in the import-map list, since
+   `test/importmap.mjs` checks every file on disk) for `test/tactics*.mjs`; the job no
+   longer runs it and its 6/6 alert is gone. Tab list in `assets/app.js` is 7 again, phone
+   tab padding back to the 7-tab sizes. v=53. The Tactics section below is history.
 7. **Alt Tactics**: the owner's own method (dip through a huge gamma level, buy
    when buyers are back, stop at the low). Kept apart from Tactics (video rules).
 8. **Trend** (2 Nov 2026, "create separate tab with that strategy"): the 50-day
@@ -108,7 +112,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    counted a few outside the period). The tab's code on the test's Deribit closes gives
    +267.7% (first-day buy cost). `node test/trend.mjs` is offline and must pass.
    Eight tabs: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px) so all fit
-   next to the style dot. v=51.
+   next to the style dot. v=51. (Back to 7 tabs and the 7-tab sizes at v=53, when
+   Tactics was removed.)
    **Phone alert** (asked "with alerts when to enter, what's TP and stop loss"; he chose
    "keep it as tested": no fixed SL / TP): `jobs/monitor.mjs`, ETH (`alertAssets`),
    `trendEvents()` in model.js (crossings since `state.trend[asset].at`, none older than
@@ -146,7 +151,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
   also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
   no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
-  state still tracked, log lines still printed; their tabs unchanged). Workflow test
+  state still tracked, log lines still printed). Then the Tactics tab itself was removed
+  (site and job). Workflow test
   choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
   how the old alerts worked, if he wants one back.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
