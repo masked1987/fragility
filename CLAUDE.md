@@ -240,6 +240,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   To show a change before publishing: copy the site into `preview/` on
   `gh-pages` (and gamma-detrite `main`), point the preview's embed at
   `gamma-detrite/preview/`, bump its `?v=`; delete `preview/` when published.
+- Site protection (asked 2 Nov 2026 "can we protect it"): both repos and the site are
+  public. Offered: private repos (site needs GitHub Pro), password page (StatiCrypt-style,
+  code still public), Cloudflare Pages + Access (free, but may ask for a card; private repo
+  Actions = 2,000 min/month, so alerts every 30 min). Owner: can't pay a subscription,
+  "leave it as it is for now". Gave him a zip copy of both repos (all branches). Don't
+  re-offer unless he asks.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
