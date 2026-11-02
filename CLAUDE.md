@@ -142,6 +142,13 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `index.html` from a file list: a NEW .js file must be added to that list
   (`node test/importmap.mjs` fails otherwise). Without it, a phone once mixed a
   new view.js with an old cached `shared/head.js` and four tabs went blank.
+- **Phone alerts now (2 Nov 2026, evening): only the 3 trade strategies, ETH:
+  Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
+  also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
+  no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
+  state still tracked, log lines still printed; their tabs unchanged). Workflow test
+  choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
+  how the old alerts worked, if he wants one back.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" rings once. "Tactics 6/6

@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (zone, dealers, Market Maker strategy, Tactics, Alt, Trend), or one: tactics, alt, mm, trend; check = is the ntfy topic OK and what does ntfy hold'
+        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend; check = is the ntfy topic OK and what does ntfy hold'
         type: choice
-        options: ['no', 'all', 'tactics', 'alt', 'mm', 'trend', 'check']
+        options: ['no', 'all', 'mm', 'alt', 'trend', 'check']
         default: 'no'
 
 permissions:
