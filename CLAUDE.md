@@ -257,7 +257,10 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   alerts and execute manually"**. Nothing built; don't re-offer auto-trading unless he asks.
   Explained: exit only on the SELL (daily close under the dashed 50-day line, closed by
   hand), no SL order, buys only. Size: his MT5 account is 1:20; warned off 100% margin.
-  He settled on a Trend position worth **40% of the account, no leverage**.
+  He settled on a Trend position worth **40% of the account, no leverage**. Real balance
+  is only **£5**; demo "I feel nothing", "every penny counts"; his broker allows micro
+  sizes, so ~£2 of ETH (≈0.001 ETH) per Trend buy. Told him to check ETHUSD minimum volume
+  and "Swap long" (overnight fee, not in the test); he says IC Markets' rules are good.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
@@ -780,6 +783,9 @@ Owner: "for now done, we continue tomorrow". Everything below is live and publis
   Tactics removed.
 - Phone alerts: only Market Maker strategy, Alt Tactics, Trend (ETH).
 - Outside strategies tested (trend / funding carry / option selling): trend held up.
+- Later the same evening: he'll trade **Trend by hand** from the alerts on his IC Markets
+  MT5 account (no auto-trading; 40% of a £5 balance, micro size, buys only, exit on the
+  SELL). Was OUT at the time (last SELL 9 Oct). "Done for now, we continue tomorrow".
 
 ## Earlier handover (1 Nov 2026, end of a long session)
 
