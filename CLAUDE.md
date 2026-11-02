@@ -277,6 +277,14 @@ Then "Market Maker TP hit" (prio 4) / "SL hit" (prio 3) / "closed after 3 days"
 30 days, else a sample from today's numbers, as [test], rings 3 times. Card WAIT
 text says the phone rings 3 times with SL and TP. The older "dealers now losing"
 alert stays as it was (can come an hour apart; it uses the forming candle).
+Month by month (asked "do the back testing ... exactly the same strategy [as the
+alert] ... results for each month"): `MONTHLY=1 LIST=1 node test/mm-backtest.mjs 36
+.bt-cache` runs the tab / alert code (`flipTrades`, `cfg.flip`), results in
+`test/results/mm-monthly-2026-11-02.txt`. Nov 2023 – Nov 2026: 38 trades in 23 of 37
+months (11 up, 12 down, 14 none); full position +52.4%, account at 1% risk +26.7%;
+best month Nov 2025 +16.0%, worst Feb 2025 −5.9% / Dec 2025 −5.8%; worst drop
+from a high 9.7% (month ends). Backtest enters at the signal close; the real alert
+can arrive hours late (GitHub schedule).
 
 ## Playbook tab
 

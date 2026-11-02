@@ -161,9 +161,35 @@ top.L.forEach(t => console.log(`  ${new Date(t.T).toISOString().slice(0, 16)} ${
   const c = c5.map(x => ({ t: x.t, high: x.h, low: x.l, close: x.c }));
   const T = flipTrades(read, c, M5, MM_CONFIG.flip).map(g => {
     const risk = Math.abs(g.entry - g.stop), R = (g.buy ? g.trade.exit - g.entry : g.entry - g.trade.exit) / risk - FEE * g.entry / risk;
-    return { T: g.t, buy: g.buy, result: g.trade.result, net: R };
+    const pct = (g.buy ? g.trade.exit - g.entry : g.entry - g.trade.exit) / g.entry * 100 - FEE * 100;
+    return { T: g.t, buy: g.buy, result: g.trade.result, net: R, pct, entry: g.entry, stop: g.stop, target: g.target, exit: g.trade.exit, at: g.trade.at };
   });
   console.log('\n' + line('tab code (flip.js, config)', T));
+  // MONTHLY=1 (asked 2 Nov 2026: "the same strategy as the alert ... results for each
+  // month"): every month from the start, buys and sells together, in % of price
+  // (full position, 0.1% costs), plus the account risking 1% a trade (R × 1%).
+  if (process.env.MONTHLY) {
+    const months = [], d = new Date(FROM);
+    for (let y = d.getUTCFullYear(), m = d.getUTCMonth(); Date.UTC(y, m, 1) < now; m++) months.push(Date.UTC(y, m, 1));
+    let eq = 1, acc = 1, peak = 1, dd = 0, cum = 0;
+    const pc = x => (x >= 0 ? '+' : '') + x.toFixed(1) + '%';
+    console.log('\nMonth by month (the alert\'s exact rules; % = price move, full position, 0.1% costs; "1% risk" = account risking 1% a trade)');
+    console.log('month     trades  TP  SL  3d   month %   running %   1% risk month   1% risk running');
+    let pos = 0, neg = 0, flat = 0;
+    months.forEach(m0 => {
+      const m1 = Date.UTC(new Date(m0).getUTCFullYear(), new Date(m0).getUTCMonth() + 1, 1);
+      const L = T.filter(t => t.T >= m0 && t.T < m1);
+      let mm = 1, ma = 1;
+      L.forEach(t => { mm *= 1 + t.pct / 100; ma *= 1 + t.net / 100; });
+      eq *= mm; acc *= ma; peak = Math.max(peak, eq); dd = Math.max(dd, 1 - eq / peak);
+      const k = r => L.filter(t => t.result === r).length;
+      if (!L.length) flat++; else if (mm > 1) pos++; else neg++;
+      console.log(`${new Date(m0).toISOString().slice(0, 7)}   ${String(L.length).padStart(5)}  ${String(k('target')).padStart(2)}  ${String(k('stopped')).padStart(2)}  ${String(k('time')).padStart(2)}  ` +
+        `${(L.length ? pc((mm - 1) * 100) : '   -').padStart(8)}  ${pc((eq - 1) * 100).padStart(10)}  ${(L.length ? pc((ma - 1) * 100) : '   -').padStart(14)}  ${pc((acc - 1) * 100).padStart(16)}`);
+    });
+    console.log(`Months with trades: ${pos + neg} of ${months.length}; up ${pos}, down ${neg}, no trade ${flat}. Worst drop from a high ${(dd * 100).toFixed(1)}%.`);
+    if (process.env.LIST) T.forEach(t => console.log(`  ${new Date(t.T).toISOString().slice(0, 16)} ${t.buy ? 'BUY ' : 'SELL'} ${t.entry.toFixed(1)} SL ${t.stop.toFixed(1)} TP ${t.target.toFixed(1)} -> ${t.result.padEnd(7)} ${pc(t.pct)}`));
+  }
 }
 
 if (process.env.ALL) { console.log('\nEvery version:'); grid.forEach(g => console.log(line(g.name, g.L))); }
