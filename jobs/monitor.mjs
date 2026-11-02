@@ -1,7 +1,7 @@
-// Scheduled job (GitHub Actions): score BTC/ETH, push a phone alert on zone
-// change, when ETH dealers start or stop losing (Market Maker), when ETH
-// crosses a key level, and when all 6 Tactics BUY or SELL rules are met; append to
-// the hourly log.
+// Scheduled job (GitHub Actions): score BTC/ETH and append to the hourly log; push phone
+// alerts for the ETH trade strategies: Market Maker strategy, Alt Tactics and Trend.
+// (Zone changes, dealers losing, key levels and Tactics 6/6 are still worked out and
+// logged, but no longer ring: see PHONE below and keyLevels.alerts.)
 //
 //   node jobs/monitor.mjs <store dir>
 //
@@ -41,6 +41,11 @@ const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (
 const MMS_REPEATS = 3;            // Market Maker strategy BUY / SELL rings like the other trade alerts
 const TREND_REPEATS = 3;          // Trend BUY / SELL (daily close crosses the 50-day average) rings like the other trade alerts
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
+// Which alerts may ring the phone. 2 Nov 2026, owner: "remove condition market alerts, also
+// remove video rules strategy": Fragility zone changes, "ETH dealers now losing / no longer
+// losing" and Tactics 6/6 are off. Their state is still tracked (so turning one back on
+// doesn't ring for old news). On: Market Maker strategy, Alt Tactics, Trend.
+const PHONE = { zone: false, dealers: false, tactics: false };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
 const firstRun = !existsSync(STATE);
@@ -84,7 +89,7 @@ for (const asset of CONFIG.assets) {
   const zone = stickyZone(Math.round(r.score), CONFIG.zones, prev, CONFIG.hysteresis) || r.zone;
   state.zones[asset] = zone;
   summary.push(`${asset} ${r.score.toFixed(0)} ${zone}`);
-  if (prev && prev !== zone) pushes.push(zoneMessage(asset, prev, zone, r));
+  if (PHONE.zone && prev && prev !== zone) pushes.push(zoneMessage(asset, prev, zone, r));
 
   const price = data.futures ? data.futures.spot : data.options ? data.options.spot : null;
 
@@ -149,7 +154,7 @@ for (const asset of CONFIG.assets) {
       console.log(`${asset} dealers: ${side} (gap ${(mm.ivWeek - mm.rvWeek).toFixed(1)})`);
       mmSummary.push(`${asset} dealers ${SIDE_WORDS[side]}`);
       if (!testNow.mm) testNow.mm = { asset, side, mm, zone, r };
-      if (prevSide && prevSide !== side && (side === 'lose' || prevSide === 'lose')) pushes.push(dealerMessage(asset, prevSide, side, mm, zone, r));
+      if (PHONE.dealers && prevSide && prevSide !== side && (side === 'lose' || prevSide === 'lose')) pushes.push(dealerMessage(asset, prevSide, side, mm, zone, r));
       // Market Maker strategy (asked 2 Nov 2026 "create alert for market maker strategy,
       // but also add stop loss and TP"): the same flipState() as the tab's card. BUY / SELL
       // rings 3 times with entry, SL and TP; TP hit, SL hit and closed after 3 days once.
@@ -177,7 +182,7 @@ for (const asset of CONFIG.assets) {
       state.tactics[asset] = t.state;
       const sd = d.decision.sides || {}, side = k => sd[k] ? `${k} ${sd[k].met}/${RULES_TOTAL} at ${Math.round(sd[k].setup.pivot)}` : `${k} none`;
       console.log(`${asset} tactics: ${side('sell')}, ${side('buy')} -> ${d.decision.action}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
-      if (t.fire) pushes.push(tacticsMessage(d));
+      if (PHONE.tactics && t.fire) pushes.push(tacticsMessage(d));
       if (!tacNow) tacNow = d;
     } catch (e) {
       console.log(`${asset} tactics unavailable: ${e.message}`);
@@ -233,12 +238,12 @@ for (const asset of CONFIG.assets) {
 // Test run: the real format of each alert that is on, marked [test], sent once each.
 if (TEST) {
   const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: 1 });
-  if ((TEST === 'all' || TEST === 'true') && testNow.zone) {
+  if (PHONE.zone && (TEST === 'all' || TEST === 'true') && testNow.zone) {
     const { asset, r } = testNow.zone, zone = state.zones[asset];
     const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
     pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 3 times, a minute apart.`));
   }
-  if ((TEST === 'all' || TEST === 'true') && testNow.mm) {
+  if (PHONE.dealers && (TEST === 'all' || TEST === 'true') && testNow.mm) {
     const { asset, side, mm, zone, r } = testNow.mm;
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
       `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
@@ -250,7 +255,7 @@ if (TEST) {
     pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (mmsNow.flip.last ? 'the last Market Maker strategy signal' : 'no signal in the last 30 days, so this uses today\'s numbers') +
       ' in the format of a real one (rings ' + MMS_REPEATS + ' times).\n' + p.body });
   }
-  if (tacNow && (TEST === 'all' || TEST === 'true' || TEST === 'tactics')) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
+  if (PHONE.tactics && tacNow && (TEST === 'all' || TEST === 'true' || TEST === 'tactics')) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
   if (altNow && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
     // The last Alt signal in the ~3.5 days the tab sees, else a sample at the nearest huge
     // level below with a made-up 1% dip (so the test always shows the real format).
@@ -277,13 +282,13 @@ if (TEST) {
 }
 
 // Confirms the phone setup: sent once, on the first run that has a topic.
-if (!state.welcomed && process.env.NTFY_TOPIC && summary.length) {
+if (PHONE.zone && !state.welcomed && process.env.NTFY_TOPIC && summary.length) {
   state.welcomed = true;
   pushes.push({ title: 'Fragility alerts are on', body: 'You will get a message here when a zone changes.\nNow: ' + summary.join(' · '), priority: 3, tags: 'white_check_mark' });
 }
 
 // Same for the dealer and level alerts added later.
-if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
+if (PHONE.dealers && !state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
   state.welcomedMM = true;
   const lv = Object.entries(state.keyLevels).map(([a, k]) => `${a} crosses ${k.levels.map(px).join(' / ')}`).join(', ') || 'the price crosses a key level';
   pushes.push({ title: 'Dealer and level alerts are on', priority: 3, tags: 'white_check_mark', click: '#mm',
@@ -292,7 +297,7 @@ if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
 
 // And the Tactics alert: one test push per side, in the alert's own format, sent once.
 // (welcomedTac 2 = the BUY + SELL pair; the first, sell-only test was `true`.)
-if (state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
+if (PHONE.tactics && state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
   state.welcomedTac = 2;
   pushes.push(tacticsMessage(tacNow, 'buy'), tacticsMessage(tacNow, 'sell'));
 }

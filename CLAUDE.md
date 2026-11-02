@@ -119,6 +119,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    close with tonight's stop line. One-time "Trend alerts are on" (`welcomedTrend`).
    Workflow test choice `trend` (also in `all`): the last real BUY (its own line) + the
    daily message, as [test]. Each state now carries `line` (for the next close). v=52.
+   Test sent 2 Nov 2026 19:41 UTC (`test_alerts: trend`): owner "received all 3 alerts"
+   (BUY ×3 rings, the daily stop line, "Trend alerts are on").
 
 ## How the owner works
 
@@ -140,6 +142,13 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `index.html` from a file list: a NEW .js file must be added to that list
   (`node test/importmap.mjs` fails otherwise). Without it, a phone once mixed a
   new view.js with an old cached `shared/head.js` and four tabs went blank.
+- **Phone alerts now (2 Nov 2026, evening): only the 3 trade strategies, ETH:
+  Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
+  also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
+  no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
+  state still tracked, log lines still printed; their tabs unchanged). Workflow test
+  choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
+  how the old alerts worked, if he wants one back.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" rings once. "Tactics 6/6
