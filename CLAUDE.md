@@ -119,6 +119,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    close with tonight's stop line. One-time "Trend alerts are on" (`welcomedTrend`).
    Workflow test choice `trend` (also in `all`): the last real BUY (its own line) + the
    daily message, as [test]. Each state now carries `line` (for the next close). v=52.
+   Test sent 2 Nov 2026 19:41 UTC (`test_alerts: trend`): owner "received all 3 alerts"
+   (BUY ×3 rings, the daily stop line, "Trend alerts are on").
 
 ## How the owner works
 
