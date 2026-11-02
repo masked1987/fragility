@@ -183,7 +183,31 @@ const TPS = {
 
 // One Daily window for one take profit. One trade at a time: a trade that is still
 // open blocks new entries, so each take profit gets its own trade list.
-function windowTrades(c, view, start, E, name, gm) {
+// Stop losses compared (asked "test them all and find best SL"), with the GodMode take
+// profit. Each gets the entry, the touch extreme (lowest low / highest high since the
+// touch), the zone strike and the Daily view; returns the stop price.
+const STOPS = {
+  'touch low/high (base)': (e, buy, ext) => ext,
+  'touch + 2 points': (e, buy, ext) => buy ? ext - 2 : ext + 2,
+  'touch + 5 points': (e, buy, ext) => buy ? ext - 5 : ext + 5,
+  'touch + 10 points': (e, buy, ext) => buy ? ext - 10 : ext + 10,
+  'touch + 20 points': (e, buy, ext) => buy ? ext - 20 : ext + 20,
+  'touch + 0.1%': (e, buy, ext) => buy ? ext * 0.999 : ext * 1.001,
+  'touch + 0.2%': (e, buy, ext) => buy ? ext * 0.998 : ext * 1.002,
+  'touch + 0.3%': (e, buy, ext) => buy ? ext * 0.997 : ext * 1.003,
+  'touch + 0.5%': (e, buy, ext) => buy ? ext * 0.995 : ext * 1.005,
+  'zone strike + 10 pts (or touch)': (e, buy, ext, K) => buy ? Math.min(K - 10, ext) : Math.max(K + 10, ext),
+  'next strike past zone': (e, buy, ext, K, v) => {
+    const r = v.rows.filter(x => buy ? x.k < Math.min(K, ext) : x.k > Math.max(K, ext)).sort((a, b) => buy ? b.k - a.k : a.k - b.k)[0];
+    return r ? r.k : ext;
+  },
+  'fixed 0.5% from entry': (e, buy) => buy ? e * 0.995 : e * 1.005,
+  'fixed 0.75% from entry': (e, buy) => buy ? e * 0.9925 : e * 1.0075,
+  'fixed 1% from entry': (e, buy) => buy ? e * 0.99 : e * 1.01,
+  'fixed 1.5% from entry': (e, buy) => buy ? e * 0.985 : e * 1.015,
+};
+
+function windowTrades(c, view, start, E, name, gm, stopName) {
   const i0 = c.findIndex(x => x.t >= start), iEnd = c.findIndex(x => x.t + M5 > E);
   if (i0 < 27 || iEnd < 0) return [];
   const spot = c[i0 - 1].c, v = typeof view === 'function' ? view(spot) : dailyView(view, E, start, spot), TP = TPS[name];
@@ -202,7 +226,7 @@ function windowTrades(c, view, start, E, name, gm) {
       else if (sellS && a.t < a.k && b.t >= b.k && x.c < sellS.ext) side = 'sell';
     }
     if (!side) { i++; continue; }
-    const buy = side === 'buy', S = buy ? buyS : sellS, entry = x.c, stop = S.ext, risk = Math.abs(entry - stop);
+    const buy = side === 'buy', S = buy ? buyS : sellS, entry = x.c, stop = STOPS[stopName || 'touch low/high (base)'](entry, buy, S.ext, S.k, v), risk = Math.abs(entry - stop);
     const tp = TP(entry, buy, v, risk);
     let exit = null, how = 'expiry', j = i + 1;
     for (; j <= iEnd; j++) {
@@ -266,15 +290,18 @@ const data = await pool(days, async D => {
 const sdata = await pool(snapDays, async s => { const c = await candles(s.D); return { ...s, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } }; });
 process.stderr.write('\n');
 
-const names = Object.keys(TPS), lists = {};
-for (const name of names) {
+// SLGRID=1: the GodMode take profit with every stop in STOPS (keys "TP|stop").
+const runs = process.env.SLGRID ? Object.keys(STOPS).map(st => ['GodMode dot (15 min)', st]) : Object.keys(TPS).map(n => [n, undefined]);
+const names = runs.map(r => r[1] ? r[1] : r[0]), lists = {};
+for (const [tpName, stName] of runs) {
+  const name = stName || tpName;
   lists[name] = [];
   for (const d of data) {
     if (!d.c.length || !d.chain.length) continue;
-    lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, name, d.gm));
-    lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, name, d.gm));
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, tpName, d.gm, stName));
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, tpName, d.gm, stName));
   }
-  for (const d of sdata) lists[name].push(...windowTrades(d.c, () => d.view, d.start, d.D + DAY + 8 * H, name, d.gm));
+  for (const d of sdata) lists[name].push(...windowTrades(d.c, () => d.view, d.start, d.D + DAY + 8 * H, tpName, d.gm, stName));
   lists[name].sort((a, b) => a.t - b.t);
 }
 
@@ -309,6 +336,19 @@ for (const name of names) {
 }
 const byS = side => stats(lists[names[0]].filter(t => t.side === side));
 console.log(`\nbuys ${byS('buy').n} / sells ${byS('sell').n} (next blue)`);
+if (process.env.SLGRID) {
+  console.log('\nIn % of price per trade (full position), after costs. GodMode 15-min dot take profit for every stop.');
+  console.log('stop loss                         trades  win%  avg win  avg loss  per trade  total %   2024     2025     2026   last 3m (n)   worst run  max drop %');
+  const yr = (L, y) => L.filter(t => new Date(t.t).getUTCFullYear() === y).reduce((a, t) => a + t.r.pct, 0);
+  for (const name of names) {
+    const L = lists[name]; if (!L.length) continue;
+    const s = stats(L), w = L.filter(t => t.r.pct > 0), lo = L.filter(t => t.r.pct <= 0), q = L.filter(t => t.t >= last3m);
+    console.log(name.padEnd(33), String(L.length).padStart(6), s.win.toFixed(0).padStart(5), f2(w.reduce((a, t) => a + t.r.pct, 0) / Math.max(w.length, 1)).padStart(8),
+      f2(lo.reduce((a, t) => a + t.r.pct, 0) / Math.max(lo.length, 1)).padStart(9), f2(s.avg).padStart(10), f2(s.sum).padStart(8),
+      f2(yr(L, 2024)).padStart(8), f2(yr(L, 2025)).padStart(8), f2(yr(L, 2026)).padStart(8),
+      (f2(q.reduce((a, t) => a + t.r.pct, 0)) + ' (' + q.length + ')').padStart(13), String(s.worst).padStart(10), s.dd.toFixed(1).padStart(11));
+  }
+}
 if (process.env.LIST) {
   console.log('\n' + process.env.LIST + ':');
   (lists[process.env.LIST] || []).forEach(t => console.log(new Date(t.t).toISOString().slice(0, 16), t.side.padEnd(4), 'zone', t.zone, 'entry', t.entry.toFixed(1), 'stop', t.stop.toFixed(1),

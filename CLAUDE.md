@@ -51,6 +51,17 @@ the file layout. Tabs, in order:
    last year GodMode +0.15%/trade (41), biggest blue +0.11%; last 3 months GodMode
    +0.02% (15 trades). About break-even after costs, not proven. "Check last 3 months":
    no free per-strike OI for every day; only 1st of month + the snapshots since 27 Oct.
+   In % (asked "show me stats like % wise"): GodMode TP, full position, after costs,
+   3 years −7.0% (before costs +5.9%), 35% win, avg win +0.83% / loss −0.53%; 2024
+   −2.8%, 2025 −10.2%, 2026 +6.3%; buys −6.7%, sells −0.3%. Not profitable yet.
+   Stop loss grid (asked "test them all and find best SL"; `SLGRID=1`, results
+   `test/results/daily-sl-2026-11-02.txt`, GodMode TP for all): touch low/high −7.0%;
+   +2 pts −7.5%; +5 / +10 pts −3.7%; +20 pts +1.0%; +0.1% −7.4%; +0.2% −3.2%; +0.3% −7.2%;
+   +0.5% **+1.6%** (102 trades, 49% win, max drop 12.9%); zone strike +10 pts (or the touch
+   if further) −0.8% (smallest yearly losses, max drop 12.4%); next strike past the zone
+   −2.0%; fixed 0.5–1.5% from entry all worst (−8.9 to −16.5%). Every stop loses in 2024
+   and 2025 and wins in 2026; some room past the touch helps a little but results jump
+   between neighbours, so it's about break-even whatever the stop.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
