@@ -255,6 +255,12 @@ turn. Live trades are now followed on Gate 5-minute candles (`closedCandles(asse
 5, 1000)` ≈ 3.5 days, passed to `flipState(..., fine)`), like the backtest's 5-min
 exits; hourly only for older flips. The only difference stated on the card: Gate
 prices on the tab, Deribit in the test (no CORS).
+Owner then: "I meant market maker": he calls it the **Market Maker strategy**, not
+"the flip". All visible text says "Market Maker strategy" / "signal" (card label
+"ETH · Market Maker strategy", "Last signal", rules box "Market Maker strategy: the
+rules, exactly as backtested", "Market Maker strategy backtest ... (the one compared
+with Alt Tactics)"). Code names (`flip.js`, `cfg.flip`) unchanged. Use his name in
+replies too. v=49.
 
 ## Playbook tab
 
@@ -589,7 +595,7 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **State (2 Nov 2026), all live, v=48 (flip card on Market Maker added):** Alt
+- **State (2 Nov 2026), all live, v=49 (Market Maker strategy card added):** Alt
   Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
   version), target the biggest huge level, stop at the low (0.4% room removed
   2 Nov at his request), dips up to 2%,
