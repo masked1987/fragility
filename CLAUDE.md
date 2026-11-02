@@ -95,6 +95,20 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    setup from the owner's video. Keep it independent of the Playbook.
 7. **Alt Tactics**: the owner's own method (dip through a huge gamma level, buy
    when buyers are back, stop at the low). Kept apart from Tactics (video rules).
+8. **Trend** (2 Nov 2026, "create separate tab with that strategy"): the 50-day
+   average rule from the outside-strategies test. Daily close (00:00 UTC) above the
+   50-day average = own ETH (IN), below = cash (OUT); long only, no stop, no target.
+   `tools/trend/` (model.js pure: states, trades, `line` = tonight's line = average of
+   the last 49 closes, the price today's close must beat; collect.js = Gate futures
+   daily candles, 1,000 days). Reading card (In / Out / Buy / Sell headline, tonight's
+   line), IN / OUT / BUY / SELL card (BUY / SELL for 24 h after the crossing close) with
+   the numbered rules, 6-month chart (close, dashed average, IN shaded, triangles),
+   trades table + live check on Gate prices, backtest card (ETH Nov 2023 – Oct 2026:
+   +268.8% vs holding +24.4%, worst drop 38% vs 68%, 21 trades; the test's "24"
+   counted a few outside the period). The tab's code on the test's Deribit closes gives
+   +267.7% (first-day buy cost). `node test/trend.mjs` is offline and must pass.
+   Phone alert not built (offer it). Eight tabs: phone padding 2.5px / 13.5px (1.5px /
+   12.5px under 380px) so all fit next to the style dot. v=51.
 
 ## How the owner works
 
@@ -212,7 +226,7 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
   `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
-  `node test/tactics.mjs`, `node test/alt.mjs`, `node test/flip.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
+  `node test/tactics.mjs`, `node test/alt.mjs`, `node test/flip.mjs`, `node test/trend.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
   and `node test/tactics-live.mjs` print the live tabs.
 - Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
   from a start time ran out of pages on BTC and silently dropped the newest trades.

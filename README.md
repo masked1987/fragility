@@ -1,6 +1,6 @@
 # Fragility Score (BTC / ETH)
 
-Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker, Playbook, Tactics, Alt Tactics.
+Tabs: Gamma Detrite (embedded, opens first), Fragility, Forced Flow, Market Maker, Playbook, Tactics, Alt Tactics, Trend.
 
 How primed the market is for a liquidation cascade: 0–100, in three zones
 (Calm < 35, Building 35–59, Primed ≥ 60). Not a trade signal.
@@ -50,6 +50,8 @@ tools/tactics/             Tactics tab: GEX pivot + order-flow exhaustion setup 
   model.js, read.js        pure: gamma nodes, pivot, volume profile, premium drift, footprint, setup
 tools/alt-tactics/          Alt Tactics tab: the owner's own method on the huge gamma levels
   model.js                 pure: huge levels, Ichimoku score, dips, once per level (runs in Node)
+tools/trend/                Trend tab: the 50-day average rule, long only (Gate daily candles)
+  model.js                 pure: daily states, trades, tonight's line (runs in Node; test/trend.mjs)
 shared/sources/*.js        one file per exchange, reusable by other tabs
 shared/gamma.js            Black-Scholes gamma, GEX, gamma flip
 tools/fragility/

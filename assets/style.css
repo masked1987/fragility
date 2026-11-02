@@ -805,3 +805,16 @@ details.tc-fold[open] .chev { transform: translateY(1px) rotate(-135deg); }
 .mm-rules .label { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; font-weight: 700; color: var(--accent); }
 .mm-rules ol { margin: 6px 0 6px; padding-left: 20px; display: grid; gap: 4px; }
 .mm-rules p { margin: 4px 0 0; }
+
+/* Trend tab: the 50-day average rule (Nov 2026). */
+.chart .tr-px { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-linejoin: round; }
+.chart .tr-ma { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 3; stroke-linejoin: round; }
+.chart .tr-in { fill: var(--calm); opacity: .12; }
+.chart .tr-now { fill: var(--text); stroke: var(--card); stroke-width: 1.5; }
+.chart .tr-nowt { fill: var(--text); font-size: 10px; font-weight: 700; }
+.legend .ln.tr-mal { border-top: 2px dashed var(--accent); }
+.legend .tr-insw { display: inline-block; width: 12px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px; background: var(--calm); opacity: .35; }
+.tc-dec.hold .tc-dec-badge { background: color-mix(in srgb, var(--muted) 70%, var(--card)); }
+/* Eight tabs (Trend added): tighter again so all fit at 360–390px next to the style dot. */
+@media (max-width: 600px) { .tabs a { padding: 7px 2.5px; font-size: 13.5px; } }
+@media (max-width: 380px) { .tabs a { padding: 7px 1.5px; font-size: 12.5px; } }
