@@ -37,13 +37,20 @@ the file layout. Tabs, in order:
    said yet. Take profit not decided ("we need to pick something optimal"). Past
    daily-expiry gamma is only free for the 1st of each month (Tardis), so a real
    test would have ~36 days. Build nothing until he asks.
-   Asked "do the test to find best take profit": `test/daily-tp.mjs [months] [cache]
-   [parallel]` (own retrying Tardis loader: the free server answers 429 when pulled
-   hard; never cache an empty chain). Take-profit idea from him: **GodMode 17,6,4
-   black or yellow dot on the 15-minute chart** = take profit. Closest public script:
-   "Godmode 3.1.4 SNOW_CITY SCALPER EDITION" (open source, 17,6,4 = "very sensitive
-   caution dots"); its code is not readable from the page fetch, so the dot rule
-   needs his code / screenshot before it can be tested.
+   Asked "do the test to find best take profit": `SNAP=<gamma-detrite clone> node
+   test/daily-tp.mjs 37 <cache> 3` (own retrying Tardis loader: the free server answers
+   429 when pulled hard; never cache an empty chain). Then "use ichimoku 5 min for entry,
+   god mode for tp": his own **GodMode** Pine script (pasted; LazyBear / xSilas /
+   Ni6HTH4wK, current ticker only), settings **17, 6, 4**, "Multi-exchange?" off =
+   wt1 = avg(TCI, money flow, RSI); wt2 = sma(wt1, 6); yellow "Caution!" dot when wt2 > 80
+   (ends a buy) or < 20 (ends a sell), on the **15-minute** chart. Results
+   `test/results/daily-tp-2026-11-02.txt` (37 first-of-month days + 28–31 Oct from the
+   Gamma Detrite snapshot history; buys + sells, 0.1% costs, median stop 0.58%): every
+   take profit slightly negative over 3 years; best GodMode dot −0.05%/trade (129, 36%
+   win, worst run 7), biggest blue −0.04%, next blue −0.05%, flip line worst −0.21%;
+   last year GodMode +0.15%/trade (41), biggest blue +0.11%; last 3 months GodMode
+   +0.02% (15 trades). About break-even after costs, not proven. "Check last 3 months":
+   no free per-strike OI for every day; only 1st of month + the snapshots since 27 Oct.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.

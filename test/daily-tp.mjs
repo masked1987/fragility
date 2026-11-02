@@ -183,10 +183,10 @@ const TPS = {
 
 // One Daily window for one take profit. One trade at a time: a trade that is still
 // open blocks new entries, so each take profit gets its own trade list.
-function windowTrades(c, chain, start, E, name, gm) {
+function windowTrades(c, view, start, E, name, gm) {
   const i0 = c.findIndex(x => x.t >= start), iEnd = c.findIndex(x => x.t + M5 > E);
   if (i0 < 27 || iEnd < 0) return [];
-  const spot = c[i0 - 1].c, v = dailyView(chain, E, start, spot), TP = TPS[name];
+  const spot = c[i0 - 1].c, v = typeof view === 'function' ? view(spot) : dailyView(view, E, start, spot), TP = TPS[name];
   if (!v.rows.length) return [];
   const out = [];
   let buyS = null, sellS = null, i = i0;
@@ -228,11 +228,42 @@ async function pool(items, fn) {
   return out;
 }
 
+// Extra recent days (asked "check last 3 months"): the Gamma Detrite bot's saved
+// snapshots (gamma-data.json history, from 27 Oct 2026, every few hours). The first
+// snapshot after 08:00 UTC on day D gives the Daily view for 08:00 D → 08:00 D+1 exactly
+// as the page showed it (its "1d" column, Near view, $M per 1%). Set SNAP=<path to a
+// gamma-detrite clone> to use them; 1st-of-month days keep the Tardis data.
+const snapDays = [];
+if (process.env.SNAP) {
+  const log = (await exec(`git -C "${process.env.SNAP}" log origin/main --format='%H' -- gamma-data.json`)).stdout.trim().split('\n');
+  const snaps = [];
+  for (const h of log) {
+    try { const j = JSON.parse((await exec(`git -C "${process.env.SNAP}" show ${h}:gamma-data.json`, { maxBuffer: 1e8 })).stdout).ETH; if (j && j.asof) snaps.push(j); } catch (e) { /* skip */ }
+  }
+  const at = j => Date.parse(j.asof.replace(' UTC', 'Z').replace(' ', 'T'));
+  for (let D = Date.UTC(2026, 9, 28); D + DAY + 8 * H <= Date.now(); D += DAY) {
+    if (days.includes(D)) continue;
+    const sn = snaps.filter(j => at(j) >= D + 8 * H && at(j) < D + 14 * H && j.exps.indexOf('1d') >= 0).sort((a, b) => at(a) - at(b))[0];
+    if (!sn) continue;
+    const col = sn.exps.indexOf('1d'), rows = sn.strikes.map((k, i) => ({ k, v: sn.m[i][col] * 1e6 }));
+    let flip = null, bd = Infinity;
+    for (let i = 0; i < rows.length - 1; i++) {
+      const g0 = rows[i].v, g1 = rows[i + 1].v;
+      if ((g0 < 0 && g1 >= 0) || (g0 >= 0 && g1 < 0)) {
+        const x = rows[i].k + Math.abs(g0) / (Math.abs(g0) + Math.abs(g1)) * (rows[i + 1].k - rows[i].k);
+        if (Math.abs(x - sn.spot) < bd) { bd = Math.abs(x - sn.spot); flip = x; }
+      }
+    }
+    snapDays.push({ D, start: at(sn), view: { rows, blue: rows.filter(r => r.v >= MIN_BLUE), flip } });
+  }
+}
+
 const data = await pool(days, async D => {
   const [chain, c] = await Promise.all([chainDay(D), candles(D)]);
   process.stderr.write('.');
   return { D, chain, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } };
 });
+const sdata = await pool(snapDays, async s => { const c = await candles(s.D); return { ...s, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } }; });
 process.stderr.write('\n');
 
 const names = Object.keys(TPS), lists = {};
@@ -243,10 +274,12 @@ for (const name of names) {
     lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, name, d.gm));
     lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, name, d.gm));
   }
+  for (const d of sdata) lists[name].push(...windowTrades(d.c, () => d.view, d.start, d.D + DAY + 8 * H, name, d.gm));
+  lists[name].sort((a, b) => a.t - b.t);
 }
 
 const f2 = x => (x >= 0 ? '+' : '') + x.toFixed(2);
-const lastYear = Date.now() - 365 * DAY;
+const lastYear = Date.now() - 365 * DAY, last3m = Date.now() - 92 * DAY;
 function stats(L) {
   if (!L.length) return { n: 0 };
   const p = L.map(t => t.r.pct), sum = p.reduce((a, b) => a + b, 0);
@@ -261,17 +294,18 @@ function stats(L) {
 }
 const usedDays = data.filter(d => d.c.length && d.chain.length).length;
 console.log(`Daily approach: blue zone touch + 5-min Tenkan/Kijun cross, stop at the touch low/high`);
+if (sdata.length) console.log(`+ ${sdata.length} recent days from saved Gamma Detrite snapshots (${sdata.map(d => new Date(d.D).toISOString().slice(5, 10)).join(', ')}), one Daily window each`);
 console.log(`${usedDays} test days (1st of each month ${new Date(days[0]).toISOString().slice(0, 7)} – ${new Date(days[days.length - 1]).toISOString().slice(0, 7)}), 2 Daily windows each, buys + sells together, 0.1% costs`);
 const any = lists[names[0]];
 const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 console.log(`median stop distance ${med(any.map(t => t.riskPct)).toFixed(2)}% of price\n`);
-console.log('take profit                trades  win%  target%  avg %/trade  total %  worst run  max drop %  w/o best 2  avg R   | first 2y %/tr  last year %/tr (n)');
+console.log('take profit                trades  win%  target%  avg %/trade  total %  worst run  max drop %  w/o best 2  avg R   | first 2y %/tr  last year %/tr (n)  last 3 months %/tr (n), total %');
 for (const name of names) {
-  const L = lists[name], s = stats(L), a = stats(L.filter(t => t.t < lastYear)), b = stats(L.filter(t => t.t >= lastYear));
+  const L = lists[name], s = stats(L), a = stats(L.filter(t => t.t < lastYear)), b = stats(L.filter(t => t.t >= lastYear)), q = stats(L.filter(t => t.t >= last3m));
   if (!s.n) { console.log(name.padEnd(26), 'no trades'); continue; }
   console.log(name.padEnd(26), String(s.n).padStart(6), s.win.toFixed(0).padStart(5), s.hit.toFixed(0).padStart(8), f2(s.avg).padStart(12), f2(s.sum).padStart(8),
     String(s.worst).padStart(10), s.dd.toFixed(1).padStart(11), (s.noTop2 == null ? '-' : f2(s.noTop2)).padStart(11), f2(s.avgR).padStart(7), ' |',
-    (a.n ? f2(a.avg) : '-').padStart(13), ((b.n ? f2(b.avg) : '-') + ' (' + b.n + ')').padStart(16));
+    (a.n ? f2(a.avg) : '-').padStart(13), ((b.n ? f2(b.avg) : '-') + ' (' + b.n + ')').padStart(16), ((q.n ? f2(q.avg) : '-') + ' (' + q.n + '), ' + (q.n ? f2(q.sum) : '-')).padStart(24));
 }
 const byS = side => stats(lists[names[0]].filter(t => t.side === side));
 console.log(`\nbuys ${byS('buy').n} / sells ${byS('sell').n} (next blue)`);
