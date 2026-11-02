@@ -91,6 +91,18 @@ export function mount(el) {
       return 'risking $' + Math.round(risk).toLocaleString('en-US') + ' (' + riskPct + '% of $' + Math.round(account).toLocaleString('en-US') + '): about <b class="num">' +
         amt.toFixed(amt >= 10 ? 1 : 2) + ' ' + a + '</b> <span class="muted">(set on the Plan tab)</span>';
     };
+    const m = o ? o.move : r.m, ref = o ? o.entry : r.price;
+    const rules = '<div class="mm-rules"><div class="label">The rules: exactly what was backtested</div><ol class="small">' +
+      '<li><b>Signal:</b> dealers turn losing. Every hour, at the close: the last 7 days\' average implied vol (DVOL) minus how much ' + a +
+        ' really moved over those 7 days. At −' + CFG.gapPts + ' points or lower they are losing; they stay losing until it is back above −' + (CFG.gapPts - CFG.flipBufferPts) + '.</li>' +
+      '<li><b>Direction:</b> ' + a + ' up over the last 24 hours = BUY, down = SELL.</li>' +
+      '<li><b>Entry:</b> the price at the close of that hour.</li>' +
+      '<li><b>Stop:</b> ½ of a day\'s expected move from the entry <span class="muted">(day\'s move = implied vol ÷ √365; ' + (o ? 'this trade' : 'now') + ' ±' + (m * 100).toFixed(1) + '%, so ' +
+        (f.stopMoves * m * 100).toFixed(1) + '% ≈ ' + Math.round(f.stopMoves * m * ref) + ' points)</span>.</li>' +
+      '<li><b>Target:</b> 2 day\'s moves from the entry, 4× the risk <span class="muted">(' + (f.targetMoves * m * 100).toFixed(1) + '% ≈ ' + Math.round(f.targetMoves * m * ref) + ' points)</span>.</li>' +
+      '<li><b>Exit:</b> stop or target, whichever is hit first on 5-minute candles; if one candle touches both, it counts as stopped. Neither after 3 days: out at the price then.</li>' +
+      '<li><b>One at a time:</b> no new trade while one is open, and only the turn counts: no second trade while dealers stay losing.</li></ol>' +
+      '<p class="small muted">The tab runs the same code as the backtest. Only the prices differ: Gate here, Deribit in the test (browsers can\'t read Deribit\'s history), so a level can be a few points off.</p></div>';
     let act, head, body;
     if (o) {
       const fresh = d.fetched - o.t <= f.freshHours * 36e5, buy = o.buy, dist = Math.abs(o.entry - o.stop);
@@ -99,7 +111,7 @@ export function mount(el) {
         : 'Open: the ' + (buy ? 'buy' : 'sell') + ' from the flip is still running';
       body = '<div class="al-sl"><div class="label">Your stop loss</div><div class="al-sl-num num">' + num(o.stop) + '</div>' +
           '<div class="small">½ of a day\'s move ' + (buy ? 'under' : 'over') + ' the entry · ' + num(dist) + ' points (' + (dist / o.entry * 100).toFixed(1) + '%)</div>' +
-          '<div class="small muted">From Gate hourly prices; your chart can differ by a few points.</div></div>' +
+          '<div class="small muted">From Gate prices; your chart can differ by a few points.</div></div>' +
         '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(o.entry) + '</b> <span class="muted">(' + when(o.t) + ', price now ' + num(d.price) + ')</span></dd>' +
         '<dt>Target</dt><dd><b class="num">' + num(o.target) + '</b> <span class="muted">2 day\'s moves ' + (buy ? 'up' : 'down') + ' (' + (Math.abs(o.target - o.entry) / o.entry * 100).toFixed(1) + '%), 4× the risk</span></dd>' +
@@ -116,24 +128,23 @@ export function mount(el) {
           (L.trade.result === 'target' ? 'reached the target' : L.trade.result === 'stopped' ? 'stopped' : 'closed after 3 days') + ' (' +
           pc(((L.buy ? 1 : -1) * (L.trade.exit - L.entry)) / L.entry) + ')' : 'none in the last 30 days';
       body = '<dl class="pb-dl">' +
-        '<dt>Fires when</dt><dd>dealers turn losing: the 7-day gap drops below −' + CFG.gapPts + ' points <span class="muted">(now ' + (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ')</span></dd>' +
-        '<dt>Then</dt><dd>trade the way ' + a + ' went in the last 24h' + (r.side === 'lose' ? '' : ' <span class="muted">(now ' + pc(r.ret24) + ', so a ' + (buy ? 'BUY' : 'SELL') + ')</span>') + '</dd>' +
-        '<dt>Stop</dt><dd>½ of a day\'s move <span class="muted">(now ' + (f.stopMoves * r.m * 100).toFixed(1) + '%, ' + px(stopPts).slice(1) + ' points)</span></dd>' +
-        '<dt>Target</dt><dd>2 day\'s moves <span class="muted">(now ' + (f.targetMoves * r.m * 100).toFixed(1) + '%, ' + px(tgtPts).slice(1) + ' points), out after 3 days</span></dd>' +
+        '<dt>Gap now</dt><dd><b class="num">' + (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' points</b> <span class="muted">(dealers ' + sideWord[r.side] + '; the signal is at −' + CFG.gapPts + ')</span></dd>' +
+        (r.side === 'lose' ? '' : '<dt>If it fired now</dt><dd>a <b>' + (buy ? 'BUY' : 'SELL') + '</b> <span class="muted">(' + a + ' ' + pc(r.ret24) + ' in 24h), stop ≈ ' + Math.round(stopPts) + ' points, target ≈ ' + Math.round(tgtPts) + ' points</span></dd>') +
         '<dt>Last flip</dt><dd>' + lastTxt + '</dd></dl>' +
         '<p class="verdict-action"><b>What it means:</b> ' + (r.side === 'lose'
           ? 'dealers have been losing since ' + when(st.losingSince) + '. The flip only fires on the turn, so the next one comes after they stop losing and turn losing again.'
-          : 'nothing to do. The flip comes when ' + a + ' starts moving more than options priced, after a calmer stretch; your phone already rings for "' + a + ' dealers now losing".') + '</p>';
+          : 'nothing to do. The flip comes when ' + a + ' starts moving more than options priced, after a calmer stretch. Your phone\'s "' + a +
+            ' dealers now losing" alert is worked out a little differently, so it can come an hour apart; this card is the one that follows the tested rules.') + '</p>';
     }
     const cls = act === 'buy' || (act === 'open' && o.buy) ? 'buy' : act === 'sell' || act === 'open' ? 'sell' : 'hold';
     return '<section class="card tc-dec ' + cls + '">' +
       '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
         '<div><div class="label">' + a + ' · the flip</div><p class="tc-dec-head">' + esc(head.slice(head.indexOf(': ') + 2)) + '</p></div></div>' +
-      body +
+      body + rules +
       '<p class="small"><b>Backtest, ETH ' + b.from + ' to now</b>' + (d.asset === 'ETH' ? '' : ' (tested on ETH only)') + ' (buys and sells together, 0.1% costs): ' + b.trades + ' trades, ' + b.winPct + '% won, ' +
         '+' + b.avgPct.toFixed(1) + '% a trade (wins +' + b.avgWin + '%, losses −' + Math.abs(b.avgLoss) + '%), +' + b.compounded + '% compounded, worst drop ' + b.maxDD + '%, ' +
         'worst losing run ' + b.worstRun + ', profitable in ' + b.quarters + ' quarters (' + b.years + '). ' + b.trades + ' trades is a small sample.</p>' +
-      '<p class="muted small">Same rule as the backtest, run here on Gate hourly prices. Context, not a trade signal.</p>' +
+      '<p class="muted small">Context, not a trade signal.</p>' +
     '</section>';
   }
 
