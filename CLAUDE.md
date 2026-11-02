@@ -28,6 +28,10 @@ the file layout. Tabs, in order:
   Every tab leads with a **reading card** (headline, a few lines, "What it means").
   Phrase levels as rounded zones (~2,170) and moves as "±X% a day".
 - Uses a phone (Android, dark mode). Always check pages at 390px wide, dark and light.
+- 2 Nov 2026: "Don't do test, is not necessary, I already know the stats.
+  Backtesting is not necessary." Don't run or report backtests / new stats unless
+  he asks; just make the change he asks for (offline unit tests before publishing
+  still run quietly, they aren't stats).
 - Likes clear answers but the site says "Context, not a trade signal".
 - Has said yes to publishing: after a change is tested, push the work branch,
   then publish (fragility: `main` and `gh-pages`; gamma-detrite: `main`).
@@ -397,7 +401,10 @@ The owner's own method, built from the version that tested best
   request, 1,000 ≈ 3.5 days, CORS ok), Gate futures as backup. Switched 2 Nov 2026
   when he asked "2173?": his TradingView ETH/USD showed the Oct 30 low at 2,169.92;
   Bitstamp 2,170.0, Coinbase 2,170.03, Deribit 2,170.0, Gate futures 2,173.4, OKX
-  USDT-swap 2,171.5. The stop box says which source was used. Backtests still use
+  USDT-swap 2,171.5. The stop box says which source was used.
+  He then said "Dip is on 2169": no fetchable exchange has 2,169.92 (Bitfinex
+  2,175.9, Gemini 2,171, Crypto.com 2,171.66, Binance.US 2,171.41, Bitstamp 1-min
+  2,170.0); his chart's ETH/USD is most likely TradingView's own blended index. Backtests still use
   Deribit 5-min (same lows as Bitstamp here). Only setups inside the 3.5 days are
   known, so once-per-level starts fresh each load.
 - After a stop (owner, 1 Nov 2026: "if price hit my SL during this buy we only re
