@@ -393,8 +393,13 @@ The owner's own method, built from the version that tested best
   levels). Then the Ichimoku checklist, the huge levels with their status, a
   chart (since the dip / spike when one is live, with the stop), and the backtest card
   (see the latest numbers below). Size uses the Playbook account.
-- Gate 5-minute candles in the browser (1,000 ≈ 3.5 days); only setups inside
-  that window are known, so once-per-level starts fresh each load.
+- 5-minute candles in the browser from **Bitstamp ETH/USD** (`collect.js`, one
+  request, 1,000 ≈ 3.5 days, CORS ok), Gate futures as backup. Switched 2 Nov 2026
+  when he asked "2173?": his TradingView ETH/USD showed the Oct 30 low at 2,169.92;
+  Bitstamp 2,170.0, Coinbase 2,170.03, Deribit 2,170.0, Gate futures 2,173.4, OKX
+  USDT-swap 2,171.5. The stop box says which source was used. Backtests still use
+  Deribit 5-min (same lows as Bitstamp here). Only setups inside the 3.5 days are
+  known, so once-per-level starts fresh each load.
 - After a stop (owner, 1 Nov 2026: "if price hit my SL during this buy we only re
   enter by all our rules in next gamma level"): that is the once-per-level rule.
   `oncePerLevel()` leaves `setups.locked`; `decideAlt()` gives `stopped` and

@@ -75,14 +75,15 @@ export function mount(el) {
   function slWhere(buy) {
     return CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '% ' + (buy ? 'under the low' : 'over the high') : (buy ? 'at the low' : 'at the high');
   }
-  function stopBox(stop, ext, buy, from, fromWord, note) {
+  function stopBox(stop, ext, buy, from, fromWord, note, source) {
     const dist = Math.abs(from - stop);
     return '<div class="al-sl"><div class="label">' + (note ? 'Stop loss so far' : 'Your stop loss') + '</div>' +
       '<div class="al-sl-num num">' + num(stop) + '</div>' +
       '<div class="small">' + (CFG.stopBufferPct > 0 ? slWhere(buy) + ' ' + num(ext) : 'the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike')) + ' · ' +
         num(dist) + ' points (' + (dist / from * 100).toFixed(1) + '%) ' + (buy ? 'under ' : 'over ') + fromWord + '</div>' +
       (note ? '<div class="small muted">' + note + '</div>' : '') +
-      '<div class="small muted">From Gate\'s ETH price; your exchange can differ by a few points.</div></div>';
+      '<div class="small muted">' + (source === 'Bitstamp' ? 'From Bitstamp ' + esc(selected) + '/USD, close to TradingView\'s ' + esc(selected) + '/USD (Oct 30 low 2,170.0 vs 2,169.92).'
+        : 'From Gate (Bitstamp didn\'t answer); your chart can differ by a few points.') + '</div></div>';
   }
 
   function decisionHtml(d) {
@@ -102,7 +103,7 @@ export function mount(el) {
       const how = buy ? 'dipped through ' : 'spiked over ';
       head = fresh ? word + ': ' + a + ' ' + how + px(o.level) + (buy ? ' and buyers are back' : ' and sellers are back')
         : 'Open: the ' + word.toLowerCase() + ' from the ' + (buy ? 'dip through ' : 'spike over ') + px(o.level) + ' is still running';
-      body = stopBox(g.stop, o.ext, buy, g.entry, 'the entry') + '<dl class="pb-dl">' +
+      body = stopBox(g.stop, o.ext, buy, g.entry, 'the entry', null, d.source) + '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Bought' : 'Sold') + ' at</dt><dd><b class="num">' + num(g.entry) + '</b> <span class="muted">(' + hhmm(g.t) + ', price now ' + num(d.spot) + ')</span></dd>' +
         '<dt>Stop</dt><dd><b class="num">' + num(g.stop) + '</b> <span class="muted">the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike') + ' was ' + num(o.ext) + ', ' + o.depth.toFixed(1) + '% ' + (buy ? 'under ' : 'over ') + px(o.level) + '</span></dd>' +
         '<dt>Target</dt><dd><b class="num">' + px(g.target) + '</b> <span class="muted">the biggest huge level ' + (buy ? 'up' : 'down') + (g.rr ? ', ' + g.rr.toFixed(1) + '× the risk' : '') + '</span></dd>' +
@@ -116,7 +117,7 @@ export function mount(el) {
       head = 'Watch: ' + a + (buy ? ' dipped through ' : ' spiked over ') + px(w.level) + ', waiting for ' + (buy ? 'buyers' : 'sellers');
       const pre = w.ext * (1 + (buy ? -1 : 1) * CFG.stopBufferPct / 100);
       body = stopBox(pre, w.ext, buy, d.spot, 'the price now', 'It moves ' + (buy ? 'down if the low goes lower' : 'up if the high goes higher') +
-          ' before ' + (buy ? 'buyers' : 'sellers') + ' are back; the ' + (buy ? 'BUY' : 'SELL') + ' card then shows the final number.') +
+          ' before ' + (buy ? 'buyers' : 'sellers') + ' are back; the ' + (buy ? 'BUY' : 'SELL') + ' card then shows the final number.', d.source) +
         '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Dipped' : 'Spiked') + '</dt><dd>' + hhmm(Math.max(w.t0, w.win ? w.win.at : 0)) + ', ' + (buy ? 'low' : 'high') + ' so far <b class="num">' + num(w.ext) + '</b> <span class="muted">(' + w.depth.toFixed(1) + '% ' + (buy ? 'under' : 'over') + ', a real break past ' + CFG.maxDepthPct + '%)</span></dd>' +
         '<dt>Waiting for</dt><dd>the ' + CFG.candleMinutes + '-minute Ichimoku score to ' + (buy ? 'reach ' + CFG.scoreBuy : 'drop to ' + CFG.scoreSell) + ' <span class="muted">(now ' + (now == null ? '–' : now) + ')</span></dd>' +
