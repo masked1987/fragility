@@ -242,8 +242,19 @@ card. The first reading can't be a flip (no "before"). Card states: BUY / SELL (
 box with the number, entry, target, ends, size from the Plan tab account), OPEN,
 WAIT (no flip: gap now, which way it would trade, stop / target now, last flip in
 30 days; or dealers already losing: losing since, the flip only fires on the turn).
-`node test/flip.mjs` is offline and must pass. Not added to the phone alerts (the
-"dealers now losing" alert already rings at the same moment); offer it if he asks.
+`node test/flip.mjs` is offline and must pass. Not added to the phone alerts; offer
+it if he asks. The "dealers now losing" alert (`jobs/monitor.mjs`) uses
+`ivWeek − rvWeek` from `analyse()` incl. Gate's still-forming candle, so it can come
+an hour apart from the card; the card says so.
+Then "Make sure it's the same strategy very clear" (v=48): every state shows a
+numbered "The rules: exactly what was backtested" box (`.mm-rules`): signal (hourly
+close, 7-day avg DVOL − 7-day realized ≤ −5, stays losing until > −4), direction
+(24h), entry (that close), stop ½ day's move, target 2 day's moves (4R), exit on
+5-minute candles (stop first if both; out after 3 days), one at a time / only the
+turn. Live trades are now followed on Gate 5-minute candles (`closedCandles(asset,
+5, 1000)` ≈ 3.5 days, passed to `flipState(..., fine)`), like the backtest's 5-min
+exits; hourly only for older flips. The only difference stated on the card: Gate
+prices on the tab, Deribit in the test (no CORS).
 
 ## Playbook tab
 
@@ -578,7 +589,7 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **State (2 Nov 2026), all live, v=47 (flip card on Market Maker added):** Alt
+- **State (2 Nov 2026), all live, v=48 (flip card on Market Maker added):** Alt
   Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
   version), target the biggest huge level, stop at the low (0.4% room removed
   2 Nov at his request), dips up to 2%,

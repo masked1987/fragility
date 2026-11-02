@@ -798,3 +798,10 @@ details.tc-fold[open] .chev { transform: translateY(1px) rotate(-135deg); }
 .chart .al-sell { fill: var(--primed); }
 .legend .al-tri.dn { border-bottom: 0; border-top: 8px solid var(--primed); }
 .al-warn { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--building) 14%, transparent); border: 1px solid color-mix(in srgb, var(--building) 40%, var(--line)); }
+
+/* Market Maker flip card: the tested rules, numbered. */
+.mm-rules { margin: 12px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.mm-rules .label { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; font-weight: 700; color: var(--accent); }
+.mm-rules ol { margin: 6px 0 6px; padding-left: 20px; display: grid; gap: 4px; }
+.mm-rules p { margin: 4px 0 0; }

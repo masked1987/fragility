@@ -16,7 +16,8 @@ export async function collectMM(asset, cfg, market) {
   const end = Math.floor(Date.now() / 36e5) * 36e5 + 36e5;
   const start = end - (cfg.chartDays + cfg.rvDays + 1) * 864e5;
   const res = await Promise.allSettled([deribit.dvol(asset, start, end), gate.hourlyCloses(asset, (cfg.chartDays + cfg.rvDays + 1) * 24),
-    market ? Promise.resolve(market) : collectFragility(asset)]);
+    market ? Promise.resolve(market) : collectFragility(asset),
+    gate.closedCandles(asset, 5, 1000)]); // the flip's stop / target on 5-minute candles, like the backtest (~3.5 days ≥ the 3-day trade)
   if (res[0].status !== 'fulfilled') throw new Error('Deribit implied vol unavailable: ' + res[0].reason.message);
   if (res[1].status !== 'fulfilled') throw new Error('Gate price history unavailable: ' + res[1].reason.message);
   const a = analyse(res[0].value, res[1].value, cfg);
@@ -37,7 +38,8 @@ export async function collectMM(asset, cfg, market) {
   try {
     const now = Date.now();
     flip = flipState(new Map(res[0].value.map(function (p) { return [p.t, p.iv]; })),
-      res[1].value.filter(function (c) { return c.t + 36e5 <= now; }), cfg);
+      res[1].value.filter(function (c) { return c.t + 36e5 <= now; }), cfg,
+      res[3].status === 'fulfilled' ? { candles: res[3].value, ms: 5 * 6e4 } : null);
   } catch (e) { flip = null; }
   return Object.assign({ asset: asset, fetched: Date.now(), gamma: gamma, carry: dollars, fragility: fragility, flip: flip }, a);
 }

@@ -56,15 +56,18 @@ export function followFlip(g, candles, ms, maxHours) {
   return { result: 'open', exit: c ? c.close : g.entry, at: c ? c.t + ms : g.t };
 }
 
-// Every flip in the readings, one trade at a time, followed on `candles`.
-export function flipTrades(read, candles, ms, f) {
+// Every flip in the readings, one trade at a time, followed on `candles` (`ms` long).
+// fine: optional { candles, ms } of smaller candles, used for a trade they cover from
+// its start (the tab passes Gate 5-minute candles, like the backtest's 5-minute exits).
+export function flipTrades(read, candles, ms, f, fine) {
   const out = [];
   let busy = 0;
   for (const r of read) {
     if (r.t < busy) continue;
     const g = flipSignal(r, f);
     if (!g) continue;
-    const tr = followFlip(g, candles, ms, f.maxHours);
+    const useFine = fine && fine.candles.length && fine.candles[0].t <= g.t;
+    const tr = useFine ? followFlip(g, fine.candles, fine.ms, f.maxHours) : followFlip(g, candles, ms, f.maxHours);
     out.push(Object.assign(g, { trade: tr }));
     busy = tr.result === 'open' ? Infinity : tr.at;
   }
@@ -73,10 +76,10 @@ export function flipTrades(read, candles, ms, f) {
 
 // What the tab shows: the trade still running (open), else the last one, and where
 // the reading stands now (how far the gap is from the −gapPts line).
-export function flipState(iv, hours, cfg) {
+export function flipState(iv, hours, cfg, fine) {
   const f = cfg.flip, read = readings(iv, hours, cfg);
   if (!read.length) return null;
-  const trades = flipTrades(read, hours, H, f);
+  const trades = flipTrades(read, hours, H, f, fine);
   const last = trades[trades.length - 1] || null, now = read[read.length - 1];
   const losingSince = (function () {
     for (let i = read.length - 1; i >= 0; i--) if (read[i].side !== 'lose') return i + 1 < read.length ? read[i + 1].t : null;
