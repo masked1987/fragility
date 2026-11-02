@@ -3,19 +3,14 @@ Hours: dealers winning 57%, balanced 21%, losing 22%; typical day's implied move
 
 version                        trades hit  per-trade total  worst | first 2 years          | last year (unseen)    |
 Best of each family (picked on the first 2 years):
-fade k0.5 stop 1 tgt 0.5        845  61%  -0.09R  -80.03R run  7 | first 2y  -0.11R (589) | last year  -0.05R (256) | without best 2  -0.10R
-fade k0.5 stop 1 tgt 0.5 buys   631  62%  -0.08R  -49.00R run  8 | first 2y  -0.07R (434) | last year  -0.10R (197) | without best 2  -0.08R
-fadeAny k0.5 stop 1 tgt 0.5    1217  61%  -0.10R -119.28R run  7 | first 2y  -0.10R (840) | last year  -0.09R (377) | without best 2  -0.10R
-fadeAny k0.5 stop 1 tgt 2 buys  468  16%  -0.08R  -35.96R run 10 | first 2y  -0.06R (311) | last year  -0.11R (157) | without best 2  -0.09R
+fade k0.5 stop 1 tgt 0.5        845  61%  -0.09R  -80.06R run  7 | first 2y  -0.11R (589) | last year  -0.05R (256) | without best 2  -0.10R
+fadeAny k0.5 stop 1 tgt 0.5    1217  61%  -0.10R -119.31R run  7 | first 2y  -0.10R (840) | last year  -0.09R (377) | without best 2  -0.10R
 trend stop 1 tgt 0.5            297  60%  -0.12R  -35.38R run  7 | first 2y  -0.16R (210) | last year  -0.02R ( 87) | without best 2  -0.12R
-trend stop 1 tgt 0.5 buys       160  59%  -0.14R  -21.99R run  5 | first 2y  -0.17R (119) | last year  -0.03R ( 41) | without best 2  -0.15R
 flip stop 0.5 tgt 2              38  34%  +0.65R  +24.83R run  6 | first 2y  +0.54R ( 25) | last year  +0.86R ( 13) | without best 2  +0.47R
-fear k1.5 stop 0.5 tgt 2 buys    96  19%  +0.04R   +3.88R run 12 | first 2y  +0.37R ( 52) | last year  -0.35R ( 44) | without best 2  -0.04R
+fear k1.5 stop 1 tgt 1          113  49%  -0.03R   -3.56R run  4 | first 2y  +0.06R ( 76) | last year  -0.22R ( 37) | without best 2  -0.05R
 
 Pick: flip stop 0.5 tgt 2
   by year  2024: 15 +0.28R  2025: 15 +0.95R  2026: 8 +0.81R
-  buys only                      13  46%  +1.25R  +16.24R run  4 | first 2y  +1.22R ( 11) | last year  +1.43R (  2) | without best 2  +0.76R
-  sells only                     25  28%  +0.34R   +8.59R run  8 | first 2y  +0.02R ( 14) | last year  +0.76R ( 11) | without best 2  +0.03R
   results: target 13, stopped 25, time 0, open 0
 
 Trades of the pick:
@@ -57,10 +52,3 @@ Trades of the pick:
   2026-06-25T14:00 SELL  1535 stop  1559 target  1440  stopped -1.06R
   2026-08-19T21:00 BUY   2218 stop  2189 target  2337  target  +3.93R
   2026-09-15T20:00 SELL  2415 stop  2450 target  2273  stopped -1.07R
-
-Compared with Alt Tactics, buys and sells together (owner: "count buy and sells together"):
-node test/alt-backtest.mjs 36 .bt-cache, target = biggest huge level (the tab's rules), same months.
-  Alt Tactics      44 trades  16% hit  +0.87R/trade  total +38.5R  worst run 16 | first 2y +1.14R (31) | last year +0.25R (13) | without best 2 -0.38R
-                   by year  2023: 9 -0.21R  2024: 9 -1.07R  2025: 14 +3.27R  2026: 12 +0.36R   (40 buys +1.07R, 4 sells all stopped)
-  MM flip          38 trades  34% hit  +0.65R/trade  total +24.8R  worst run  6 | first 2y +0.54R (25) | last year +0.86R (13) | without best 2 +0.47R
-                   by year  2024: 15 +0.28R  2025: 15 +0.95R  2026: 8 +0.81R

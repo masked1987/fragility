@@ -11,7 +11,10 @@
 //   trend  dealers losing (moves keep going): close through the 24h high (buy) /
 //          low (sell) -> go with it.
 //   flip   dealers just turned losing -> go the way of the last 24h.
-//   fear   implied vol up ≥5 points in 24h and price down ≥ k day-moves -> buy.
+//   fear   implied vol up ≥5 points in 24h and price down ≥ k day-moves -> buy;
+//          the mirror (vol up, price up ≥ k day-moves) -> sell.
+// Buys and sells are always counted together (owner, 2 Nov 2026: "count buy and
+// sells together. I'm not interested in separate").
 // Stop s day-moves, target t day-moves, 3 days max then out at the close. Exits on
 // Deribit 5-minute highs / lows (a candle touching both = stopped). Costs 0.1% round
 // trip, in R. The best version is picked on the first 2 years, checked on the last year.
@@ -101,7 +104,7 @@ const ENTRY = {
     (r.price <= r.hi * (1 - v.k * r.m) ? 1 : r.price >= r.lo * (1 + v.k * r.m) ? -1 : 0) : 0,
   trend: (r) => r.side === 'lose' ? (r.price > r.hi ? 1 : r.price < r.lo ? -1 : 0) : 0,
   flip: (r) => r.side === 'lose' && r.prev !== 'lose' ? (r.ret24 >= 0 ? 1 : -1) : 0,
-  fear: (r, v) => r.dIv >= MM_CONFIG.ivMovePts && r.ret24 <= -v.k * r.m ? 1 : 0,
+  fear: (r, v) => r.dIv >= MM_CONFIG.ivMovePts ? (r.ret24 <= -v.k * r.m ? 1 : r.ret24 >= v.k * r.m ? -1 : 0) : 0,
 };
 
 function run(fam, v) {
@@ -109,7 +112,6 @@ function run(fam, v) {
   for (const r of read) {
     if (r.t < busy) continue;
     let dir = ENTRY[fam](r, v);
-    if (v.only === 'buy' && dir < 0) dir = 0;
     if (!dir) continue;
     const buy = dir > 0, risk = v.s * r.m * r.price;
     const stop = buy ? r.price - risk : r.price + risk, target = buy ? r.price + v.t * r.m * r.price : r.price - v.t * r.m * r.price;
@@ -148,26 +150,21 @@ const grid = [];
 const K = [0.5, 1, 1.5], S = [0.5, 1], T = [0.5, 1, 2];
 for (const fam of ['fade', 'fadeAny', 'trend', 'flip', 'fear']) {
   const ks = fam === 'trend' || fam === 'flip' ? [0] : K;
-  for (const only of ['both', 'buy']) {
-    if (fam === 'fear' && only === 'both') continue;
-    for (const k of ks) for (const s of S) for (const t of T) {
-      const v = { k, s, t, only }, L = run(fam, v);
-      grid.push({ fam, v, L, name: `${fam}${k ? ' k' + k : ''} stop ${s} tgt ${t}${only === 'buy' ? ' buys' : ''}` });
-    }
+  for (const k of ks) for (const s of S) for (const t of T) {
+    const v = { k, s, t }, L = run(fam, v);
+    grid.push({ fam, v, L, name: `${fam}${k ? ' k' + k : ''} stop ${s} tgt ${t}` });
   }
 }
 // Best per family, chosen on the first 2 years only (at least 20 trades there; the
 // "flip" event happens ~13 times a year, about as often as Alt Tactics trades).
-const fams = [...new Set(grid.map(g => g.fam + (g.v.only === 'buy' ? ' buys' : '')))];
-const best = fams.map(fk => grid.filter(g => g.fam + (g.v.only === 'buy' ? ' buys' : '') === fk)
+const fams = [...new Set(grid.map(g => g.fam))];
+const best = fams.map(fk => grid.filter(g => g.fam === fk)
   .map(g => ({ ...g, first: avg(g.L.filter(t => t.T < SPLIT)), nFirst: g.L.filter(t => t.T < SPLIT).length }))
   .filter(g => g.nFirst >= 20).sort((a, b) => b.first - a.first)[0]).filter(Boolean);
 console.log('Best of each family (picked on the first 2 years):');
 best.forEach(g => console.log(line(g.name, g.L)));
 const top = best.slice().sort((a, b) => b.first - a.first)[0];
 console.log(`\nPick: ${top.name}\n  by year  ${years(top.L)}`);
-const bb = top.L.filter(t => t.buy), ss = top.L.filter(t => !t.buy);
-if (ss.length) { console.log(line('  buys only', bb)); console.log(line('  sells only', ss)); }
 console.log('  results: ' + ['target', 'stopped', 'time', 'open'].map(k => k + ' ' + top.L.filter(t => t.result === k).length).join(', '));
 
 console.log('\nTrades of the pick:');

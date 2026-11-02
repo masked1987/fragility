@@ -215,17 +215,18 @@ reading over 3 years (DVOL vs 7-day realized, `dealerSide()`), sizes in the day'
 implied move, Deribit 5-min exits, 0.1% costs, 3 days max, picked on the first 2
 years, checked on the last year. Range fades when dealers win, breakouts when they
 lose, buying fear spikes: all lose or fade out (−0.05 to −0.37R; fear spike +0.37R
-first 2y, −0.35R last year). Only **"flip"** works: dealers just turned losing →
-trade the way of the last 24h, stop ½ day's move, target 2 day's moves: 38 trades,
-34% hit, +0.65R (first 2y +0.54R, last year +0.86R; 2024 +0.28 / 2025 +0.95 /
-2026 +0.81R), worst run 6, without best 2 still +0.47R (wins all ~+4R, no single
-trade carries it). Buys 13 (+1.25R), sells 25 (+0.34R; first 2y ~0). Picked from
-6 flip versions; trade-count floor lowered 30 → 20 after seeing it, so not fully
-blind. Owner: "count buy and sells together. I'm not interested in separate" (give
-one combined line per strategy from now on). Alt Tactics combined (rerun 2 Nov):
-44 trades, 16% hit, +0.87R, worst run 16, first 2y +1.14R / last year +0.25R,
-without best 2 −0.38R. Flip: 38, 34%, +0.65R, run 6, +0.54R / +0.86R, without
-best 2 +0.47R. Not on any tab; nothing changed on the site.
+first 2y, −0.35R last year). Owner then: "count buy and sells together. I'm not
+interested in separate" — about the **Market Maker** test (not Alt Tactics; I
+wrongly reran Alt and he corrected me: "I want you to test Market Maker"). So every
+family counts both sides, one line each (fear has a mirror sell: vol up + price up).
+Best of each, buys + sells: fade −0.09R (845 trades), fade in balanced too −0.10R,
+trend −0.12R, fear −0.03R (first 2y +0.06R, last year −0.22R). Only **"flip"**
+works: dealers just turned losing → trade the way of the last 24h, stop ½ day's
+move, target 2 day's moves: 38 trades, 34% hit, +0.65R (first 2y +0.54R, last year
++0.86R; 2024 +0.28 / 2025 +0.95 / 2026 +0.81R), worst run 6, without best 2 still
++0.47R (wins all ~+4R). Picked from 6 flip versions; trade-count floor lowered
+30 → 20 after seeing it, so not fully blind. Not on any tab; nothing changed on
+the site.
 
 ## Playbook tab
 
