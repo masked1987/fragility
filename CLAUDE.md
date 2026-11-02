@@ -26,6 +26,12 @@ the file layout. Tabs, in order:
    "day+month". A shared date (Thursday daily = weekly) shows once.
    Then "make sure all expiries is the first to show": All is the first tab (left)
    and the page always opens on All (the choice is no longer saved per phone).
+   **Daily approach** (2 Nov 2026): the owner is building a separate DAILY trading
+   approach from the Gamma tab's Daily view (blue = dealers trade against the move,
+   price tends to stall / turn; pink = with the move, runs). "Don't take into account
+   alt tactics or any other strategies": keep it fully separate from Alt Tactics,
+   Tactics, Playbook and the Market Maker strategy; his long-term strategies stay
+   as they are. Wait for his rules before building anything for it.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
