@@ -435,6 +435,12 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   runs succeed, cron is every 15 min but GitHub ran it every 4–6 h; state shows every
   alert on and every welcome sent; `test_alerts: all` sends zone, dealers, Market Maker
   strategy (3), Tactics (3), Alt (3).
+  Owner then: "I didn't receive anything". `test_alerts: check` (`jobs/ntfy-check.mjs`,
+  own workflow step): topic secret clean (26 chars, no stray spaces), ntfy.sh held
+  every message (all tests since 14:35 UK, plus a plain "ntfy check"), and two
+  untitled prio-3 messages at 15:11 UK that the job did not send (maybe him testing
+  from the app). So delivery to ntfy works; the problem is on the phone (app
+  subscription name / server, notifications, battery, instant delivery).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
