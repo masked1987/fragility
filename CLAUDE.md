@@ -37,6 +37,13 @@ the file layout. Tabs, in order:
    said yet. Take profit not decided ("we need to pick something optimal"). Past
    daily-expiry gamma is only free for the 1st of each month (Tardis), so a real
    test would have ~36 days. Build nothing until he asks.
+   Asked "do the test to find best take profit": `test/daily-tp.mjs [months] [cache]
+   [parallel]` (own retrying Tardis loader: the free server answers 429 when pulled
+   hard; never cache an empty chain). Take-profit idea from him: **GodMode 17,6,4
+   black or yellow dot on the 15-minute chart** = take profit. Closest public script:
+   "Godmode 3.1.4 SNOW_CITY SCALPER EDITION" (open source, 17,6,4 = "very sensitive
+   caution dots"); its code is not readable from the page fetch, so the dot rule
+   needs his code / screenshot before it can be tested.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
