@@ -126,6 +126,9 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    daily message, as [test]. Each state now carries `line` (for the next close). v=52.
    Test sent 2 Nov 2026 19:41 UTC (`test_alerts: trend`): owner "received all 3 alerts"
    (BUY ×3 rings, the daily stop line, "Trend alerts are on").
+   Long only: SELL = close the buy, never a short (long + short 50d was +364% but −22% in
+   2024 and a 58% drop; offered, not taken). Offered a filter against sideways losses
+   (average rising / close 2% above): owner "Nope stay as it is". Don't re-offer.
 
 ## How the owner works
 
