@@ -1,0 +1,356 @@
+// Owner's DAILY approach (2 Nov 2026), kept apart from every other strategy:
+// price touches a blue zone on the Gamma Detrite "Daily" view, then wait for the
+// 5-minute Ichimoku Tenkan / Kijun cross the way of the turn, stop at the low / high
+// of the touch. Asked: "do the test to find best take profit". This compares take
+// profits on the same entries.
+//
+//   node test/daily-tp.mjs [months=37] [cache=.bt-cache] [parallel=6]
+//   LIST=<tp name> prints every trade for that take profit.
+//
+// Data: past option open interest per strike is only free for the 1st of each month
+// (Tardis, the ~00:00–00:20 snapshot, held for the day), so the test days are the 1st
+// of each month. Each test day has two Daily windows, as the page would show them:
+//   00:20 → 08:00 day D  : the options expiring 08:00 day D
+//   08:00 D → 08:00 D+1  : the options expiring 08:00 day D+1 (snapshot OI, 8 h older)
+// Gamma as on the page (dealers long calls, short puts; $ per 1% move), worked out at
+// the window start with the price then; a strike is a blue zone when its value is at
+// least +$5K (the page draws nothing smaller), within ±8% of the price (≈ the Near view).
+// Candles: Deribit ETH-PERPETUAL 5-minute. Costs 0.1% of the entry per round trip.
+// Rules as simulated:
+//   touch (buy): a candle's low reaches a blue strike that the previous close was above
+//   (sell: the high reaches a blue strike the previous close was below);
+//   the stop is the lowest low since the touch (sell: highest high), no extra points;
+//   entry at the close of the first 5-minute candle where Tenkan (9) crosses above
+//   Kijun (26) (sell: below), while that setup is live and the close is past the stop;
+//   one trade at a time; setups reset when a trade opens; setups and open trades end
+//   at the window's expiry (08:00 UTC), closed at that candle's close.
+//   Stop checked first when stop and target are in the same candle.
+import { exec as execCb } from 'node:child_process';
+import { promisify } from 'node:util';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { setCache, getJson, cached, ymd, DAY } from './bt-data.mjs';
+const exec = promisify(execCb);
+
+const MONTHS = +(process.argv[2] || 37), CACHE = process.argv[3] || '.bt-cache', PAR = +(process.argv[4] || 6);
+setCache(CACHE);
+const M5 = 5 * 6e4, H = 36e5, FEE = 0.001, MIN_BLUE = 5000, RANGE = 0.08;
+
+// The 1st of each month, newest first, only days whose next 08:00 has passed.
+const days = [];
+{
+  const now = new Date();
+  let y = now.getUTCFullYear(), m = now.getUTCMonth();
+  while (days.length < MONTHS) {
+    const D = Date.UTC(y, m, 1);
+    if (D + DAY + 8 * H <= Date.now()) days.push(D);
+    if (--m < 0) { m = 11; y--; }
+  }
+  days.reverse();
+}
+
+// Same as chainAt() in bt-data.mjs, but the free Tardis server answers 429 (too many
+// requests) when pulled hard: fail on HTTP errors, wait and retry, never cache an empty chain.
+async function chainDay(D) {
+  const f = join(CACHE, 'chain-' + ymd(D).replace(/\//g, '') + '.json');
+  if (existsSync(f)) { const v = JSON.parse(readFileSync(f, 'utf8')); if (v.length) return v; }
+  for (let k = 0; k < 8; k++) {
+    try {
+      const raw = (await exec(`set -o pipefail; curl -sf -r 0-209715199 "https://datasets.tardis.dev/v1/deribit/options_chain/${ymd(D)}/OPTIONS.csv.gz" | (gunzip 2>/dev/null || true) | (grep '^deribit,ETH-' || true)`,
+        { maxBuffer: 2e9, shell: '/bin/bash' })).stdout;
+      const last = {};
+      for (const line of raw.split('\n')) {
+        const x = line.split(',');
+        if (x.length < 17) continue;
+        last[x[1]] = { strike: +x[5], type: x[4] === 'call' ? 'C' : 'P', expiry: +x[6] / 1000, oi: +x[7], iv: +x[16] / 100 };
+      }
+      const v = Object.values(last).filter(o => o.oi > 0 && o.iv > 0 && o.strike > 0);
+      if (v.length) { writeFileSync(f, JSON.stringify(v)); return v; }
+    } catch (e) { /* 429 or network: wait and retry */ }
+    await new Promise(r => setTimeout(r, 15000 * (k + 1)));
+  }
+  console.error('no chain for', ymd(D));
+  return [];
+}
+
+// 5-minute candles with volume, from 30 h before the day (warm-up for the 15-minute
+// GodMode) to 08:00 the day after.
+function candles(D) {
+  return cached('d5v-' + D + '.json', async () => {
+    const a = D - 30 * H, b = D + DAY + 9 * H;
+    const j = await getJson(`https://www.deribit.com/api/v2/public/get_tradingview_chart_data?instrument_name=ETH-PERPETUAL&start_timestamp=${a}&end_timestamp=${b}&resolution=5`);
+    const r = j.result;
+    return r.ticks.map((t, i) => ({ t, o: r.open[i], h: r.high[i], l: r.low[i], c: r.close[i], v: r.volume[i] }));
+  });
+}
+
+// GodMode, the owner's own Pine script (pasted 2 Nov 2026; "Godmode", LazyBear / xSilas /
+// Ni6HTH4wK, "changed to only look at the current ticker"), his settings 17, 6, 4:
+//   src = hlc3; n1 = 17 (channel), n2 = 6 (average), n3 = 4 (short)
+//   tci   = ema((src − ema(src,n1)) / (0.025 · ema(|src − ema(src,n1)|, n1)), n2) + 50
+//   mf    = rsi(sum(volume·src on up bars, n3), sum(volume·src on down bars, n3))
+//   "Multi-exchange?" off (default): wt1 = avg(tci, mf, rsi(src, n3))   ("tradition")
+//   on: wt1 = avg(tci, csi, mf, willy), csi = avg(rsi(src,n3), tsi(src,n1,n2)·50+50),
+//       willy = 60·(src − highest(src,n2)) / (highest − lowest) + 80   (same ticker twice)
+//   wt2 = sma(wt1, 6); yellow "Caution!" dot when wt2 < 20 (bottom) or > 80 (top).
+// A top dot ends a buy, a bottom dot ends a sell (at that 15-minute bar's close).
+const GM = { n1: 17, n2: 6, n3: 4, top: 80, bottom: 20, multi: false };
+function emaA(x, n) { const a = 2 / (n + 1), o = []; let e = NaN; x.forEach((v, i) => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
+function rmaA(x, n) { const a = 1 / n, o = []; let e = NaN; x.forEach(v => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
+function smaA(x, n) { return x.map((v, i) => { if (i < n - 1) return NaN; let s = 0; for (let k = i - n + 1; k <= i; k++) s += x[k]; return s / n; }); }
+function rsiA(x, n) {
+  const ch = x.map((v, i) => i ? v - x[i - 1] : NaN), up = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(d, 0)), n), dn = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(-d, 0)), n);
+  return up.map((u, i) => dn[i] === 0 ? 100 : u === 0 ? 0 : 100 - 100 / (1 + u / dn[i]));
+}
+function godmode(bars, multi) {
+  const { n1, n2, n3 } = GM, src = bars.map(b => (b.h + b.l + b.c) / 3), ch = src.map((v, i) => i ? v - src[i - 1] : NaN);
+  const e = emaA(src, n1), dev = emaA(src.map((v, i) => Math.abs(v - e[i])), n1);
+  const tci = emaA(src.map((v, i) => (v - e[i]) / (0.025 * dev[i])), n2).map(v => v + 50);
+  const ds = emaA(emaA(ch, n2), n1), dsa = emaA(emaA(ch.map(Math.abs), n2), n1);
+  const rs = rsiA(src, n3), csi = rs.map((r, i) => (r + (ds[i] / dsa[i]) * 50 + 50) / 2);
+  const mf = src.map((v, i) => {
+    if (i < n3) return NaN; let u = 0, d = 0;
+    for (let k = i - n3 + 1; k <= i; k++) { if (ch[k] > 0) u += bars[k].v * src[k]; if (ch[k] < 0) d += bars[k].v * src[k]; }
+    return d === 0 ? 100 : 100 - 100 / (1 + u / d);
+  });
+  const willy = src.map((v, i) => {
+    if (i < n2 - 1) return NaN; let hh = -Infinity, ll = Infinity;
+    for (let k = i - n2 + 1; k <= i; k++) { hh = Math.max(hh, src[k]); ll = Math.min(ll, src[k]); }
+    return hh === ll ? 50 : 60 * (v - hh) / (hh - ll) + 80;
+  });
+  const wt1 = multi ? src.map((v, i) => (tci[i] + csi[i] + mf[i] + willy[i]) / 4) : src.map((v, i) => (tci[i] + mf[i] + rs[i]) / 3);
+  return smaA(wt1, 6);
+}
+// 15-minute bars from the 5-minute candles; returns { end time of each finished 15-min bar: signal }.
+const M15 = 15 * 6e4;
+function godmode15(c, multi) {
+  const bars = [];
+  c.forEach(x => {
+    const s = Math.floor(x.t / M15) * M15, b = bars[bars.length - 1];
+    if (b && b.t === s) { b.h = Math.max(b.h, x.h); b.l = Math.min(b.l, x.l); b.c = x.c; b.v += x.v; b.n++; }
+    else bars.push({ t: s, h: x.h, l: x.l, c: x.c, v: x.v, n: 1 });
+  });
+  const full = bars.filter(b => b.n === 3), sig = godmode(full, multi), out = {};
+  full.forEach((b, i) => { if (!isNaN(sig[i])) out[b.t + M15] = sig[i]; });
+  return out;
+}
+
+function gam(F, K, s, T) {
+  const d1 = (Math.log(F / K) + 0.5 * s * s * T) / (s * Math.sqrt(T));
+  return Math.exp(-0.5 * d1 * d1) / Math.sqrt(2 * Math.PI) / (F * s * Math.sqrt(T));
+}
+
+// The Daily view for one expiry at time t: $ gamma per strike, blue strikes, the flip.
+function dailyView(chain, E, t, spot) {
+  const T = (E - t) / (365 * DAY), by = {};
+  chain.forEach(function (o) {
+    if (o.expiry !== E || Math.abs(o.strike / spot - 1) > RANGE) return;
+    const g = gam(spot, o.strike, o.iv, T) * o.oi * spot * spot * 0.01;
+    by[o.strike] = (by[o.strike] || 0) + (o.type === 'C' ? g : -g);
+  });
+  const rows = Object.keys(by).map(Number).sort((a, b) => a - b).map(k => ({ k, v: by[k] }));
+  let flip = null, bd = Infinity;
+  for (let i = 0; i < rows.length - 1; i++) {
+    const g0 = rows[i].v, g1 = rows[i + 1].v;
+    if ((g0 < 0 && g1 >= 0) || (g0 >= 0 && g1 < 0)) {
+      const x = rows[i].k + Math.abs(g0) / (Math.abs(g0) + Math.abs(g1)) * (rows[i + 1].k - rows[i].k);
+      if (Math.abs(x - spot) < bd) { bd = Math.abs(x - spot); flip = x; }
+    }
+  }
+  return { rows, blue: rows.filter(r => r.v >= MIN_BLUE), flip };
+}
+
+function tk(c, i) {
+  const mid = n => { let hi = -Infinity, lo = Infinity; for (let k = i - n + 1; k <= i; k++) { hi = Math.max(hi, c[k].h); lo = Math.min(lo, c[k].l); } return (hi + lo) / 2; };
+  return i >= 26 ? { t: mid(9), k: mid(26) } : null;
+}
+
+// Take profits compared on the same entries. Each returns a price or null (no target:
+// held to the stop or the 08:00 expiry).
+const TPS = {
+  'next blue': (e, buy, v) => { const b = v.blue.filter(r => buy ? r.k > e : r.k < e).sort((x, y) => buy ? x.k - y.k : y.k - x.k)[0]; return b ? b.k : null; },
+  'biggest blue': (e, buy, v) => { const b = v.blue.filter(r => buy ? r.k > e : r.k < e).sort((x, y) => y.v - x.v)[0]; return b ? b.k : null; },
+  'flip line': (e, buy, v) => v.flip != null && (buy ? v.flip > e : v.flip < e) ? v.flip : null,
+  '1R': (e, buy, v, risk) => buy ? e + risk : e - risk,
+  '1.5R': (e, buy, v, risk) => buy ? e + 1.5 * risk : e - 1.5 * risk,
+  '2R': (e, buy, v, risk) => buy ? e + 2 * risk : e - 2 * risk,
+  '3R': (e, buy, v, risk) => buy ? e + 3 * risk : e - 3 * risk,
+  '4R': (e, buy, v, risk) => buy ? e + 4 * risk : e - 4 * risk,
+  'GodMode dot (15 min)': () => null,  // his script as set: Multi-exchange off; exit at the first 15-min dot on the trade's side
+  'GodMode dot, multi on': () => null, // same with "Multi-exchange?" ticked (4-part formula)
+  'no target (out at 08:00)': () => null,
+};
+
+// One Daily window for one take profit. One trade at a time: a trade that is still
+// open blocks new entries, so each take profit gets its own trade list.
+// Stop losses compared (asked "test them all and find best SL"), with the GodMode take
+// profit. Each gets the entry, the touch extreme (lowest low / highest high since the
+// touch), the zone strike and the Daily view; returns the stop price.
+const STOPS = {
+  'touch low/high (base)': (e, buy, ext) => ext,
+  'touch + 2 points': (e, buy, ext) => buy ? ext - 2 : ext + 2,
+  'touch + 5 points': (e, buy, ext) => buy ? ext - 5 : ext + 5,
+  'touch + 10 points': (e, buy, ext) => buy ? ext - 10 : ext + 10,
+  'touch + 20 points': (e, buy, ext) => buy ? ext - 20 : ext + 20,
+  'touch + 0.1%': (e, buy, ext) => buy ? ext * 0.999 : ext * 1.001,
+  'touch + 0.2%': (e, buy, ext) => buy ? ext * 0.998 : ext * 1.002,
+  'touch + 0.3%': (e, buy, ext) => buy ? ext * 0.997 : ext * 1.003,
+  'touch + 0.5%': (e, buy, ext) => buy ? ext * 0.995 : ext * 1.005,
+  'zone strike + 10 pts (or touch)': (e, buy, ext, K) => buy ? Math.min(K - 10, ext) : Math.max(K + 10, ext),
+  'next strike past zone': (e, buy, ext, K, v) => {
+    const r = v.rows.filter(x => buy ? x.k < Math.min(K, ext) : x.k > Math.max(K, ext)).sort((a, b) => buy ? b.k - a.k : a.k - b.k)[0];
+    return r ? r.k : ext;
+  },
+  'fixed 0.5% from entry': (e, buy) => buy ? e * 0.995 : e * 1.005,
+  'fixed 0.75% from entry': (e, buy) => buy ? e * 0.9925 : e * 1.0075,
+  'fixed 1% from entry': (e, buy) => buy ? e * 0.99 : e * 1.01,
+  'fixed 1.5% from entry': (e, buy) => buy ? e * 0.985 : e * 1.015,
+};
+
+function windowTrades(c, view, start, E, name, gm, stopName) {
+  const i0 = c.findIndex(x => x.t >= start), iEnd = c.findIndex(x => x.t + M5 > E);
+  if (i0 < 27 || iEnd < 0) return [];
+  const spot = c[i0 - 1].c, v = typeof view === 'function' ? view(spot) : dailyView(view, E, start, spot), TP = TPS[name];
+  if (!v.rows.length) return [];
+  const out = [];
+  let buyS = null, sellS = null, i = i0;
+  while (i <= iEnd) {
+    const x = c[i], prev = c[i - 1];
+    const tb = v.blue.filter(r => x.l <= r.k && prev.c > r.k), ts = v.blue.filter(r => x.h >= r.k && prev.c < r.k);
+    if (buyS) buyS.ext = Math.min(buyS.ext, x.l); else if (tb.length) buyS = { k: tb[tb.length - 1].k, ext: x.l };
+    if (sellS) sellS.ext = Math.max(sellS.ext, x.h); else if (ts.length) sellS = { k: ts[0].k, ext: x.h };
+    const a = tk(c, i), b = tk(c, i - 1);
+    let side = null;
+    if (a && b && i < iEnd) {
+      if (buyS && a.t > a.k && b.t <= b.k && x.c > buyS.ext) side = 'buy';
+      else if (sellS && a.t < a.k && b.t >= b.k && x.c < sellS.ext) side = 'sell';
+    }
+    if (!side) { i++; continue; }
+    const buy = side === 'buy', S = buy ? buyS : sellS, entry = x.c, stop = STOPS[stopName || 'touch low/high (base)'](entry, buy, S.ext, S.k, v), risk = Math.abs(entry - stop);
+    const tp = TP(entry, buy, v, risk);
+    let exit = null, how = 'expiry', j = i + 1;
+    for (; j <= iEnd; j++) {
+      const y = c[j];
+      if (buy ? y.l <= stop : y.h >= stop) { exit = stop; how = 'stop'; break; }
+      if (tp != null && (buy ? y.h >= tp : y.l <= tp)) { exit = tp; how = 'target'; break; }
+      const g = name.startsWith('GodMode') ? (name.includes('multi') ? gm.multi : gm.plain)[y.t + M5] : undefined;
+      if (g !== undefined && (buy ? g > GM.top : g < GM.bottom)) { exit = y.c; how = 'target'; break; }
+    }
+    if (exit == null) { j = iEnd; exit = c[iEnd].c; }
+    const move = buy ? exit - entry : entry - exit;
+    out.push({ t: x.t, side, zone: S.k, entry, stop, riskPct: risk / entry * 100,
+      r: { pct: move / entry * 100 - FEE * 100, R: (move - FEE * entry) / risk, how, tp } });
+    buyS = sellS = null;
+    i = j + 1;
+  }
+  return out;
+}
+
+async function pool(items, fn) {
+  const out = new Array(items.length); let k = 0;
+  await Promise.all(Array.from({ length: PAR }, async () => { while (k < items.length) { const i = k++; out[i] = await fn(items[i]); } }));
+  return out;
+}
+
+// Extra recent days (asked "check last 3 months"): the Gamma Detrite bot's saved
+// snapshots (gamma-data.json history, from 27 Oct 2026, every few hours). The first
+// snapshot after 08:00 UTC on day D gives the Daily view for 08:00 D → 08:00 D+1 exactly
+// as the page showed it (its "1d" column, Near view, $M per 1%). Set SNAP=<path to a
+// gamma-detrite clone> to use them; 1st-of-month days keep the Tardis data.
+const snapDays = [];
+if (process.env.SNAP) {
+  const log = (await exec(`git -C "${process.env.SNAP}" log origin/main --format='%H' -- gamma-data.json`)).stdout.trim().split('\n');
+  const snaps = [];
+  for (const h of log) {
+    try { const j = JSON.parse((await exec(`git -C "${process.env.SNAP}" show ${h}:gamma-data.json`, { maxBuffer: 1e8 })).stdout).ETH; if (j && j.asof) snaps.push(j); } catch (e) { /* skip */ }
+  }
+  const at = j => Date.parse(j.asof.replace(' UTC', 'Z').replace(' ', 'T'));
+  for (let D = Date.UTC(2026, 9, 28); D + DAY + 8 * H <= Date.now(); D += DAY) {
+    if (days.includes(D)) continue;
+    const sn = snaps.filter(j => at(j) >= D + 8 * H && at(j) < D + 14 * H && j.exps.indexOf('1d') >= 0).sort((a, b) => at(a) - at(b))[0];
+    if (!sn) continue;
+    const col = sn.exps.indexOf('1d'), rows = sn.strikes.map((k, i) => ({ k, v: sn.m[i][col] * 1e6 }));
+    let flip = null, bd = Infinity;
+    for (let i = 0; i < rows.length - 1; i++) {
+      const g0 = rows[i].v, g1 = rows[i + 1].v;
+      if ((g0 < 0 && g1 >= 0) || (g0 >= 0 && g1 < 0)) {
+        const x = rows[i].k + Math.abs(g0) / (Math.abs(g0) + Math.abs(g1)) * (rows[i + 1].k - rows[i].k);
+        if (Math.abs(x - sn.spot) < bd) { bd = Math.abs(x - sn.spot); flip = x; }
+      }
+    }
+    snapDays.push({ D, start: at(sn), view: { rows, blue: rows.filter(r => r.v >= MIN_BLUE), flip } });
+  }
+}
+
+const data = await pool(days, async D => {
+  const [chain, c] = await Promise.all([chainDay(D), candles(D)]);
+  process.stderr.write('.');
+  return { D, chain, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } };
+});
+const sdata = await pool(snapDays, async s => { const c = await candles(s.D); return { ...s, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } }; });
+process.stderr.write('\n');
+
+// SLGRID=1: the GodMode take profit with every stop in STOPS (keys "TP|stop").
+const runs = process.env.SLGRID ? Object.keys(STOPS).map(st => ['GodMode dot (15 min)', st]) : Object.keys(TPS).map(n => [n, undefined]);
+const names = runs.map(r => r[1] ? r[1] : r[0]), lists = {};
+for (const [tpName, stName] of runs) {
+  const name = stName || tpName;
+  lists[name] = [];
+  for (const d of data) {
+    if (!d.c.length || !d.chain.length) continue;
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, tpName, d.gm, stName));
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, tpName, d.gm, stName));
+  }
+  for (const d of sdata) lists[name].push(...windowTrades(d.c, () => d.view, d.start, d.D + DAY + 8 * H, tpName, d.gm, stName));
+  lists[name].sort((a, b) => a.t - b.t);
+}
+
+const f2 = x => (x >= 0 ? '+' : '') + x.toFixed(2);
+const lastYear = Date.now() - 365 * DAY, last3m = Date.now() - 92 * DAY;
+function stats(L) {
+  if (!L.length) return { n: 0 };
+  const p = L.map(t => t.r.pct), sum = p.reduce((a, b) => a + b, 0);
+  let run = 0, worst = 0, eq = 0, peak = 0, dd = 0;
+  p.forEach(x => { run = x < 0 ? run + 1 : 0; worst = Math.max(worst, run); eq += x; peak = Math.max(peak, eq); dd = Math.max(dd, peak - eq); });
+  const sorted = p.slice().sort((a, b) => b - a), top2 = sorted.slice(0, 2).reduce((a, b) => a + b, 0);
+  return {
+    n: L.length, win: L.filter(t => t.r.pct > 0).length / L.length * 100, hit: L.filter(t => t.r.how === 'target').length / L.length * 100,
+    avg: sum / L.length, sum, worst, dd, noTop2: L.length > 2 ? (sum - top2) / (L.length - 2) : null,
+    avgR: L.reduce((a, t) => a + t.r.R, 0) / L.length,
+  };
+}
+const usedDays = data.filter(d => d.c.length && d.chain.length).length;
+console.log(`Daily approach: blue zone touch + 5-min Tenkan/Kijun cross, stop at the touch low/high`);
+if (sdata.length) console.log(`+ ${sdata.length} recent days from saved Gamma Detrite snapshots (${sdata.map(d => new Date(d.D).toISOString().slice(5, 10)).join(', ')}), one Daily window each`);
+console.log(`${usedDays} test days (1st of each month ${new Date(days[0]).toISOString().slice(0, 7)} – ${new Date(days[days.length - 1]).toISOString().slice(0, 7)}), 2 Daily windows each, buys + sells together, 0.1% costs`);
+const any = lists[names[0]];
+const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+console.log(`median stop distance ${med(any.map(t => t.riskPct)).toFixed(2)}% of price\n`);
+console.log('take profit                trades  win%  target%  avg %/trade  total %  worst run  max drop %  w/o best 2  avg R   | first 2y %/tr  last year %/tr (n)  last 3 months %/tr (n), total %');
+for (const name of names) {
+  const L = lists[name], s = stats(L), a = stats(L.filter(t => t.t < lastYear)), b = stats(L.filter(t => t.t >= lastYear)), q = stats(L.filter(t => t.t >= last3m));
+  if (!s.n) { console.log(name.padEnd(26), 'no trades'); continue; }
+  console.log(name.padEnd(26), String(s.n).padStart(6), s.win.toFixed(0).padStart(5), s.hit.toFixed(0).padStart(8), f2(s.avg).padStart(12), f2(s.sum).padStart(8),
+    String(s.worst).padStart(10), s.dd.toFixed(1).padStart(11), (s.noTop2 == null ? '-' : f2(s.noTop2)).padStart(11), f2(s.avgR).padStart(7), ' |',
+    (a.n ? f2(a.avg) : '-').padStart(13), ((b.n ? f2(b.avg) : '-') + ' (' + b.n + ')').padStart(16), ((q.n ? f2(q.avg) : '-') + ' (' + q.n + '), ' + (q.n ? f2(q.sum) : '-')).padStart(24));
+}
+const byS = side => stats(lists[names[0]].filter(t => t.side === side));
+console.log(`\nbuys ${byS('buy').n} / sells ${byS('sell').n} (next blue)`);
+if (process.env.SLGRID) {
+  console.log('\nIn % of price per trade (full position), after costs. GodMode 15-min dot take profit for every stop.');
+  console.log('stop loss                         trades  win%  avg win  avg loss  per trade  total %   2024     2025     2026   last 3m (n)   worst run  max drop %');
+  const yr = (L, y) => L.filter(t => new Date(t.t).getUTCFullYear() === y).reduce((a, t) => a + t.r.pct, 0);
+  for (const name of names) {
+    const L = lists[name]; if (!L.length) continue;
+    const s = stats(L), w = L.filter(t => t.r.pct > 0), lo = L.filter(t => t.r.pct <= 0), q = L.filter(t => t.t >= last3m);
+    console.log(name.padEnd(33), String(L.length).padStart(6), s.win.toFixed(0).padStart(5), f2(w.reduce((a, t) => a + t.r.pct, 0) / Math.max(w.length, 1)).padStart(8),
+      f2(lo.reduce((a, t) => a + t.r.pct, 0) / Math.max(lo.length, 1)).padStart(9), f2(s.avg).padStart(10), f2(s.sum).padStart(8),
+      f2(yr(L, 2024)).padStart(8), f2(yr(L, 2025)).padStart(8), f2(yr(L, 2026)).padStart(8),
+      (f2(q.reduce((a, t) => a + t.r.pct, 0)) + ' (' + q.length + ')').padStart(13), String(s.worst).padStart(10), s.dd.toFixed(1).padStart(11));
+  }
+}
+if (process.env.LIST) {
+  console.log('\n' + process.env.LIST + ':');
+  (lists[process.env.LIST] || []).forEach(t => console.log(new Date(t.t).toISOString().slice(0, 16), t.side.padEnd(4), 'zone', t.zone, 'entry', t.entry.toFixed(1), 'stop', t.stop.toFixed(1),
+    'tp', t.r.tp == null ? '-' : t.r.tp.toFixed(1), t.r.how.padEnd(7), f2(t.r.pct) + '%'));
+}

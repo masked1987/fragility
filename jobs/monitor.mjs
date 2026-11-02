@@ -22,7 +22,7 @@ import { collectTac } from '../tools/tactics/collect.js';
 import { sixOfSix, RULES_TOTAL } from '../tools/tactics/model.js';
 import { TAC_CONFIG } from '../tools/tactics/config.js';
 import { collectAlt, withPoints } from '../tools/alt-tactics/collect.js';
-import { altEvents } from '../tools/alt-tactics/model.js';
+import { altEvents, stopFrom, pickTarget } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 import { mmEvents } from '../tools/market-maker/flip.js';
 
@@ -227,9 +227,14 @@ if (TEST) {
   }
   if (tacNow && (TEST === 'all' || TEST === 'true' || TEST === 'tactics')) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
   if (altNow && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
-    const s = altNow.decision.setups.filter(x => x.taken).pop();
-    if (s) pushes.push({ ...altMessage(altNow, { kind: 'signal', setup: s }), title: '[test] ' + altMessage(altNow, { kind: 'signal', setup: s }).title,
-      body: 'TEST ONLY: the last Alt signal in the format of a real one (rings ' + ALT_REPEATS + ' times).\n' + altMessage(altNow, { kind: 'signal', setup: s }).body });
+    // The last Alt signal in the ~3.5 days the tab sees, else a sample at the nearest huge
+    // level below with a made-up 1% dip (so the test always shows the real format).
+    const last = altNow.decision.setups.filter(x => x.taken).pop(), s = last || altSample(altNow);
+    if (s) {
+      const p = altMessage(altNow, { kind: 'signal', setup: s });
+      pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (last ? 'the last Alt signal' : 'no Alt signal in the last 3.5 days, so this is a sample dip of 1% through ~' +
+        px(s.level) + ' with today\'s levels') + ' in the format of a real one (rings ' + ALT_REPEATS + ' times).\n' + p.body });
+    }
   }
   console.log('test alerts queued:', pushes.length);
 }
@@ -465,6 +470,14 @@ function mmsMessage(mm, e) {
 function mmsSample(mm) {
   const r = mm.flip.now, f = MM_CONFIG.flip, buy = r.ret24 >= 0, risk = f.stopMoves * r.m * r.price, reward = f.targetMoves * r.m * r.price;
   return { t: now, buy, entry: r.price, stop: buy ? r.price - risk : r.price + risk, target: buy ? r.price + reward : r.price - reward, ret24: r.ret24 };
+}
+// A sample Alt BUY for the test push: a 1% dip through the nearest huge level below.
+function altSample(d) {
+  const L = d.decision.nextBuy || d.decision.below;
+  if (!L) return null;
+  const cfg = withPoints(ALT_CONFIG, d.asset), ext = L * 0.99, entry = L * 1.004;
+  const stop = stopFrom(ext, true, cfg), target = pickTarget(d.huge, L, 1, ALT_CONFIG);
+  return { side: 'buy', level: L, ext, signal: { t: now, entry, stop, target, rr: target ? (target - entry) / (entry - stop) : null } };
 }
 function altUk(t) { return new Date(t).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }); }
 function altDay(t) { return new Date(t).toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }); }

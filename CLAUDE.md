@@ -11,6 +11,80 @@ the file layout. Tabs, in order:
 
 1. **Gamma Detrite**: embedded from the separate repo `masked1987/gamma-detrite`
    (single `index.html`; heat map of dealer gamma by strike × expiry, Near/Wide ±25%).
+   **Expiry tabs** (asked 2 Nov 2026, "like tab selector"): Daily (the very next
+   expiry) / Weekly (nearest Friday) / Monthly (nearest last Friday of a month) /
+   All, each with its date under the name and a gliding gradient underline. Heat
+   map, flip, key readings and put/call use only the chosen expiries (`parse()` once,
+   `view(P, wide, pick)`). One expiry = a bar per strike; All = every expiry, after
+   9 columns the last ("later") adds up the rest. Saved per phone (`gd.exp`). The
+   saved-snapshot fallback only has its 10 nearest columns (dates from the "Nd"
+   labels). Checked against the old calculation: same numbers.
+   Then (same day) a combined D+W+M tab; owner: "Not together, separately please,
+   up to choice", picked "Mix your own": now Daily / Weekly / Monthly each switch on
+   and off (any mix, each its own column, own underline); All = everything and
+   clears them; removing the last one goes back to All. `pick` = "all" or e.g.
+   "day+month". A shared date (Thursday daily = weekly) shows once.
+   Then "make sure all expiries is the first to show": All is the first tab (left)
+   and the page always opens on All (the choice is no longer saved per phone).
+   **Daily approach** (2 Nov 2026): the owner is building a separate DAILY trading
+   approach from the Gamma tab's Daily view (blue = dealers trade against the move,
+   price tends to stall / turn; pink = with the move, runs). "Don't take into account
+   alt tactics or any other strategies": keep it fully separate from Alt Tactics,
+   Tactics, Playbook and the Market Maker strategy; his long-term strategies stay
+   as they are. "Don't build anything, I just want you to know the rules" (so far):
+   price touches a blue zone on the Daily view → wait for the 5-minute Ichimoku
+   Tenkan / Kijun cross → enter; stop at the low / high of the touch. Sides not
+   said yet. Take profit not decided ("we need to pick something optimal"). Past
+   daily-expiry gamma is only free for the 1st of each month (Tardis), so a real
+   test would have ~36 days. Build nothing until he asks.
+   Asked "do the test to find best take profit": `SNAP=<gamma-detrite clone> node
+   test/daily-tp.mjs 37 <cache> 3` (own retrying Tardis loader: the free server answers
+   429 when pulled hard; never cache an empty chain). Then "use ichimoku 5 min for entry,
+   god mode for tp": his own **GodMode** Pine script (pasted; LazyBear / xSilas /
+   Ni6HTH4wK, current ticker only), settings **17, 6, 4**, "Multi-exchange?" off =
+   wt1 = avg(TCI, money flow, RSI); wt2 = sma(wt1, 6); yellow "Caution!" dot when wt2 > 80
+   (ends a buy) or < 20 (ends a sell), on the **15-minute** chart. Results
+   `test/results/daily-tp-2026-11-02.txt` (37 first-of-month days + 28–31 Oct from the
+   Gamma Detrite snapshot history; buys + sells, 0.1% costs, median stop 0.58%): every
+   take profit slightly negative over 3 years; best GodMode dot −0.05%/trade (129, 36%
+   win, worst run 7), biggest blue −0.04%, next blue −0.05%, flip line worst −0.21%;
+   last year GodMode +0.15%/trade (41), biggest blue +0.11%; last 3 months GodMode
+   +0.02% (15 trades). About break-even after costs, not proven. "Check last 3 months":
+   no free per-strike OI for every day; only 1st of month + the snapshots since 27 Oct.
+   In % (asked "show me stats like % wise"): GodMode TP, full position, after costs,
+   3 years −7.0% (before costs +5.9%), 35% win, avg win +0.83% / loss −0.53%; 2024
+   −2.8%, 2025 −10.2%, 2026 +6.3%; buys −6.7%, sells −0.3%. Not profitable yet.
+   Stop loss grid (asked "test them all and find best SL"; `SLGRID=1`, results
+   `test/results/daily-sl-2026-11-02.txt`, GodMode TP for all): touch low/high −7.0%;
+   +2 pts −7.5%; +5 / +10 pts −3.7%; +20 pts +1.0%; +0.1% −7.4%; +0.2% −3.2%; +0.3% −7.2%;
+   +0.5% **+1.6%** (102 trades, 49% win, max drop 12.9%); zone strike +10 pts (or the touch
+   if further) −0.8% (smallest yearly losses, max drop 12.4%); next strike past the zone
+   −2.0%; fixed 0.5–1.5% from entry all worst (−8.9 to −16.5%). Every stop loses in 2024
+   and 2025 and wins in 2026; some room past the touch helps a little but results jump
+   between neighbours, so it's about break-even whatever the stop.
+   Month by month (asked): each "month" is one test day (the 1st); 0.5% stop 14 up /
+   17 down, lowest −12.5% (Jan 2026), ends +1.6%; gains mostly Feb–Apr and Oct 2026.
+
+## Outside strategies (asked 2 Nov 2026, not his own)
+
+"Look on GitHub ... profitable strategies ... do not include mine", "doesn't need to
+fit my style", then "Test 1 2 and 3". `node test/outside-strategies.mjs <cache>`
+(Deribit hourly ETH perp candles, perp funding, DVOL; all free daily), results
+`test/results/outside-strategies-2026-11-02.txt`, Nov 2023 – Oct 2026, % of ETH price,
+full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
+1. Trend following: long only above the N-day average: 30d +166%, 40d +299%, **50d
+   +269%** (max drop 37.5%, 24 trades), 60d +205%, 75d +98%, 100d +101%, 150d +93%,
+   200d +84%; all beat holding, mostly by sitting out the big drops (Aug 2024, Feb 2025,
+   Nov 2025, Feb / Jun 2026). Long + short 50d (perp, funding paid) +364% but max drop
+   58%; 20-day breakouts and blended long + short weak (+6 to +20%).
+2. Funding carry (hold ETH, short Deribit perp): always on +15.7% over 3 years, max drop
+   0.8%, but 2024 +8.8%, 2025 +1.0%, 2026 +1.1% (Deribit funding avg 4.9%/yr; Binance /
+   OKX higher, not fetchable). Switching on/off by recent funding is worse.
+3. Selling ATM straddles, priced at DVOL (no free option price history): the result
+   is all about the price you sell at. Daily: DVOL −1 +556%, −3 +163%, −5 +5%, −10 −89%;
+   weekly: −1 +78%, −3 +26%, −5 −11%. Real spreads on 2 Nov 2026: daily ~3–4 vol points
+   below mark at the bid, weekly ~1.5. Worst single straddle −20 to −24% of ETH price.
+   Too fragile to trust. Conclusion given: trend following is the one that held up.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
@@ -21,6 +95,20 @@ the file layout. Tabs, in order:
    setup from the owner's video. Keep it independent of the Playbook.
 7. **Alt Tactics**: the owner's own method (dip through a huge gamma level, buy
    when buyers are back, stop at the low). Kept apart from Tactics (video rules).
+8. **Trend** (2 Nov 2026, "create separate tab with that strategy"): the 50-day
+   average rule from the outside-strategies test. Daily close (00:00 UTC) above the
+   50-day average = own ETH (IN), below = cash (OUT); long only, no stop, no target.
+   `tools/trend/` (model.js pure: states, trades, `line` = tonight's line = average of
+   the last 49 closes, the price today's close must beat; collect.js = Gate futures
+   daily candles, 1,000 days). Reading card (In / Out / Buy / Sell headline, tonight's
+   line), IN / OUT / BUY / SELL card (BUY / SELL for 24 h after the crossing close) with
+   the numbered rules, 6-month chart (close, dashed average, IN shaded, triangles),
+   trades table + live check on Gate prices, backtest card (ETH Nov 2023 – Oct 2026:
+   +268.8% vs holding +24.4%, worst drop 38% vs 68%, 21 trades; the test's "24"
+   counted a few outside the period). The tab's code on the test's Deribit closes gives
+   +267.7% (first-day buy cost). `node test/trend.mjs` is offline and must pass.
+   Phone alert not built (offer it). Eight tabs: phone padding 2.5px / 13.5px (1.5px /
+   12.5px under 380px) so all fit next to the style dot. v=51.
 
 ## How the owner works
 
@@ -138,7 +226,7 @@ the file layout. Tabs, in order:
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
   `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
-  `node test/tactics.mjs`, `node test/alt.mjs`, `node test/flip.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
+  `node test/tactics.mjs`, `node test/alt.mjs`, `node test/flip.mjs`, `node test/trend.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
   and `node test/tactics-live.mjs` print the live tabs.
 - Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
   from a start time ran out of pages on BTC and silently dropped the newest trades.
@@ -277,6 +365,14 @@ Then "Market Maker TP hit" (prio 4) / "SL hit" (prio 3) / "closed after 3 days"
 30 days, else a sample from today's numbers, as [test], rings 3 times. Card WAIT
 text says the phone rings 3 times with SL and TP. The older "dealers now losing"
 alert stays as it was (can come an hour apart; it uses the forming candle).
+Month by month (asked "do the back testing ... exactly the same strategy [as the
+alert] ... results for each month"): `MONTHLY=1 LIST=1 node test/mm-backtest.mjs 36
+.bt-cache` runs the tab / alert code (`flipTrades`, `cfg.flip`), results in
+`test/results/mm-monthly-2026-11-02.txt`. Nov 2023 – Nov 2026: 38 trades in 23 of 37
+months (11 up, 12 down, 14 none); full position +52.4%, account at 1% risk +26.7%;
+best month Nov 2025 +16.0%, worst Feb 2025 −5.9% / Dec 2025 −5.8%; worst drop
+from a high 9.7% (month ends). Backtest enters at the signal close; the real alert
+can arrive hours late (GitHub schedule).
 
 ## Playbook tab
 
@@ -423,6 +519,21 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   +0.09R. Few trades (~15 a year) and the top 10 wins carry the total. SELL after
   a buy hit its target, once per level: huge levels only 6–15 trades, mostly
   negative; key levels +0.18 to +0.98R on 25–31 trades. Too few to trust yet.
+- "Check all alerts on ntfy" (2 Nov 2026): can't read his topic (secret), so: all
+  runs succeed, cron is every 15 min but GitHub ran it every 4–6 h; state shows every
+  alert on and every welcome sent; `test_alerts: all` sends zone, dealers, Market Maker
+  strategy (3), Tactics (3), Alt (3).
+  Owner then: "I didn't receive anything". `test_alerts: check` (`jobs/ntfy-check.mjs`,
+  own workflow step): topic secret clean (26 chars, no stray spaces), ntfy.sh held
+  every message (all tests since 14:35 UK, plus a plain "ntfy check"), and two
+  untitled prio-3 messages at 15:11 UK that the job did not send (maybe him testing
+  from the app). So delivery to ntfy works; the problem is on the phone (app
+  subscription name / server, notifications, battery, instant delivery).
+  Topic in his app was right, but the app received nothing (CPU 0s, Xiaomi). Fixed by
+  uninstall + reinstall, allow notifications, subscribe with **Instant delivery**
+  ticked, battery "No restrictions". If alerts stop again, start there. A quick
+  "ntfy check" can be posted straight to the topic from a session (don't put the
+  topic in the repo).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
@@ -604,7 +715,10 @@ The owner's own method, built from the version that tested best
   priority 3, low so far + stop so far. Target hit (prio 4) / stopped (prio 3):
   once; after a buy target it reminds the sell rule, after a stop it names the next
   level. `altMessage()` in the job. One-time "Alt Tactics alerts are on" message
-  (`welcomedAlt`). Workflow test choice `alt` sends the last signal as [test].
+  (`welcomedAlt`). Workflow test choice `alt` sends the last signal as [test]; if
+  none in the ~3.5 days, a sample (`altSample()`: 1% dip through the nearest huge level
+  below, today's levels and target), added 2 Nov 2026 when "check all alerts" showed
+  the Alt test sent nothing.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
 ## Where we stopped (handover, 1 Nov 2026, end of a long session)

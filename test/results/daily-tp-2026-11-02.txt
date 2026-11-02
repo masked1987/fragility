@@ -1,0 +1,19 @@
+Daily approach: blue zone touch + 5-min Tenkan/Kijun cross, stop at the touch low/high
++ 4 recent days from saved Gamma Detrite snapshots (10-28, 10-29, 10-30, 10-31), one Daily window each
+37 test days (1st of each month 2023-11 – 2026-11), 2 Daily windows each, buys + sells together, 0.1% costs
+median stop distance 0.58% of price
+
+take profit                trades  win%  target%  avg %/trade  total %  worst run  max drop %  w/o best 2  avg R   | first 2y %/tr  last year %/tr (n)  last 3 months %/tr (n), total %
+next blue                     157    39       40        -0.05    -7.30          9        15.7       -0.11   -0.27  |         -0.10       +0.07 (49)        -0.03 (15), -0.39
+biggest blue                  136    38       32        -0.04    -5.29          8        15.2       -0.12   -0.21  |         -0.11       +0.11 (45)        -0.03 (15), -0.39
+flip line                     109    27       15        -0.21   -23.14          9        24.0       -0.30   -0.59  |         -0.24       -0.15 (33)        -0.33 (14), -4.59
+1R                            135    43       42        -0.11   -14.19          4        17.2       -0.14   -0.44  |         -0.13       -0.04 (39)        -0.13 (15), -2.02
+1.5R                          126    40       33        -0.07    -8.73          6        13.1       -0.12   -0.34  |         -0.10       -0.00 (38)        -0.07 (14), -0.99
+2R                            120    38       25        -0.08    -9.25          6        14.1       -0.14   -0.29  |         -0.11       +0.01 (35)        -0.05 (14), -0.75
+3R                            110    29       15        -0.11   -12.34         11        19.3       -0.22   -0.39  |         -0.19       +0.07 (33)        -0.15 (13), -1.98
+4R                            106    29       12        -0.10   -10.28         11        17.3       -0.19   -0.30  |         -0.17       +0.07 (31)        -0.07 (13), -0.92
+GodMode dot (15 min)          129    36       31        -0.05    -6.98          7        17.8       -0.10   +0.22  |         -0.15       +0.15 (41)        +0.02 (15), +0.34
+GodMode dot, multi on         122    33       22        -0.08   -10.05          7        14.6       -0.14   +0.40  |         -0.11       -0.02 (39)        -0.07 (14), -0.93
+no target (out at 08:00)      100    24        0        -0.09    -9.33         11        17.4       -0.21   -0.52  |         -0.18       +0.10 (31)        +0.01 (13), +0.10
+
+buys 59 / sells 98 (next blue)

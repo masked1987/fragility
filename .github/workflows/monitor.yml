@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (zone, dealers, Tactics, Alt, Market Maker strategy), or one: tactics, alt, mm'
+        description: 'Send [test] phone alerts: all (zone, dealers, Market Maker strategy, Tactics, Alt), or one: tactics, alt, mm; check = is the ntfy topic OK and what does ntfy hold'
         type: choice
-        options: ['no', 'all', 'tactics', 'alt', 'mm']
+        options: ['no', 'all', 'tactics', 'alt', 'mm', 'check']
         default: 'no'
 
 permissions:
@@ -34,6 +34,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Check the ntfy topic
+        if: inputs.test_alerts == 'check'
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node jobs/ntfy-check.mjs
 
       - name: Score, alert, log
         env:
