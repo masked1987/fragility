@@ -253,8 +253,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   use", not guaranteed; needs his trading password; trades hours late with the job);
   (2) Windows VPS ~$10–15/month + EA, set up via Remote Desktop app; (3) by hand from the
   alert (~7 trades a year). TradingView can't take orders from outside. Suggested 1 if
-  MetaApi is still free, else 3, demo account first. Owner: "so it's up to me". Nothing
-  built; wait for his choice.
+  MetaApi is still free, else 3, demo account first. Owner chose **3: "I will follow
+  alerts and execute manually"**. Nothing built; don't re-offer auto-trading unless he asks.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
