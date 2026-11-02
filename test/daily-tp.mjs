@@ -84,18 +84,17 @@ function candles(D) {
   });
 }
 
-// GodMode oscillator, rebuilt from the public Godmode 3.x formula (xSilas / LazyBear /
-// Ni6HTH4wK; "Godmode 3.1.4 SNOW_CITY SCALPER EDITION" uses 17, 6, 4 for its "very
-// sensitive caution dots"). The owner's own copy (black / yellow dots) was not available,
-// so this is an approximation:
+// GodMode, the owner's own Pine script (pasted 2 Nov 2026; "Godmode", LazyBear / xSilas /
+// Ni6HTH4wK, "changed to only look at the current ticker"), his settings 17, 6, 4:
 //   src = hlc3; n1 = 17 (channel), n2 = 6 (average), n3 = 4 (short)
-//   TCI   = ema((src − ema(src,n1)) / (0.025 · ema(|src − ema(src,n1)|, n1)), n2) + 50
-//   CSI   = (rsi(src,n3) + 50 · tsi(src,n1,n2) + 50) / 2
-//   MF    = money-flow RSI of volume·src on up vs down bars over n3
-//   Willy = 60 · (src − highest(src,n2)) / (highest − lowest) + 80
-//   line  = average of the four; signal = 6-bar average of the line
-//   caution dot: signal above 80 (top, ends a buy) or below 20 (bottom, ends a sell).
-const GM = { n1: 17, n2: 6, n3: 4, top: 80, bottom: 20 };
+//   tci   = ema((src − ema(src,n1)) / (0.025 · ema(|src − ema(src,n1)|, n1)), n2) + 50
+//   mf    = rsi(sum(volume·src on up bars, n3), sum(volume·src on down bars, n3))
+//   "Multi-exchange?" off (default): wt1 = avg(tci, mf, rsi(src, n3))   ("tradition")
+//   on: wt1 = avg(tci, csi, mf, willy), csi = avg(rsi(src,n3), tsi(src,n1,n2)·50+50),
+//       willy = 60·(src − highest(src,n2)) / (highest − lowest) + 80   (same ticker twice)
+//   wt2 = sma(wt1, 6); yellow "Caution!" dot when wt2 < 20 (bottom) or > 80 (top).
+// A top dot ends a buy, a bottom dot ends a sell (at that 15-minute bar's close).
+const GM = { n1: 17, n2: 6, n3: 4, top: 80, bottom: 20, multi: false };
 function emaA(x, n) { const a = 2 / (n + 1), o = []; let e = NaN; x.forEach((v, i) => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
 function rmaA(x, n) { const a = 1 / n, o = []; let e = NaN; x.forEach(v => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
 function smaA(x, n) { return x.map((v, i) => { if (i < n - 1) return NaN; let s = 0; for (let k = i - n + 1; k <= i; k++) s += x[k]; return s / n; }); }
@@ -103,7 +102,7 @@ function rsiA(x, n) {
   const ch = x.map((v, i) => i ? v - x[i - 1] : NaN), up = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(d, 0)), n), dn = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(-d, 0)), n);
   return up.map((u, i) => dn[i] === 0 ? 100 : u === 0 ? 0 : 100 - 100 / (1 + u / dn[i]));
 }
-function godmode(bars) {
+function godmode(bars, multi) {
   const { n1, n2, n3 } = GM, src = bars.map(b => (b.h + b.l + b.c) / 3), ch = src.map((v, i) => i ? v - src[i - 1] : NaN);
   const e = emaA(src, n1), dev = emaA(src.map((v, i) => Math.abs(v - e[i])), n1);
   const tci = emaA(src.map((v, i) => (v - e[i]) / (0.025 * dev[i])), n2).map(v => v + 50);
@@ -119,18 +118,19 @@ function godmode(bars) {
     for (let k = i - n2 + 1; k <= i; k++) { hh = Math.max(hh, src[k]); ll = Math.min(ll, src[k]); }
     return hh === ll ? 50 : 60 * (v - hh) / (hh - ll) + 80;
   });
-  return smaA(src.map((v, i) => (tci[i] + csi[i] + mf[i] + willy[i]) / 4), 6);
+  const wt1 = multi ? src.map((v, i) => (tci[i] + csi[i] + mf[i] + willy[i]) / 4) : src.map((v, i) => (tci[i] + mf[i] + rs[i]) / 3);
+  return smaA(wt1, 6);
 }
 // 15-minute bars from the 5-minute candles; returns { end time of each finished 15-min bar: signal }.
 const M15 = 15 * 6e4;
-function godmode15(c) {
+function godmode15(c, multi) {
   const bars = [];
   c.forEach(x => {
     const s = Math.floor(x.t / M15) * M15, b = bars[bars.length - 1];
     if (b && b.t === s) { b.h = Math.max(b.h, x.h); b.l = Math.min(b.l, x.l); b.c = x.c; b.v += x.v; b.n++; }
     else bars.push({ t: s, h: x.h, l: x.l, c: x.c, v: x.v, n: 1 });
   });
-  const full = bars.filter(b => b.n === 3), sig = godmode(full), out = {};
+  const full = bars.filter(b => b.n === 3), sig = godmode(full, multi), out = {};
   full.forEach((b, i) => { if (!isNaN(sig[i])) out[b.t + M15] = sig[i]; });
   return out;
 }
@@ -176,7 +176,8 @@ const TPS = {
   '2R': (e, buy, v, risk) => buy ? e + 2 * risk : e - 2 * risk,
   '3R': (e, buy, v, risk) => buy ? e + 3 * risk : e - 3 * risk,
   '4R': (e, buy, v, risk) => buy ? e + 4 * risk : e - 4 * risk,
-  'GodMode dot (15 min)': () => null,  // exit at the close of the first 15-min bar with a dot on the trade's side
+  'GodMode dot (15 min)': () => null,  // his script as set: Multi-exchange off; exit at the first 15-min dot on the trade's side
+  'GodMode dot, multi on': () => null, // same with "Multi-exchange?" ticked (4-part formula)
   'no target (out at 08:00)': () => null,
 };
 
@@ -208,7 +209,7 @@ function windowTrades(c, chain, start, E, name, gm) {
       const y = c[j];
       if (buy ? y.l <= stop : y.h >= stop) { exit = stop; how = 'stop'; break; }
       if (tp != null && (buy ? y.h >= tp : y.l <= tp)) { exit = tp; how = 'target'; break; }
-      const g = name.startsWith('GodMode') ? gm[y.t + M5] : undefined;
+      const g = name.startsWith('GodMode') ? (name.includes('multi') ? gm.multi : gm.plain)[y.t + M5] : undefined;
       if (g !== undefined && (buy ? g > GM.top : g < GM.bottom)) { exit = y.c; how = 'target'; break; }
     }
     if (exit == null) { j = iEnd; exit = c[iEnd].c; }
@@ -230,7 +231,7 @@ async function pool(items, fn) {
 const data = await pool(days, async D => {
   const [chain, c] = await Promise.all([chainDay(D), candles(D)]);
   process.stderr.write('.');
-  return { D, chain, c, gm: godmode15(c) };
+  return { D, chain, c, gm: { plain: godmode15(c, false), multi: godmode15(c, true) } };
 });
 process.stderr.write('\n');
 
