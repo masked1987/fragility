@@ -119,7 +119,9 @@ export function mount(el) {
       '<li>Close <b>above</b> the average: own ' + a + '. If you are out, buy at that close.</li>' +
       '<li>Close <b>below</b> the average: hold cash. If you are in, sell at that close.</li>' +
       '<li>Nothing else: no stop loss, no target, no trading during the day. Long only, no leverage.</li>' +
-      '</ol><p class="small muted">"Tonight\'s line" is the price today\'s close has to beat to sit above its own ' + CFG.days + '-day average (the average of the last ' + (CFG.days - 1) + ' closes).</p></div>';
+      '</ol><p class="small muted">"Tonight\'s line" is the price today\'s close has to beat to sit above its own ' + CFG.days + '-day average (the average of the last ' + (CFG.days - 1) + ' closes).</p></div>' +
+      (CFG.alertAssets.indexOf(d.asset) >= 0 ? '<p class="small"><b>Phone alerts:</b> BUY and SELL ring 3 times (entry, stop line, result). While IN, a quiet message after each daily close with tonight\'s stop line. ' +
+        'The stop is the daily close under the line, not a stop order; there is no take profit, it rides the trend.</p>' : '');
     return '<section class="card tc-dec ' + cls + '">' +
       '<div class="tc-dec-top"><span class="tc-dec-badge">' + act.toUpperCase() + '</span>' +
         '<div><div class="label">' + a + ' · trend ' + CFG.days + '</div><p class="tc-dec-head">' + esc(splitHead(head).title) + '</p></div></div>' +

@@ -25,6 +25,9 @@ import { collectAlt, withPoints } from '../tools/alt-tactics/collect.js';
 import { altEvents, stopFrom, pickTarget } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 import { mmEvents } from '../tools/market-maker/flip.js';
+import { collectTrend } from '../tools/trend/collect.js';
+import { trendEvents } from '../tools/trend/model.js';
+import { TREND_CONFIG } from '../tools/trend/config.js';
 
 const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
@@ -36,6 +39,7 @@ const TACTICS_REPEATS = 3;        // Tactics 6/6 rings 3 times (owner tried 5, t
 const ALT_REPEATS = 3;            // Alt Tactics BUY / SELL rings like Tactics 6/6
 const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (the job can run hours late)
 const MMS_REPEATS = 3;            // Market Maker strategy BUY / SELL rings like the other trade alerts
+const TREND_REPEATS = 3;          // Trend BUY / SELL (daily close crosses the 50-day average) rings like the other trade alerts
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
@@ -51,6 +55,7 @@ state.quiet = state.quiet || {};
 state.tactics = state.tactics || {};
 state.alt = state.alt || {};
 state.mmStrat = state.mmStrat || {};
+state.trend = state.trend || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
 const now = Date.now();
@@ -60,10 +65,11 @@ const pushes = [];
 let tacNow = null; // latest Tactics reading, for the one-time test push
 let altNow = null; // latest Alt Tactics reading, for its one-time welcome push
 let mmsNow = null; // latest Market Maker reading with its strategy state, for its welcome / test push
+let trendNow = null; // latest Trend reading, for its welcome / test push
 // Started by hand with "send test alerts" ticked: one [test] message per alert kind.
 // TEST_ALERTS: 'all' (or 'true') = zone, dealers, Tactics, Alt and the Market Maker strategy;
-// 'tactics' / 'alt' / 'mm' = that one only.
-const TEST = ['true', 'all', 'tactics', 'alt', 'mm'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
+// 'tactics' / 'alt' / 'mm' / 'trend' = that one only.
+const TEST = ['true', 'all', 'tactics', 'alt', 'mm', 'trend'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
 const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
@@ -196,6 +202,25 @@ for (const asset of CONFIG.assets) {
     }
   }
 
+  // Trend (asked 2 Nov 2026: "alerts when to enter, what's TP and stop loss", kept as
+  // tested): BUY / SELL when the daily close crosses the 50-day average (rings 3 times);
+  // while IN, one quiet message per daily close with tonight's line (the moving stop).
+  // Same model as the tab. Nothing from before the first run (that run only saves the state).
+  if (TREND_CONFIG.alertAssets.includes(asset)) {
+    try {
+      const d = await collectTrend(asset, TREND_CONFIG), m = d.model;
+      const ev = trendEvents(m, state.trend[asset] || null, now, TREND_CONFIG.alertMaxHours * 36e5);
+      for (const e of ev.events) pushes.push(trendMessage(d, e));
+      if (ev.daily) pushes.push(trendDaily(d));
+      state.trend[asset] = ev.next;
+      console.log(`${asset} trend: ${m.on ? 'IN' : 'OUT'} (close ${num(m.close)}, avg ${num(m.avg)}, tonight's line ${num(m.line)})` +
+        (ev.events.length ? ` -> ${ev.events.map(e => e.kind).join(', ')}` : '') + (ev.daily ? ' -> daily line' : ''));
+      if (!trendNow) trendNow = d;
+    } catch (e) {
+      console.log(`${asset} trend unavailable: ${e.message}`);
+    }
+  }
+
   if (!state.lastLog[asset] || now - state.lastLog[asset] >= LOG_EVERY_MS) {
     const sub = Object.fromEntries(r.inputs.map(i => [i.key, i.score == null ? '' : i.score.toFixed(1)]));
     const row = [new Date(now).toISOString(), asset, price == null ? '' : price, r.score.toFixed(1), zone,
@@ -234,6 +259,18 @@ if (TEST) {
       const p = altMessage(altNow, { kind: 'signal', setup: s });
       pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (last ? 'the last Alt signal' : 'no Alt signal in the last 3.5 days, so this is a sample dip of 1% through ~' +
         px(s.level) + ' with today\'s levels') + ' in the format of a real one (rings ' + ALT_REPEATS + ' times).\n' + p.body });
+    }
+  }
+  if (trendNow && (TEST === 'all' || TEST === 'true' || TEST === 'trend')) {
+    // The last real BUY in the real format (its own stop line then), then the daily line message.
+    const m = trendNow.model, a = trendNow.asset;
+    const b = m.states.filter((s, i) => i > 0 && s.on && !m.states[i - 1].on).pop();
+    if (b) {
+      const e = { kind: 'buy', t: b.t, close: b.close, avg: b.avg, line: b.line };
+      const p = trendMessage(trendNow, e, true);
+      pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: the last real Trend BUY (' + altDay(b.t) + '), in the format of a real one (rings ' + TREND_REPEATS + ' times). ' + a + ' is ' + (m.on ? 'IN' : 'OUT') + ' now.\n' + p.body });
+      const q = trendDaily(trendNow, e);
+      pushes.push({ ...q, title: '[test] ' + q.title, body: 'TEST ONLY: while IN you get this once a day, quietly (here: the day after that BUY).\n' + q.body });
     }
   }
   console.log('test alerts queued:', pushes.length);
@@ -280,6 +317,18 @@ if (!state.welcomedAlt && process.env.NTFY_TOPIC && altNow) {
   pushes.push({ title: 'Alt Tactics alerts are on', priority: 3, tags: 'white_check_mark', click: '#alt',
     body: `You will get a message here when your rules fire on ${ALT_CONFIG.alertAssets.join(', ')}:\n` +
       `BUY / SELL (rings ${ALT_REPEATS} times) with entry, stop loss and target;\nWATCH when price dips through a huge level;\ntarget hit or stopped.\n` + nowLine });
+}
+
+// And the Trend alerts: one message saying what will come, with where things stand.
+if (!state.welcomedTrend && process.env.NTFY_TOPIC && trendNow) {
+  state.welcomedTrend = true;
+  const m = trendNow.model, a = trendNow.asset;
+  pushes.push({ title: 'Trend alerts are on', priority: 3, tags: 'white_check_mark', click: '#trend',
+    body: `You will get a message here when ${a}'s daily close (00:00 UTC) crosses its ${TREND_CONFIG.days}-day average:\n` +
+      `BUY (rings ${TREND_REPEATS} times) with the entry and the stop line;\nwhile IN, a quiet message after each daily close with tonight's stop line;\n` +
+      `SELL (rings ${TREND_REPEATS} times) on the first daily close under it, with the result. No take profit: it rides the trend.\n` +
+      (m.on ? `Now: IN since ${altDay(m.since.t)} (${num(m.since.price)}). Tonight's stop line ${num(m.line)}; price ${num(trendNow.price)}.`
+        : `Now: OUT since ${altDay(m.since.t)}. A daily close above ${num(m.line)} tonight is a BUY; price ${num(trendNow.price)}.`) });
 }
 
 writeFileSync(STATE, JSON.stringify(state, null, 2) + '\n');
@@ -464,6 +513,47 @@ function mmsMessage(mm, e) {
       ` at ${altUk(x.at)} UK: ${res}.` +
       `\nThe next signal comes when dealers stop losing and then turn losing again.` + end,
     priority: e.kind === 'target' ? 4 : 3, tags: e.kind === 'target' ? 'tada' : e.kind === 'stopped' ? 'x' : 'hourglass', click: '#mm',
+  };
+}
+// Trend messages. e = { kind: 'buy' | 'sell', t (the 00:00 UTC close), close, avg, trade }.
+// The stop is a rule on the daily close (tonight's line), not an intraday stop order;
+// there is no take profit (as tested).
+function trendMessage(d, e, sample) {
+  const m = d.model, a = d.asset, buy = e.kind === 'buy', N = TREND_CONFIG.days, end = '\nContext, not a trade signal.';
+  const when = `00:00 UTC (${altUk(e.t)} UK, ${altDay(e.t)})`;
+  const late = !sample && now - e.t > 2 * 36e5 ? `\nThat close was at ${altUk(e.t)} UK; price now ${num(d.price)}.` : '';
+  if (buy) {
+    const line = sample ? e.line : m.line, gap = e.close - line;
+    return {
+      title: `Trend BUY - ${a} ${num(e.close)} (daily close over the ${N}-day avg)`,
+      body: `${a} closed at ${num(e.close)} at ${when}, above its ${N}-day average ${num(e.avg)}. Buy and hold.` +
+        `\nEntry ${num(e.close)} (the daily close)` +
+        `\nStop loss: a daily close under ${num(line)} tonight` + (gap > 0 ? ` (${num(gap)} points, ${(gap / e.close * 100).toFixed(1)}% under the entry)` : ' (already at the entry: a close under it is a sell)') +
+        `. It's a rule on the 00:00 UTC close, not a stop order: a dip under it during the day doesn't count. The line moves every day; you'll get it here after each close.` +
+        `\nTake profit: none. Ride the trend; sell only when a daily close is under the line.` + late + end,
+      priority: 4, repeats: TREND_REPEATS, tags: 'chart_with_upwards_trend', click: '#trend',
+    };
+  }
+  const t = e.trade;
+  return {
+    title: `Trend SELL - ${a} ${num(e.close)} (daily close under the ${N}-day avg)`,
+    body: `${a} closed at ${num(e.close)} at ${when}, under its ${N}-day average ${num(e.avg)}. Sell and hold cash.` +
+      (t ? `\nTrade: bought ${num(t.buy.price)} on ${altDay(t.buy.t)}, sold ${num(t.sell.price)}: ${t.pct >= 0 ? '+' : ''}${t.pct.toFixed(1)}% after costs (${Math.round((t.sell.t - t.buy.t) / 864e5)} days).` : '') +
+      `\nNext buy: the first daily close above its ${N}-day average (tonight: above ${num(m.line)}).` + late + end,
+    priority: 4, repeats: TREND_REPEATS, tags: 'chart_with_downwards_trend', click: '#trend',
+  };
+}
+// sample = a past BUY event (for the test): its line and price, as the day after it.
+function trendDaily(d, sample) {
+  const m = d.model, a = d.asset, line = sample ? sample.line : m.line, price = sample ? sample.close : d.price;
+  const o = sample ? { price: sample.close, t: sample.t } : m.open, dist = (price / line - 1) * 100;
+  return {
+    title: `Trend IN - ${a} stop line tonight ${num(line)}`,
+    body: `Still IN. Tonight's stop line ${num(line)}: a daily close under it at 00:00 UTC (${altUk(d.nextClose)} UK) is a SELL.` +
+      `\nPrice now ${num(price)} (${dist >= 0 ? '+' : ''}${dist.toFixed(1)}% from the line).` +
+      (o ? `\nTrade: bought ${num(o.price)} on ${altDay(o.t)}, ${((price / o.price - 1) * 100) >= 0 ? '+' : ''}${((price / o.price - 1) * 100).toFixed(1)}% so far.` : '') +
+      `\nNo take profit: it rides the trend.\nContext, not a trade signal.`,
+    priority: 2, tags: 'chart_with_upwards_trend', click: '#trend',
   };
 }
 // A sample trade from today's numbers, for the test push when there was no signal in 30 days.

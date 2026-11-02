@@ -107,8 +107,18 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    +268.8% vs holding +24.4%, worst drop 38% vs 68%, 21 trades; the test's "24"
    counted a few outside the period). The tab's code on the test's Deribit closes gives
    +267.7% (first-day buy cost). `node test/trend.mjs` is offline and must pass.
-   Phone alert not built (offer it). Eight tabs: phone padding 2.5px / 13.5px (1.5px /
-   12.5px under 380px) so all fit next to the style dot. v=51.
+   Eight tabs: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px) so all fit
+   next to the style dot. v=51.
+   **Phone alert** (asked "with alerts when to enter, what's TP and stop loss"; he chose
+   "keep it as tested": no fixed SL / TP): `jobs/monitor.mjs`, ETH (`alertAssets`),
+   `trendEvents()` in model.js (crossings since `state.trend[asset].at`, none older than
+   72 h; first run only saves the state). BUY / SELL priority 4, rings 3 times
+   (`TREND_REPEATS`): BUY = entry (the close), "Stop loss: a daily close under <tonight's
+   line>" (points, %), "a rule on the 00:00 UTC close, not a stop order", "Take profit:
+   none"; SELL = the trade's result. While IN, one quiet (priority 2) message per daily
+   close with tonight's stop line. One-time "Trend alerts are on" (`welcomedTrend`).
+   Workflow test choice `trend` (also in `all`): the last real BUY (its own line) + the
+   daily message, as [test]. Each state now carries `line` (for the next close). v=52.
 
 ## How the owner works
 
@@ -142,7 +152,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   losing / no longer losing, Tactics 6/6, and (from 2 Nov 2026, his request) Alt
   Tactics BUY / SELL / WATCH / target hit / stopped (see the Alt Tactics section), and
   (2 Nov 2026) Market Maker strategy BUY / SELL with SL and TP, then TP / SL hit or
-  closed after 3 days (see the Market Maker backtest section). "Test them now": the workflow has a
+  closed after 3 days (see the Market Maker backtest section), and (2 Nov 2026) Trend BUY / SELL plus a
+  quiet daily stop line while IN (see the Trend tab). "Test them now": the workflow has a
   `test_alerts` input (Run workflow → choose `all` or `tactics`; `TEST_ALERTS` in
   the job) that sends [test] messages in their real format: zone and dealers once
   each, Tactics 3 times like the real one.
