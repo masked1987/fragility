@@ -23,7 +23,7 @@
   "welcomedMM": true,
   "tactics": {
     "ETH": {
-      "met": 1,
+      "met": 2,
       "action": "hold"
     }
   },
