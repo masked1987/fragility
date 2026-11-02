@@ -52,7 +52,9 @@ the file layout. Tabs, in order:
   I will need just 6/6 alerts from tactics". Asked about the zone and dealer
   alerts: "keep those two on". So the phone gets: zone changes, ETH dealers
   losing / no longer losing, Tactics 6/6, and (from 2 Nov 2026, his request) Alt
-  Tactics BUY / SELL / WATCH / target hit / stopped (see the Alt Tactics section). "Test them now": the workflow has a
+  Tactics BUY / SELL / WATCH / target hit / stopped (see the Alt Tactics section), and
+  (2 Nov 2026) Market Maker strategy BUY / SELL with SL and TP, then TP / SL hit or
+  closed after 3 days (see the Market Maker backtest section). "Test them now": the workflow has a
   `test_alerts` input (Run workflow → choose `all` or `tactics`; `TEST_ALERTS` in
   the job) that sends [test] messages in their real format: zone and dealers once
   each, Tactics 3 times like the real one.
@@ -242,8 +244,7 @@ card. The first reading can't be a flip (no "before"). Card states: BUY / SELL (
 box with the number, entry, target, ends, size from the Plan tab account), OPEN,
 WAIT (no flip: gap now, which way it would trade, stop / target now, last flip in
 30 days; or dealers already losing: losing since, the flip only fires on the turn).
-`node test/flip.mjs` is offline and must pass. Not added to the phone alerts; offer
-it if he asks. The "dealers now losing" alert (`jobs/monitor.mjs`) uses
+`node test/flip.mjs` is offline and must pass (incl. the alert events). The "dealers now losing" alert (`jobs/monitor.mjs`) uses
 `ivWeek − rvWeek` from `analyse()` incl. Gate's still-forming candle, so it can come
 an hour apart from the card; the card says so.
 Then "Make sure it's the same strategy very clear" (v=48): every state shows a
@@ -261,6 +262,21 @@ Owner then: "I meant market maker": he calls it the **Market Maker strategy**, n
 rules, exactly as backtested", "Market Maker strategy backtest ... (the one compared
 with Alt Tactics)"). Code names (`flip.js`, `cfg.flip`) unchanged. Use his name in
 replies too. v=49.
+**Phone alert** (asked "create alert for market maker strategy, but also add stop
+loss and TP", v=50): `jobs/monitor.mjs`, inside the Market Maker block (ETH,
+`MM_CONFIG.alertAssets`), uses `mm.flip` from `collectMM` (= the card) and
+`mmEvents()` in `flip.js`: signal, then 'target' / 'stopped' / 'time', each pushed
+once (`state.mmStrat[asset].sent`, pruned after 10 days; `since` = first run;
+older than 24 h skipped). `mmsMessage()`: "Market Maker BUY / SELL - ETH 2,286.7 at
+14:00 UK", rings 3 times (`MMS_REPEATS`), priority 4: why (dealers turned losing,
+24h move), Entry, Stop loss (number, points, %, half a day's move), Take profit
+(number, points, %, 2 day's moves, 4x), out-after-3-days time, late note if >30 min.
+Then "Market Maker TP hit" (prio 4) / "SL hit" (prio 3) / "closed after 3 days"
+(prio 3) once each with the % result. One-time "Market Maker strategy alerts are on"
+(`welcomedMMS`). Workflow test choice `mm` (also in `all`) sends the last signal in
+30 days, else a sample from today's numbers, as [test], rings 3 times. Card WAIT
+text says the phone rings 3 times with SL and TP. The older "dealers now losing"
+alert stays as it was (can come an hour apart; it uses the forming candle).
 
 ## Playbook tab
 
@@ -595,7 +611,7 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **State (2 Nov 2026), all live, v=49 (Market Maker strategy card added):** Alt
+- **State (2 Nov 2026), all live, v=50 (Market Maker strategy card + phone alert added):** Alt
   Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
   version), target the biggest huge level, stop at the low (0.4% room removed
   2 Nov at his request), dips up to 2%,

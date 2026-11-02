@@ -133,8 +133,7 @@ export function mount(el) {
         '<dt>Last signal</dt><dd>' + lastTxt + '</dd></dl>' +
         '<p class="verdict-action"><b>What it means:</b> ' + (r.side === 'lose'
           ? 'dealers have been losing since ' + when(st.losingSince) + '. The signal only fires on the turn, so the next one comes after they stop losing and turn losing again.'
-          : 'nothing to do. The next signal comes when ' + a + ' starts moving more than options priced, after a calmer stretch. Your phone\'s "' + a +
-            ' dealers now losing" alert is worked out a little differently, so it can come an hour apart; this card is the one that follows the tested rules.') + '</p>';
+          : 'nothing to do. The next signal comes when ' + a + ' starts moving more than options priced, after a calmer stretch.' + (a === 'ETH' ? ' Your phone rings 3 times when it fires, with the stop loss and take profit.' : '')) + '</p>';
     }
     const cls = act === 'buy' || (act === 'open' && o.buy) ? 'buy' : act === 'sell' || act === 'open' ? 'sell' : 'hold';
     return '<section class="card tc-dec ' + cls + '">' +

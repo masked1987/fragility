@@ -88,3 +88,19 @@ export function flipState(iv, hours, cfg, fine) {
   return { trades: trades, open: last && last.trade.result === 'open' ? last : null, last: last, now: now,
     losingSince: now.side === 'lose' ? losingSince : null, from: read[0].t };
 }
+
+// Phone alert events (jobs/monitor.mjs, asked 2 Nov 2026 "create alert for market maker
+// strategy, but also add stop loss and TP"): the signal, then how the trade ended
+// ('target' = TP hit, 'stopped' = SL hit, 'time' = closed after maxHours). Each is pushed
+// once (`sent` holds the keys); nothing from before `since` or older than maxAgeMs.
+export function mmEvents(st, sent, since, now, maxAgeMs) {
+  const out = [];
+  if (!st) return out;
+  const fresh = function (t) { return t != null && t >= since && now - t <= maxAgeMs; };
+  st.trades.forEach(function (g) {
+    const add = function (kind, t) { const key = kind + ':' + g.t; if (!sent[key] && fresh(t)) out.push({ kind: kind, key: key, t: t, trade: g }); };
+    add('signal', g.t);
+    if (g.trade.result !== 'open') add(g.trade.result, g.trade.at);
+  });
+  return out.sort(function (a, b) { return a.t - b.t; });
+}
