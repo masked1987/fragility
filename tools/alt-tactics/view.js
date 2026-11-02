@@ -71,11 +71,15 @@ export function mount(el) {
   // The stop loss as a number to type into the order, worked out from live prices:
   // CFG.stopBufferPct under the low (buys) / over the high (sells). from = the entry,
   // or the price now while a setup is still waiting.
+  // Where the stop goes, in words: "at the low" or "0.4% under the low".
+  function slWhere(buy) {
+    return CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '% ' + (buy ? 'under the low' : 'over the high') : (buy ? 'at the low' : 'at the high');
+  }
   function stopBox(stop, ext, buy, from, fromWord, note) {
     const dist = Math.abs(from - stop);
     return '<div class="al-sl"><div class="label">' + (note ? 'Stop loss so far' : 'Your stop loss') + '</div>' +
       '<div class="al-sl-num num">' + num(stop) + '</div>' +
-      '<div class="small">' + CFG.stopBufferPct + '% ' + (buy ? 'under the low ' : 'over the high ') + num(ext) + ' · ' +
+      '<div class="small">' + (CFG.stopBufferPct > 0 ? slWhere(buy) + ' ' + num(ext) : 'the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike')) + ' · ' +
         num(dist) + ' points (' + (dist / from * 100).toFixed(1) + '%) ' + (buy ? 'under ' : 'over ') + fromWord + '</div>' +
       (note ? '<div class="small muted">' + note + '</div>' : '') +
       '<div class="small muted">From Gate\'s ETH price; your exchange can differ by a few points.</div></div>';
@@ -116,7 +120,7 @@ export function mount(el) {
         '<dl class="pb-dl">' +
         '<dt>' + (buy ? 'Dipped' : 'Spiked') + '</dt><dd>' + hhmm(Math.max(w.t0, w.win ? w.win.at : 0)) + ', ' + (buy ? 'low' : 'high') + ' so far <b class="num">' + num(w.ext) + '</b> <span class="muted">(' + w.depth.toFixed(1) + '% ' + (buy ? 'under' : 'over') + ', a real break past ' + CFG.maxDepthPct + '%)</span></dd>' +
         '<dt>Waiting for</dt><dd>the ' + CFG.candleMinutes + '-minute Ichimoku score to ' + (buy ? 'reach ' + CFG.scoreBuy : 'drop to ' + CFG.scoreSell) + ' <span class="muted">(now ' + (now == null ? '–' : now) + ')</span></dd>' +
-        '<dt>Then</dt><dd>' + (buy ? 'buy, stop ' + CFG.stopBufferPct + '% under the low' : 'sell, stop ' + CFG.stopBufferPct + '% over the high') + ', target ' + (w.target ? px(w.target) : '<span class="muted">no huge level ' + (buy ? 'above' : 'below') + '</span>') + '</dd></dl>' +
+        '<dt>Then</dt><dd>' + (buy ? 'buy, stop ' + slWhere(true) : 'sell, stop ' + slWhere(false)) + ', target ' + (w.target ? px(w.target) : '<span class="muted">no huge level ' + (buy ? 'above' : 'below') + '</span>') + '</dd></dl>' +
         (buy ? '' : whyHere(w.win)) + (buy ? '' : unproven) +
         '<p class="verdict-action"><b>What it means:</b> the setup is live. Don\'t ' + (buy ? 'buy' : 'sell') + ' yet: the ' + (buy ? 'low can still go lower until buyers' : 'high can still go higher until sellers') + ' take over.</p>';
     } else {
@@ -225,23 +229,23 @@ export function mount(el) {
   function backtestHtml() {
     const b = CFG.backtest;
     return '<section class="card"><h3>How it did on past data</h3>' +
-      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop ' + CFG.stopBufferPct + '% under the low, dips up to ' + CFG.maxDepthPct + '%, target the biggest huge level above, once per level, 0.1% costs):</p>' +
+      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop ' + slWhere(true) + ', dips up to ' + CFG.maxDepthPct + '%, target the biggest huge level above, once per level, 0.1% costs):</p>' +
       '<dl class="pb-dl"><dt>Trades</dt><dd>' + b.trades + ' (about 14 a year)</dd>' +
       '<dt>Reached target</dt><dd>' + b.hitPct + '%</dd>' +
       '<dt>Average</dt><dd><b>+' + b.avgR.toFixed(2) + 'R</b> per trade <span class="muted">(R = the stop distance)</span></dd>' +
       '<dt>By year</dt><dd>' + esc(b.years) + '</dd>' +
       '<dt>Worst run</dt><dd>' + b.worstRun + ' losses in a row</dd></dl>' +
-      '<p class="small al-warn"><b>The catch:</b> two trades (' + esc(b.best2) + ') made most of it. The other ' + (b.trades - 2) + ' buys averaged ' +
+      '<p class="small al-warn"><b>The catch:</b> two trades (' + esc(b.best2) + ') made ' + (b.without2 < 0 ? 'all' : 'most') + ' of it. The other ' + (b.trades - 2) + ' buys averaged ' +
         (b.without2 >= 0 ? '+' : '−') + Math.abs(b.without2).toFixed(1) + 'R each. ' + esc(b.before) + '</p>' +
       '<p class="small"><b>Sells</b> (only at the level a buy just reached as its target): ' + b.sell.trades + ' trades in 3 years, ' + b.sell.won +
         ' reached target. Too few to judge; the buys carry the method.</p>' +
       '<details class="tc-fold"><summary class="small"><b>The rules and the catch</b></summary><ol class="tc-steps small">' +
         '<li>Levels: only the huge strikes, at least ' + Math.round(CFG.hugeShare * 100) + '% of the biggest open interest.</li>' +
         '<li>Price was above a level and trades below it (spikes count).</li>' +
-        '<li>Stop: ' + CFG.stopBufferPct + '% under the lowest price since the dip, so a quick wick just under the low doesn\'t stop you out. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
+        '<li>Stop: ' + (CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '% under the lowest price since the dip, so a quick wick just under the low doesn\'t stop you out' : 'the lowest price since the dip') + '. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
         '<li>Buy when the ' + CFG.candleMinutes + '-minute Ichimoku score crosses up through ' + CFG.scoreBuy + ' (stand-in for your indicator).</li>' +
         '<li>Target: the biggest huge level above (most open contracts), not just the nearest. One trade per level; a used level comes back after price crosses another one.</li>' +
-        '<li>Sells only after a buy reached its target, at that level, within ' + CFG.afterWinHours + ' h: a spike over it, stop ' + CFG.stopBufferPct + '% over the high, score down through ' + CFG.scoreSell +
+        '<li>Sells only after a buy reached its target, at that level, within ' + CFG.afterWinHours + ' h: a spike over it, stop ' + slWhere(false) + ', score down through ' + CFG.scoreSell +
           ', target the biggest huge level below. When a sell reaches its target, that level is open for a buy again.</li>' +
         '<li>The catch: few trades, and the 10 best make most of the profit. Levels came from monthly snapshots, so yours may differ. Stops can fill worse in fast markets.</li>' +
       '</ol></details></section>';

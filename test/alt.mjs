@@ -170,14 +170,15 @@ d = decideAlt(c, levels, cfg);
 assert.equal(d.setups.filter(x => x.taken).length, 1, 'a second dip through 2,200 is not traded');
 assert.ok(d.setups.some(x => x.used && x.level === 2200));
 
-// 11. Live settings (1 Nov 2026, "let's do it 0.4%"): stop 0.4% under the low,
-//     dips more than 2% under the level are a breakdown.
-assert.equal(ALT_CONFIG.stopBufferPct, 0.4);
+// 11. Live settings: stop right at the low (2 Nov 2026, "set our SL as normal ... +0%";
+//     0.4% under was live 1-2 Nov), dips more than 2% under the level are a breakdown.
+assert.equal(ALT_CONFIG.stopBufferPct, 0);
 assert.equal(ALT_CONFIG.maxDepthPct, 2);
 c = candles(dip);
 s = findSetups(c, levels, ALT_CONFIG);
 const lowest = Math.min(...c.map(x => x.l));
-assert.ok(Math.abs(s[0].signal.stop - lowest * 0.996) < 1e-6, 'stop 0.4% under the low');
+assert.ok(Math.abs(s[0].signal.stop - lowest) < 1e-6, 'stop at the low');
+assert.ok(Math.abs(findSetups(c, levels, { ...ALT_CONFIG, stopBufferPct: 0.4 })[0].signal.stop - lowest * 0.996) < 1e-6, 'room under the low still works');
 assert.ok(Math.abs(s[0].low - lowest) < 1e-9, 'the low itself is kept');
 c = candles([...flat(2260, 120), ...line(2260, 2150, 35), ...flat(2150, 6), ...line(2150, 2240, 40), ...flat(2240, 10)]);
 assert.equal(findSetups(c, levels, ALT_CONFIG)[0].state, 'broken');                  // 2.3% under 2,200
