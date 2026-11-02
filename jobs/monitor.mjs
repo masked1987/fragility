@@ -1,7 +1,7 @@
 // Scheduled job (GitHub Actions): score BTC/ETH and append to the hourly log; push phone
 // alerts for the ETH trade strategies: Market Maker strategy, Alt Tactics and Trend.
-// (Zone changes, dealers losing, key levels and Tactics 6/6 are still worked out and
-// logged, but no longer ring: see PHONE below and keyLevels.alerts.)
+// (Zone changes, dealers losing and key levels are still worked out and logged, but no
+// longer ring: see PHONE below and keyLevels.alerts. Tactics was removed, 2 Nov 2026.)
 //
 //   node jobs/monitor.mjs <store dir>
 //
@@ -18,9 +18,6 @@ import { CONFIG } from '../tools/fragility/config.js';
 import { collectMM } from '../tools/market-maker/collect.js';
 import { readMM, readCarry, dealerSide } from '../tools/market-maker/read.js';
 import { MM_CONFIG } from '../tools/market-maker/config.js';
-import { collectTac } from '../tools/tactics/collect.js';
-import { sixOfSix, RULES_TOTAL } from '../tools/tactics/model.js';
-import { TAC_CONFIG } from '../tools/tactics/config.js';
 import { collectAlt, withPoints } from '../tools/alt-tactics/collect.js';
 import { altEvents, stopFrom, pickTarget } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
@@ -35,17 +32,17 @@ const LOG = join(DIR, 'log.csv');
 const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
 const ZONE_REPEATS = 3;           // a zone change rings this many times...
 const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
-const TACTICS_REPEATS = 3;        // Tactics 6/6 rings 3 times (owner tried 5, then "3 is enough"), same gap
 const ALT_REPEATS = 3;            // Alt Tactics BUY / SELL rings like Tactics 6/6
 const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (the job can run hours late)
 const MMS_REPEATS = 3;            // Market Maker strategy BUY / SELL rings like the other trade alerts
 const TREND_REPEATS = 3;          // Trend BUY / SELL (daily close crosses the 50-day average) rings like the other trade alerts
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 // Which alerts may ring the phone. 2 Nov 2026, owner: "remove condition market alerts, also
-// remove video rules strategy": Fragility zone changes, "ETH dealers now losing / no longer
-// losing" and Tactics 6/6 are off. Their state is still tracked (so turning one back on
-// doesn't ring for old news). On: Market Maker strategy, Alt Tactics, Trend.
-const PHONE = { zone: false, dealers: false, tactics: false };
+// remove video rules strategy": Fragility zone changes and "ETH dealers now losing / no longer
+// losing" are off (their state is still tracked, so turning one back on doesn't ring for old
+// news); Tactics 6/6 went with the Tactics tab (removed from the site and this job the same
+// evening). On: Market Maker strategy, Alt Tactics, Trend.
+const PHONE = { zone: false, dealers: false };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
 const firstRun = !existsSync(STATE);
@@ -67,14 +64,13 @@ const now = Date.now();
 const summary = [];
 const mmSummary = [];
 const pushes = [];
-let tacNow = null; // latest Tactics reading, for the one-time test push
 let altNow = null; // latest Alt Tactics reading, for its one-time welcome push
 let mmsNow = null; // latest Market Maker reading with its strategy state, for its welcome / test push
 let trendNow = null; // latest Trend reading, for its welcome / test push
 // Started by hand with "send test alerts" ticked: one [test] message per alert kind.
 // TEST_ALERTS: 'all' (or 'true') = zone, dealers, Tactics, Alt and the Market Maker strategy;
-// 'tactics' / 'alt' / 'mm' / 'trend' = that one only.
-const TEST = ['true', 'all', 'tactics', 'alt', 'mm', 'trend'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
+// 'alt' / 'mm' / 'trend' = that one only.
+const TEST = ['true', 'all', 'alt', 'mm', 'trend'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
 const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
@@ -173,22 +169,6 @@ for (const asset of CONFIG.assets) {
     }
   }
 
-  // Tactics: ring when the BUY or SELL rules met go from 5 or fewer to all 6
-  // (same decide() as the tab); re-arms once below 6. A failed fetch keeps the old state.
-  if (TAC_CONFIG.alertAssets.includes(asset)) {
-    try {
-      const d = await collectTac(asset, TAC_CONFIG);
-      const t = sixOfSix(d.decision, state.tactics[asset] ?? null);
-      state.tactics[asset] = t.state;
-      const sd = d.decision.sides || {}, side = k => sd[k] ? `${k} ${sd[k].met}/${RULES_TOTAL} at ${Math.round(sd[k].setup.pivot)}` : `${k} none`;
-      console.log(`${asset} tactics: ${side('sell')}, ${side('buy')} -> ${d.decision.action}` + (d.missing.length ? ` (missing: ${d.missing.join(', ')})` : ''));
-      if (PHONE.tactics && t.fire) pushes.push(tacticsMessage(d));
-      if (!tacNow) tacNow = d;
-    } catch (e) {
-      console.log(`${asset} tactics unavailable: ${e.message}`);
-    }
-  }
-
   // Alt Tactics (asked 2 Nov 2026, "add the NTFY alert ... about our rules"): the same
   // decideAlt() as the tab. BUY / SELL rings 3 times; WATCH, target hit and stopped once.
   // Each event is pushed once (state.alt[asset].sent); nothing from before the first run.
@@ -255,7 +235,6 @@ if (TEST) {
     pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (mmsNow.flip.last ? 'the last Market Maker strategy signal' : 'no signal in the last 30 days, so this uses today\'s numbers') +
       ' in the format of a real one (rings ' + MMS_REPEATS + ' times).\n' + p.body });
   }
-  if (PHONE.tactics && tacNow && (TEST === 'all' || TEST === 'true' || TEST === 'tactics')) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
   if (altNow && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
     // The last Alt signal in the ~3.5 days the tab sees, else a sample at the nearest huge
     // level below with a made-up 1% dip (so the test always shows the real format).
@@ -293,13 +272,6 @@ if (PHONE.dealers && !state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.le
   const lv = Object.entries(state.keyLevels).map(([a, k]) => `${a} crosses ${k.levels.map(px).join(' / ')}`).join(', ') || 'the price crosses a key level';
   pushes.push({ title: 'Dealer and level alerts are on', priority: 3, tags: 'white_check_mark', click: '#mm',
     body: `You will also get a message when ${MM_CONFIG.alertAssets.join(' or ')} dealers start losing (and when they stop), and when ${lv}.\nNow: ` + mmSummary.join(' · ') });
-}
-
-// And the Tactics alert: one test push per side, in the alert's own format, sent once.
-// (welcomedTac 2 = the BUY + SELL pair; the first, sell-only test was `true`.)
-if (PHONE.tactics && state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
-  state.welcomedTac = 2;
-  pushes.push(tacticsMessage(tacNow, 'buy'), tacticsMessage(tacNow, 'sell'));
 }
 
 // And the Market Maker strategy alerts: one message saying what will come.
@@ -425,30 +397,6 @@ function dealerMessage(asset, from, to, mm, zone, r) {
     tags: to === 'lose' ? 'warning' : 'white_check_mark',
     repeats: to === 'lose' ? ZONE_REPEATS : 1,
     click: '#mm',
-  };
-}
-
-// "Tactics 6/6 BUY|SELL" with asset, UK time and price.
-// test = 'buy' or 'sell': a one-time check of that side's message on the phone.
-function tacticsMessage(d, test) {
-  const at = new Date(d.fetched);
-  const uk = at.toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
-  const day = at.toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' });
-  const dec = d.decision, s = dec.setup || d.setup; // the side that fired (SELL above or BUY below)
-  const action = test || dec.action, act = action.toUpperCase();
-  const tg = (s.targets || [])[0];
-  const levels = s.pivot ? `Pivot ~${px(s.pivot)}, stop ~${px(s.stop)}` + (tg ? `, first target ~${px(tg.price)} (${tg.r.toFixed(1)}R)` : '') + '.\n' : '';
-  const now = `${dec.met}/${RULES_TOTAL} ${dec.short === false ? 'buy' : 'sell'} rules`;
-  return {
-    title: `Tactics 6/6 ${act}${test ? ' [test]' : ''} - ${d.asset} ${px(d.spot)} at ${uk} UK`,
-    body: (test
-      ? `Test: this is the message you will get when all ${RULES_TOTAL} ${act} rules on the Tactics tab are met. A real one rings ${TACTICS_REPEATS} times, a minute apart. Nothing to do now (right now: ${now}).\n`
-      : `All ${RULES_TOTAL} ${act} rules on the Tactics tab are met.\n` + levels) +
-      `${d.asset} ${px(d.spot)} at ${uk} UK time (${day}).\nContext, not a trade signal.`,
-    priority: test ? 3 : 4,
-    repeats: test ? 1 : TACTICS_REPEATS,
-    tags: action === 'buy' ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
-    click: '#tactics',
   };
 }
 
