@@ -52,3 +52,22 @@ Trades of the pick:
   2026-06-25T14:00 SELL  1535 stop  1559 target  1440  stopped -1.06R
   2026-08-19T21:00 BUY   2218 stop  2189 target  2337  target  +3.93R
   2026-09-15T20:00 SELL  2415 stop  2450 target  2273  stopped -1.07R
+
+Alt Tactics vs Market Maker flip in % (asked 2 Nov 2026: "which one is more consistently
+profitable? Give me pure % numbers stats"). Buys + sells together, 0.1% costs, Nov 2023 - Nov 2026.
+% = price move per trade (full position, no leverage); "1% risk" = account risking 1% per trade.
+                         Alt Tactics       MM flip
+  trades                 44                38
+  win rate               18%               34%
+  avg win / avg loss     +11.8% / -1.7%    +7.1% / -1.9%
+  avg per trade          +0.74%            +1.20%
+  compounded             +25.8%            +52.4%
+  max drawdown           30.7%             11.5%
+  worst losing run       16                6
+  best 2 = share profit  186%              36%
+  without best 2         -0.67%/trade      +0.81%/trade
+  profitable years       2/4 (50%)         3/3 (100%)
+  profitable quarters    4/13 (31%)        9/11 (82%)
+  profitable months      5/23 (22%)        11/23 (48%)
+  by year                2023 -1.6%, 2024 -19.9%, 2025 +46.5%, 2026 +7.6%   |   2024 +7.7%, 2025 +28.2%, 2026 +9.9%
+  1% risk: account       +36.5%, max drawdown 18.5%   |   +26.7%, max drawdown 6.1%

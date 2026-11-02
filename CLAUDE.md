@@ -226,7 +226,11 @@ move, target 2 day's moves: 38 trades, 34% hit, +0.65R (first 2y +0.54R, last ye
 +0.86R; 2024 +0.28 / 2025 +0.95 / 2026 +0.81R), worst run 6, without best 2 still
 +0.47R (wins all ~+4R). Picked from 6 flip versions; trade-count floor lowered
 30 → 20 after seeing it, so not fully blind. Not on any tab; nothing changed on
-the site.
+the site. Then "which one is more consistently profitable? Give me pure % numbers":
+table in the results file (price % per trade, buys + sells): flip +1.20%/trade vs
+Alt +0.74%, win rate 34% vs 18%, max drawdown 11.5% vs 30.7%, profitable quarters
+82% vs 31%; Alt's best 2 trades are 186% of its profit. Answer: flip is the more
+consistent; he wants % figures, not R.
 
 ## Playbook tab
 
