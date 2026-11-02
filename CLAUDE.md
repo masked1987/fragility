@@ -431,6 +431,10 @@ change anything" else. `tools/tactics/`, own data file `sources.js`.
   +0.09R. Few trades (~15 a year) and the top 10 wins carry the total. SELL after
   a buy hit its target, once per level: huge levels only 6–15 trades, mostly
   negative; key levels +0.18 to +0.98R on 25–31 trades. Too few to trust yet.
+- "Check all alerts on ntfy" (2 Nov 2026): can't read his topic (secret), so: all
+  runs succeed, cron is every 15 min but GitHub ran it every 4–6 h; state shows every
+  alert on and every welcome sent; `test_alerts: all` sends zone, dealers, Market Maker
+  strategy (3), Tactics (3), Alt (3).
 - Owner on alert timing: 15 minutes late is fine, sometimes an hour is understood.
   Don't push the outside cron trigger again.
 - Phone alert "Tactics 6/6 BUY / SELL" (asked for later): `jobs/monitor.mjs` runs
@@ -612,7 +616,10 @@ The owner's own method, built from the version that tested best
   priority 3, low so far + stop so far. Target hit (prio 4) / stopped (prio 3):
   once; after a buy target it reminds the sell rule, after a stop it names the next
   level. `altMessage()` in the job. One-time "Alt Tactics alerts are on" message
-  (`welcomedAlt`). Workflow test choice `alt` sends the last signal as [test].
+  (`welcomedAlt`). Workflow test choice `alt` sends the last signal as [test]; if
+  none in the ~3.5 days, a sample (`altSample()`: 1% dip through the nearest huge level
+  below, today's levels and target), added 2 Nov 2026 when "check all alerts" showed
+  the Alt test sent nothing.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
 ## Where we stopped (handover, 1 Nov 2026, end of a long session)

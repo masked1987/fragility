@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (zone, dealers, Tactics, Alt, Market Maker strategy), or one: tactics, alt, mm'
+        description: 'Send [test] phone alerts: all (zone, dealers, Market Maker strategy, Tactics, Alt), or one: tactics, alt, mm'
         type: choice
         options: ['no', 'all', 'tactics', 'alt', 'mm']
         default: 'no'
