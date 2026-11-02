@@ -750,7 +750,20 @@ The owner's own method, built from the version that tested best
   the Alt test sent nothing.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
-## Where we stopped (handover, 1 Nov 2026, end of a long session)
+## Where we stopped (handover, 2 Nov 2026 evening)
+
+Owner: "for now done, we continue tomorrow". Everything below is live and published
+(fragility v=53, gamma-detrite main); nothing half-built. Ask what he wants next.
+- Gamma Detrite: expiry tabs All (first, opens on it) · Daily · Weekly · Monthly, the
+  last three mixable; his separate **daily approach** (blue zone touch + 5-min Tenkan /
+  Kijun cross, stop at the touch low / high, GodMode 15-min dot as TP; tested about
+  break-even, best stop 0.5% past the touch) is only written down, nothing built.
+- Tabs: Gamma, Score, Flow, Dealers, Plan, Alt, **Trend** (new, 50-day average, long only);
+  Tactics removed.
+- Phone alerts: only Market Maker strategy, Alt Tactics, Trend (ETH).
+- Outside strategies tested (trend / funding carry / option selling): trend held up.
+
+## Earlier handover (1 Nov 2026, end of a long session)
 
 The owner closed this conversation to start a new one. Pick up from here:
 
