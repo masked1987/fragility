@@ -62,6 +62,29 @@ the file layout. Tabs, in order:
    −2.0%; fixed 0.5–1.5% from entry all worst (−8.9 to −16.5%). Every stop loses in 2024
    and 2025 and wins in 2026; some room past the touch helps a little but results jump
    between neighbours, so it's about break-even whatever the stop.
+   Month by month (asked): each "month" is one test day (the 1st); 0.5% stop 14 up /
+   17 down, lowest −12.5% (Jan 2026), ends +1.6%; gains mostly Feb–Apr and Oct 2026.
+
+## Outside strategies (asked 2 Nov 2026, not his own)
+
+"Look on GitHub ... profitable strategies ... do not include mine", "doesn't need to
+fit my style", then "Test 1 2 and 3". `node test/outside-strategies.mjs <cache>`
+(Deribit hourly ETH perp candles, perp funding, DVOL; all free daily), results
+`test/results/outside-strategies-2026-11-02.txt`, Nov 2023 – Oct 2026, % of ETH price,
+full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
+1. Trend following: long only above the N-day average: 30d +166%, 40d +299%, **50d
+   +269%** (max drop 37.5%, 24 trades), 60d +205%, 75d +98%, 100d +101%, 150d +93%,
+   200d +84%; all beat holding, mostly by sitting out the big drops (Aug 2024, Feb 2025,
+   Nov 2025, Feb / Jun 2026). Long + short 50d (perp, funding paid) +364% but max drop
+   58%; 20-day breakouts and blended long + short weak (+6 to +20%).
+2. Funding carry (hold ETH, short Deribit perp): always on +15.7% over 3 years, max drop
+   0.8%, but 2024 +8.8%, 2025 +1.0%, 2026 +1.1% (Deribit funding avg 4.9%/yr; Binance /
+   OKX higher, not fetchable). Switching on/off by recent funding is worse.
+3. Selling ATM straddles, priced at DVOL (no free option price history): the result
+   is all about the price you sell at. Daily: DVOL −1 +556%, −3 +163%, −5 +5%, −10 −89%;
+   weekly: −1 +78%, −3 +26%, −5 −11%. Real spreads on 2 Nov 2026: daily ~3–4 vol points
+   below mark at the bid, weekly ~1.5. Worst single straddle −20 to −24% of ETH price.
+   Too fragile to trust. Conclusion given: trend following is the one that held up.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
