@@ -16,7 +16,10 @@ export const ALT_CONFIG = {
   // low, and turns. More than maxDepthPct past the level = a real breakdown; no
   // confirmation within windowHours = the setup lapses.
   maxDepthPct: 2,           // was 3; 2 tested better (owner OK'd 1 Nov 2026)
-  stopBufferPct: 0,         // stop right at the low / high (owner 2 Nov 2026: "set our SL as normal ... +0%"; 0.4% was live 1–2 Nov)
+  stopBufferPct: 0,         // no % room (owner 2 Nov 2026: "set our SL as normal ... +0%"; 0.4% was live 1–2 Nov)
+  // Fixed points past the low / high for the stop (owner 2 Nov 2026: "add like two points
+  // to every stop, e.g. 2170 → 2168"). BTC gets the same share of its price (~0.09%).
+  stopPoints: { ETH: 2, BTC: 60 },
   windowHours: 48,
 
   // Confirmation: the Ichimoku score on candleMinutes candles crosses up through scoreBuy.

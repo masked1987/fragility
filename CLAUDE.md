@@ -490,6 +490,13 @@ The owner's own method, built from the version that tested best
   / 2025 +3.61R / 2026 +0.64R, two July 2025 trades +35R / +19R made all of it
   (the other 38 −0.3R), "with 0.4% under it was +1.42R". `slWhere()` words the
   stop as "at the low" when the buffer is 0. Don't re-suggest the buffer unasked.
+- **2 Nov 2026: 2 points past the low/high.** Owner: "add like two points to every
+  stop, e.g. 2170 → 2168". `stopPoints: { ETH: 2, BTC: 60 }` in config (BTC = same
+  share of price); `withPoints(cfg, asset)` in `collect.js` sets `cfg.points`;
+  `stopFrom(ext, buy, cfg)` in `model.js` = low − points (sells: high + points),
+  used by the model and the view. Box reads "2 points under the low 2,170.0" →
+  2,168.0. Results card still says "stop at the low" (its numbers were measured
+  that way; no backtest rerun, he doesn't want them). v=45.
 - Ichimoku settings (asked "adjust how many candles is optimal for applying
   ichimoku"): `GRID=ichi node test/alt-backtest.mjs 36 .bt-cache`, results in
   `test/results/alt-ichimoku-2026-11-01.txt`. `ichimoku(c, p)` takes look-back

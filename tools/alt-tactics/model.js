@@ -85,6 +85,13 @@ export function pickTarget(levels, L, dir, cfg) {
   return near[0].price;
 }
 
+// The stop from the low (buys) / high (sells): cfg.stopBufferPct % further, then
+// cfg.points more (the collector sets it per asset from cfg.stopPoints: 2 for ETH).
+export function stopFrom(ext, buy, cfg) {
+  const d = buy ? -1 : 1;
+  return ext * (1 + d * (cfg.stopBufferPct || 0) / 100) + d * (cfg.points || 0);
+}
+
 // Every cross through every level, followed until it confirms (signal), breaks
 // through, lapses, or the data ends (still waiting). BUY: price was above a level and
 // dips below it; the low is the stop; the Ichimoku score crossing up through scoreBuy
@@ -115,8 +122,7 @@ export function findSetups(c5, levels, cfg) {
         const a = ich[k - 1], b = ich[k];
         if (a && b && (buy ? a.score < cfg.scoreBuy && b.score >= cfg.scoreBuy : a.score > cfg.scoreSell && b.score <= cfg.scoreSell)) {
           s.state = 'signal';
-          // cfg.stopBufferPct: room past the extreme for the stop (0 = at the low / high).
-          const stop = s.ext * (1 + (buy ? -1 : 1) * (cfg.stopBufferPct || 0) / 100), risk = Math.abs(x.c - stop);
+          const stop = stopFrom(s.ext, buy, cfg), risk = Math.abs(x.c - stop);
           s.signal = { t: x.t + bar, entry: x.c, stop: stop, target: s.target, rr: s.target && risk > 0 ? Math.abs(s.target - x.c) / risk : null };
           endT = x.t;
           break;

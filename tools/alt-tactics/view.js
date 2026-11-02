@@ -2,7 +2,8 @@
 // Tactics, which follows the video). BUY / WATCH / WAIT card, the Ichimoku checklist,
 // the huge levels with their status, a 48-hour chart, and the backtest behind it.
 import { ALT_CONFIG as CFG } from './config.js';
-import { collectAlt } from './collect.js';
+import { collectAlt, withPoints } from './collect.js';
+import { stopFrom } from './model.js';
 import { splitHead } from '../../shared/head.js';
 import { load } from '../../shared/storage.js';
 
@@ -73,13 +74,15 @@ export function mount(el) {
   // or the price now while a setup is still waiting.
   // Where the stop goes, in words: "at the low" or "0.4% under the low".
   function slWhere(buy) {
-    return CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '% ' + (buy ? 'under the low' : 'over the high') : (buy ? 'at the low' : 'at the high');
+    const pts = (CFG.stopPoints && CFG.stopPoints[selected]) || 0, pct = CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '%' : '';
+    const room = [pct, pts ? pts + ' point' + (pts === 1 ? '' : 's') : ''].filter(Boolean).join(' + ');
+    return room ? room + ' ' + (buy ? 'under the low' : 'over the high') : (buy ? 'at the low' : 'at the high');
   }
   function stopBox(stop, ext, buy, from, fromWord, note, source) {
     const dist = Math.abs(from - stop);
     return '<div class="al-sl"><div class="label">' + (note ? 'Stop loss so far' : 'Your stop loss') + '</div>' +
       '<div class="al-sl-num num">' + num(stop) + '</div>' +
-      '<div class="small">' + (CFG.stopBufferPct > 0 ? slWhere(buy) + ' ' + num(ext) : 'the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike')) + ' · ' +
+      '<div class="small">' + (slWhere(buy).indexOf(' at the') < 0 && slWhere(buy).slice(0, 3) !== 'at ' ? slWhere(buy) + ' ' + num(ext) : 'the ' + (buy ? 'low' : 'high') + ' of the ' + (buy ? 'dip' : 'spike')) + ' · ' +
         num(dist) + ' points (' + (dist / from * 100).toFixed(1) + '%) ' + (buy ? 'under ' : 'over ') + fromWord + '</div>' +
       (note ? '<div class="small muted">' + note + '</div>' : '') +
       '<div class="small muted">' + (source === 'Bitstamp' ? 'From Bitstamp ' + esc(selected) + '/USD, close to TradingView\'s ' + esc(selected) + '/USD (Oct 30 low 2,170.0 vs 2,169.92).'
@@ -115,7 +118,7 @@ export function mount(el) {
     } else if (act === 'watch') {
       const w = dec.waiting, buy = w.side === 'buy', now = dec.ichimoku ? dec.ichimoku.score : null;
       head = 'Watch: ' + a + (buy ? ' dipped through ' : ' spiked over ') + px(w.level) + ', waiting for ' + (buy ? 'buyers' : 'sellers');
-      const pre = w.ext * (1 + (buy ? -1 : 1) * CFG.stopBufferPct / 100);
+      const pre = stopFrom(w.ext, buy, withPoints(CFG, selected));
       body = stopBox(pre, w.ext, buy, d.spot, 'the price now', 'It moves ' + (buy ? 'down if the low goes lower' : 'up if the high goes higher') +
           ' before ' + (buy ? 'buyers' : 'sellers') + ' are back; the ' + (buy ? 'BUY' : 'SELL') + ' card then shows the final number.', d.source) +
         '<dl class="pb-dl">' +
@@ -197,7 +200,7 @@ export function mount(el) {
     const lv = d.huge.map(function (h) { return h.price; });
     let lo = Math.min.apply(null, c.map(function (x) { return x.l; })), hi = Math.max.apply(null, c.map(function (x) { return x.h; }));
     // Always show the huge level under and over the price (and the trade's level and stop).
-    [dec.below, dec.above, live && live.level, live && isFinite(live.ext) && live.ext * (1 + (live.side === 'buy' ? -1 : 1) * CFG.stopBufferPct / 100), dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
+    [dec.below, dec.above, live && live.level, live && isFinite(live.ext) && stopFrom(live.ext, live.side === 'buy', withPoints(CFG, selected)), dec.open && dec.open.signal.stop].forEach(function (L) { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
     const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
     const x = function (t) { return padL + (t - c[0].t) / (c[c.length - 1].t - c[0].t) * (W - padL - padR); };
     const y = function (p) { return H - (p - lo) / (hi - lo) * H; };
@@ -209,7 +212,7 @@ export function mount(el) {
     });
     // Stop loss line with its price: the trade's stop, or while waiting the stop so far.
     const stopAt = dec.open ? dec.open.signal.stop
-      : dec.waiting && isFinite(dec.waiting.ext) ? dec.waiting.ext * (1 + (dec.waiting.side === 'buy' ? -1 : 1) * CFG.stopBufferPct / 100) : null;
+      : dec.waiting && isFinite(dec.waiting.ext) ? stopFrom(dec.waiting.ext, dec.waiting.side === 'buy', withPoints(CFG, selected)) : null;
     if (stopAt) {
       const ys = y(stopAt), ty = ys > 16 ? ys - 4 : ys + 12; // label above the line unless at the very top
       s += '<line class="al-stop" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + ys.toFixed(1) + '" y2="' + ys.toFixed(1) + '"/>' +
@@ -230,7 +233,7 @@ export function mount(el) {
   function backtestHtml() {
     const b = CFG.backtest;
     return '<section class="card"><h3>How it did on past data</h3>' +
-      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop ' + slWhere(true) + ', dips up to ' + CFG.maxDepthPct + '%, target the biggest huge level above, once per level, 0.1% costs):</p>' +
+      '<p class="small"><b>Buys</b>, ETH, ' + b.from + ' to now, these exact rules (huge levels, ' + CFG.candleMinutes + '-minute Ichimoku, stop at the low, dips up to ' + CFG.maxDepthPct + '%, target the biggest huge level above, once per level, 0.1% costs):</p>' +
       '<dl class="pb-dl"><dt>Trades</dt><dd>' + b.trades + ' (about 14 a year)</dd>' +
       '<dt>Reached target</dt><dd>' + b.hitPct + '%</dd>' +
       '<dt>Average</dt><dd><b>+' + b.avgR.toFixed(2) + 'R</b> per trade <span class="muted">(R = the stop distance)</span></dd>' +
@@ -243,7 +246,7 @@ export function mount(el) {
       '<details class="tc-fold"><summary class="small"><b>The rules and the catch</b></summary><ol class="tc-steps small">' +
         '<li>Levels: only the huge strikes, at least ' + Math.round(CFG.hugeShare * 100) + '% of the biggest open interest.</li>' +
         '<li>Price was above a level and trades below it (spikes count).</li>' +
-        '<li>Stop: ' + (CFG.stopBufferPct > 0 ? CFG.stopBufferPct + '% under the lowest price since the dip, so a quick wick just under the low doesn\'t stop you out' : 'the lowest price since the dip') + '. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
+        '<li>Stop: ' + (slWhere(true) === 'at the low' ? 'the lowest price since the dip' : slWhere(true) + ' (the lowest price since the dip)') + '. More than ' + CFG.maxDepthPct + '% under the level is a real breakdown: no trade.</li>' +
         '<li>Buy when the ' + CFG.candleMinutes + '-minute Ichimoku score crosses up through ' + CFG.scoreBuy + ' (stand-in for your indicator).</li>' +
         '<li>Target: the biggest huge level above (most open contracts), not just the nearest. One trade per level; a used level comes back after price crosses another one.</li>' +
         '<li>Sells only after a buy reached its target, at that level, within ' + CFG.afterWinHours + ' h: a spike over it, stop ' + slWhere(false) + ', score down through ' + CFG.scoreSell +
