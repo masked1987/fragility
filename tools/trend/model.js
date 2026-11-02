@@ -31,7 +31,9 @@ export function trend(candles, n, costSide) {
       trades.push({ buy: open, sell: { t: at, price: C[i] }, pct: (C[i] / open.price * (1 - costSide) * (1 - costSide) - 1) * 100 });
       open = null;
     }
-    const st = { t: at, close: C[i], avg: avg, on: on };
+    // line = the next close's line: the average of the last n−1 closes up to this one.
+    let l = 0; for (let j = i - n + 2; j <= i; j++) l += C[j];
+    const st = { t: at, close: C[i], avg: avg, on: on, line: l / (n - 1) };
     states.push(st);
     prev = st;
   }
@@ -65,4 +67,27 @@ export function trend(candles, n, costSide) {
 export function tonight(m, price) {
   const above = price > m.line;
   return { above: above, flips: above !== m.on, gapPct: (m.line / price - 1) * 100 };
+}
+
+// Phone alert events (asked 2 Nov 2026: "alerts when to enter, what's TP and stop loss";
+// kept as tested: the stop is a daily close under the line, no take profit).
+// prev = { at: time of the last close already seen, on } from the job's state, or null.
+// Returns the crossings since then (BUY / SELL, newest last, none older than maxAge),
+// whether to send the quiet daily "tonight's line" update (IN, a new close, no BUY now),
+// and the state to save.
+export function trendEvents(m, prev, now, maxAge) {
+  const events = [];
+  if (prev) {
+    let on = prev.on;
+    m.states.forEach(function (s) {
+      if (s.t <= prev.at || s.on === on) return;
+      on = s.on;
+      if (now - s.t > maxAge) return;
+      const trade = s.on ? null : m.trades.filter(function (t) { return t.sell.t === s.t; })[0] || null;
+      events.push({ kind: s.on ? 'buy' : 'sell', t: s.t, close: s.close, avg: s.avg, line: s.line, trade: trade, key: (s.on ? 'buy-' : 'sell-') + s.t });
+    });
+  }
+  const newClose = !!prev && m.lastClose > prev.at;
+  const daily = newClose && m.on && !events.some(function (e) { return e.kind === 'buy' && e.t === m.lastClose; });
+  return { events: events, daily: daily, next: { at: m.lastClose, on: m.on } };
 }
