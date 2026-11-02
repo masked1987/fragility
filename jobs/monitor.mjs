@@ -24,6 +24,7 @@ import { TAC_CONFIG } from '../tools/tactics/config.js';
 import { collectAlt, withPoints } from '../tools/alt-tactics/collect.js';
 import { altEvents } from '../tools/alt-tactics/model.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
+import { mmEvents } from '../tools/market-maker/flip.js';
 
 const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
@@ -34,6 +35,7 @@ const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
 const TACTICS_REPEATS = 3;        // Tactics 6/6 rings 3 times (owner tried 5, then "3 is enough"), same gap
 const ALT_REPEATS = 3;            // Alt Tactics BUY / SELL rings like Tactics 6/6
 const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (the job can run hours late)
+const MMS_REPEATS = 3;            // Market Maker strategy BUY / SELL rings like the other trade alerts
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
@@ -48,6 +50,7 @@ state.lastClose = state.lastClose || {};
 state.quiet = state.quiet || {};
 state.tactics = state.tactics || {};
 state.alt = state.alt || {};
+state.mmStrat = state.mmStrat || {};
 if (!existsSync(LOG)) writeFileSync(LOG, COLUMNS.join(',') + '\n');
 
 const now = Date.now();
@@ -56,9 +59,11 @@ const mmSummary = [];
 const pushes = [];
 let tacNow = null; // latest Tactics reading, for the one-time test push
 let altNow = null; // latest Alt Tactics reading, for its one-time welcome push
+let mmsNow = null; // latest Market Maker reading with its strategy state, for its welcome / test push
 // Started by hand with "send test alerts" ticked: one [test] message per alert kind.
-// TEST_ALERTS: 'all' (or 'true') = zone, dealers, Tactics and Alt; 'tactics' / 'alt' = that one only.
-const TEST = ['true', 'all', 'tactics', 'alt'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
+// TEST_ALERTS: 'all' (or 'true') = zone, dealers, Tactics, Alt and the Market Maker strategy;
+// 'tactics' / 'alt' / 'mm' = that one only.
+const TEST = ['true', 'all', 'tactics', 'alt', 'mm'].includes(process.env.TEST_ALERTS) ? process.env.TEST_ALERTS : null;
 const testNow = {}; // first asset's readings for those tests
 
 for (const asset of CONFIG.assets) {
@@ -139,6 +144,19 @@ for (const asset of CONFIG.assets) {
       mmSummary.push(`${asset} dealers ${SIDE_WORDS[side]}`);
       if (!testNow.mm) testNow.mm = { asset, side, mm, zone, r };
       if (prevSide && prevSide !== side && (side === 'lose' || prevSide === 'lose')) pushes.push(dealerMessage(asset, prevSide, side, mm, zone, r));
+      // Market Maker strategy (asked 2 Nov 2026 "create alert for market maker strategy,
+      // but also add stop loss and TP"): the same flipState() as the tab's card. BUY / SELL
+      // rings 3 times with entry, SL and TP; TP hit, SL hit and closed after 3 days once.
+      if (mm.flip) {
+        const st = state.mmStrat[asset] = state.mmStrat[asset] || { since: now, sent: {} };
+        const ev = mmEvents(mm.flip, st.sent, st.since, now, ALT_MAX_AGE);
+        for (const e of ev) { st.sent[e.key] = now; pushes.push(mmsMessage(mm, e)); }
+        for (const k of Object.keys(st.sent)) if (now - st.sent[k] > 10 * 864e5) delete st.sent[k];
+        const o = mm.flip.open;
+        console.log(`${asset} mm strategy: ${o ? (o.buy ? 'BUY' : 'SELL') + ' open from ' + num(o.entry) + ', SL ' + num(o.stop) + ', TP ' + num(o.target) : 'wait'}` +
+          ` (gap ${mm.flip.now.gap.toFixed(1)})` + (ev.length ? ` -> ${ev.map(e => e.kind).join(', ')}` : ''));
+        if (!mmsNow) mmsNow = mm;
+      }
     } catch (e) {
       console.log(`${asset} market maker unavailable: ${e.message}`);
     }
@@ -200,8 +218,15 @@ if (TEST) {
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
       `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
   }
-  if (tacNow && TEST !== 'alt') pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
-  if (altNow && TEST !== 'tactics') {
+  if (mmsNow && (TEST === 'all' || TEST === 'true' || TEST === 'mm')) {
+    // The last signal in the 30 days the tab sees, else one built from today's numbers.
+    const g = mmsNow.flip.last || mmsSample(mmsNow);
+    const p = mmsMessage(mmsNow, { kind: 'signal', trade: g });
+    pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (mmsNow.flip.last ? 'the last Market Maker strategy signal' : 'no signal in the last 30 days, so this uses today\'s numbers') +
+      ' in the format of a real one (rings ' + MMS_REPEATS + ' times).\n' + p.body });
+  }
+  if (tacNow && (TEST === 'all' || TEST === 'true' || TEST === 'tactics')) pushes.push({ ...tacticsMessage(tacNow, 'sell'), repeats: TACTICS_REPEATS }); // rings like the real one
+  if (altNow && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
     const s = altNow.decision.setups.filter(x => x.taken).pop();
     if (s) pushes.push({ ...altMessage(altNow, { kind: 'signal', setup: s }), title: '[test] ' + altMessage(altNow, { kind: 'signal', setup: s }).title,
       body: 'TEST ONLY: the last Alt signal in the format of a real one (rings ' + ALT_REPEATS + ' times).\n' + altMessage(altNow, { kind: 'signal', setup: s }).body });
@@ -228,6 +253,17 @@ if (!state.welcomedMM && process.env.NTFY_TOPIC && mmSummary.length) {
 if (state.welcomedTac !== 2 && process.env.NTFY_TOPIC && tacNow) {
   state.welcomedTac = 2;
   pushes.push(tacticsMessage(tacNow, 'buy'), tacticsMessage(tacNow, 'sell'));
+}
+
+// And the Market Maker strategy alerts: one message saying what will come.
+if (!state.welcomedMMS && process.env.NTFY_TOPIC && mmsNow) {
+  state.welcomedMMS = true;
+  const f = mmsNow.flip, o = f.open, a = mmsNow.asset;
+  pushes.push({ title: 'Market Maker strategy alerts are on', priority: 3, tags: 'white_check_mark', click: '#mm',
+    body: `You will get a message here when the Market Maker strategy fires on ${MM_CONFIG.alertAssets.join(', ')}:\n` +
+      `BUY / SELL (rings ${MMS_REPEATS} times) with entry, stop loss and take profit;\nthen TP hit, SL hit, or closed after 3 days.\n` +
+      (o ? `Now: ${o.buy ? 'BUY' : 'SELL'} open from ${num(o.entry)}, SL ${num(o.stop)}, TP ${num(o.target)}.`
+        : `Now: WAIT, dealers ${SIDE_WORDS[f.now.side]} (gap ${f.now.gap >= 0 ? '+' : ''}${f.now.gap.toFixed(1)}, the signal is at -${MM_CONFIG.gapPts}). ${a} ${num(f.now.price)}.`) });
 }
 
 // And the Alt Tactics alerts: one message saying what will come, with where things stand.
@@ -394,6 +430,41 @@ function altMessage(d, e) {
         : `\n~${L} is used now: the next ${buy ? 'buy' : 'sell'} only comes at another huge level` + (buy && nb ? ` (nearest ~${px(nb)})` : '') + '.') + end,
     priority: won ? 4 : 3, tags: won ? 'tada' : 'x', click: '#alt',
   };
+}
+// Market Maker strategy messages. e = { kind: 'signal' | 'target' | 'stopped' | 'time', trade }.
+function mmsMessage(mm, e) {
+  const g = e.trade, buy = g.buy, a = mm.asset, f = MM_CONFIG.flip;
+  const risk = Math.abs(g.entry - g.stop), reward = Math.abs(g.target - g.entry), pc = x => (x / g.entry * 100).toFixed(1) + '%';
+  const end = '\nContext, not a trade signal.';
+  if (e.kind === 'signal') {
+    const late = now - g.t > 30 * 6e4;
+    return {
+      title: `Market Maker ${buy ? 'BUY' : 'SELL'} - ${a} ${num(g.entry)} at ${altUk(g.t)} UK`,
+      body: `${a} dealers just turned losing (moving more than options priced), and ${a} went ${buy ? 'up' : 'down'} ${Math.abs(g.ret24 * 100).toFixed(1)}% in 24h, so ${buy ? 'buy' : 'sell'}.` +
+        `\nEntry ${num(g.entry)}` +
+        `\nStop loss ${num(g.stop)} (${num(risk)} points, ${pc(risk)}: half a day's move)` +
+        `\nTake profit ${num(g.target)} (${num(reward)} points, ${pc(reward)}: 2 day's moves, 4x the risk)` +
+        `\nIf neither is hit: out at the price on ${altDay(g.t + f.maxHours * 36e5)} ${altUk(g.t + f.maxHours * 36e5)} UK (3 days).` +
+        (late ? `\nThe signal was at ${altUk(g.t)} UK (${altDay(g.t)}); price now ${num(mm.price)}. Entering late changes the risk; SL and TP stay where they are.` : '') + end,
+      priority: 4, repeats: MMS_REPEATS, tags: buy ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend', click: '#mm',
+    };
+  }
+  const x = g.trade, pct = ((buy ? x.exit - g.entry : g.entry - x.exit) / g.entry * 100);
+  const res = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  const head = { target: `Market Maker TP hit - ${a} ${num(g.target)}`, stopped: `Market Maker SL hit - ${a} ${num(g.stop)}`, time: `Market Maker closed after 3 days - ${a} ${num(x.exit)}` }[e.kind];
+  return {
+    title: head,
+    body: `The ${buy ? 'buy' : 'sell'} from ${num(g.entry)} (${altDay(g.t)}) ` +
+      (e.kind === 'target' ? `reached its take profit ${num(g.target)}` : e.kind === 'stopped' ? `hit its stop loss ${num(g.stop)}` : `hit neither SL ${num(g.stop)} nor TP ${num(g.target)} in 3 days; out at ${num(x.exit)}`) +
+      ` at ${altUk(x.at)} UK: ${res}.` +
+      `\nThe next signal comes when dealers stop losing and then turn losing again.` + end,
+    priority: e.kind === 'target' ? 4 : 3, tags: e.kind === 'target' ? 'tada' : e.kind === 'stopped' ? 'x' : 'hourglass', click: '#mm',
+  };
+}
+// A sample trade from today's numbers, for the test push when there was no signal in 30 days.
+function mmsSample(mm) {
+  const r = mm.flip.now, f = MM_CONFIG.flip, buy = r.ret24 >= 0, risk = f.stopMoves * r.m * r.price, reward = f.targetMoves * r.m * r.price;
+  return { t: now, buy, entry: r.price, stop: buy ? r.price - risk : r.price + risk, target: buy ? r.price + reward : r.price - reward, ret24: r.ret24 };
 }
 function altUk(t) { return new Date(t).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }); }
 function altDay(t) { return new Date(t).toLocaleDateString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }); }

@@ -1,6 +1,6 @@
 // Run: node test/flip.mjs  — offline checks of the Market Maker flip (tools/market-maker/flip.js).
 import assert from 'node:assert/strict';
-import { readings, flipSignal, followFlip, flipTrades, flipState } from '../tools/market-maker/flip.js';
+import { readings, flipSignal, followFlip, flipTrades, flipState, mmEvents } from '../tools/market-maker/flip.js';
 import { MM_CONFIG as CFG } from '../tools/market-maker/config.js';
 
 const H = 36e5, T0 = Date.UTC(2026, 0, 1);
@@ -74,5 +74,20 @@ function series(calmHours, wildHours, calmStep, wildStep, ivLevel) {
   assert.equal(out.at, T0 + 72 * H);
   assert.equal(followFlip(g, flat.slice(0, 10), H, 72).result, 'open');
   console.log('5 stop first on a two-sided candle; out at the close after 3 days; open while running');
+}
+// 6. Phone alert events: the signal and the ending, each once, nothing before `since` or too old.
+{
+  const g = (t, result, at) => ({ t, buy: true, entry: 100, stop: 99, target: 104, trade: { result, at, exit: 104 } });
+  const st = { trades: [g(T0, 'target', T0 + 5 * H), g(T0 + 10 * H, 'open', T0 + 11 * H)] };
+  const sent = {}, now = T0 + 12 * H, day = 24 * H;
+  let ev = mmEvents(st, sent, T0, now, day);
+  assert.deepEqual(ev.map(e => e.kind), ['signal', 'target', 'signal']);
+  ev.forEach(e => { sent[e.key] = now; });
+  assert.equal(mmEvents(st, sent, T0, now, day).length, 0, 'each pushed once');
+  st.trades[1].trade = { result: 'stopped', at: T0 + 13 * H, exit: 99 };
+  assert.deepEqual(mmEvents(st, sent, T0, T0 + 14 * H, day).map(e => e.kind), ['stopped'], 'then the SL hit');
+  assert.equal(mmEvents(st, {}, T0 + 6 * H, now, day).filter(e => e.trade.t === T0).length, 0, 'nothing from before the first run');
+  assert.equal(mmEvents(st, {}, T0, T0 + 40 * H, day).length, 0, 'nothing older than a day');
+  console.log('6 alert events: signal, then TP / SL / 3 days, each once');
 }
 console.log('flip ok');
