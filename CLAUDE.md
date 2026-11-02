@@ -221,8 +221,11 @@ trade the way of the last 24h, stop ½ day's move, target 2 day's moves: 38 trad
 2026 +0.81R), worst run 6, without best 2 still +0.47R (wins all ~+4R, no single
 trade carries it). Buys 13 (+1.25R), sells 25 (+0.34R; first 2y ~0). Picked from
 6 flip versions; trade-count floor lowered 30 → 20 after seeing it, so not fully
-blind. Compared with Alt Tactics (40 buys, 18%, +1.07R, run 16, without best 2
-−0.30R). Not on any tab; nothing changed on the site.
+blind. Owner: "count buy and sells together. I'm not interested in separate" (give
+one combined line per strategy from now on). Alt Tactics combined (rerun 2 Nov):
+44 trades, 16% hit, +0.87R, worst run 16, first 2y +1.14R / last year +0.25R,
+without best 2 −0.38R. Flip: 38, 34%, +0.65R, run 6, +0.54R / +0.86R, without
+best 2 +0.47R. Not on any tab; nothing changed on the site.
 
 ## Playbook tab
 

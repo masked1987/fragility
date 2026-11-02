@@ -57,3 +57,10 @@ Trades of the pick:
   2026-06-25T14:00 SELL  1535 stop  1559 target  1440  stopped -1.06R
   2026-08-19T21:00 BUY   2218 stop  2189 target  2337  target  +3.93R
   2026-09-15T20:00 SELL  2415 stop  2450 target  2273  stopped -1.07R
+
+Compared with Alt Tactics, buys and sells together (owner: "count buy and sells together"):
+node test/alt-backtest.mjs 36 .bt-cache, target = biggest huge level (the tab's rules), same months.
+  Alt Tactics      44 trades  16% hit  +0.87R/trade  total +38.5R  worst run 16 | first 2y +1.14R (31) | last year +0.25R (13) | without best 2 -0.38R
+                   by year  2023: 9 -0.21R  2024: 9 -1.07R  2025: 14 +3.27R  2026: 12 +0.36R   (40 buys +1.07R, 4 sells all stopped)
+  MM flip          38 trades  34% hit  +0.65R/trade  total +24.8R  worst run  6 | first 2y +0.54R (25) | last year +0.86R (13) | without best 2 +0.47R
+                   by year  2024: 15 +0.28R  2025: 15 +0.95R  2026: 8 +0.81R
