@@ -23,7 +23,9 @@ the file layout. Tabs, in order:
    up to choice", picked "Mix your own": now Daily / Weekly / Monthly each switch on
    and off (any mix, each its own column, own underline); All = everything and
    clears them; removing the last one goes back to All. `pick` = "all" or e.g.
-   "day+month" (`gd.exp`). A shared date (Thursday daily = weekly) shows once.
+   "day+month". A shared date (Thursday daily = weekly) shows once.
+   Then "make sure all expiries is the first to show": All is the first tab (left)
+   and the page always opens on All (the choice is no longer saved per phone).
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
