@@ -1,6 +1,6 @@
 // Run: node test/alt.mjs  — offline checks of the Alt Tactics model (made-up data).
 import assert from 'node:assert/strict';
-import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget, stopFrom } from '../tools/alt-tactics/model.js';
+import { pickHuge, ichimoku, to15, findSetups, oncePerLevel, decideAlt, pickTarget, stopFrom, altEvents } from '../tools/alt-tactics/model.js';
 import { withPoints } from '../tools/alt-tactics/collect.js';
 import { ALT_CONFIG } from '../tools/alt-tactics/config.js';
 // Checks 1-10 test the mechanics with the stop right at the low and 3% dips (the
@@ -189,5 +189,21 @@ assert.ok(Math.abs(s[0].low - lowest) < 1e-9, 'the low itself is kept');
 c = candles([...flat(2260, 120), ...line(2260, 2150, 35), ...flat(2150, 6), ...line(2150, 2240, 40), ...flat(2240, 10)]);
 assert.equal(findSetups(c, levels, ALT_CONFIG)[0].state, 'broken');                  // 2.3% under 2,200
 assert.equal(findSetups(c, levels, cfg)[0].state, 'signal');                          // fine under the old 3%
+
+// 12. Phone alert events: watch, then signal, then the result; each key once; nothing
+//     from before the job's first run.
+c = candles(dip);
+d = decideAlt(c, levels, cfg);
+const tEnd = c.at(-1).t + M5, DAY1 = 864e5;
+let ev = altEvents(d, {}, 0, tEnd, DAY1);
+assert.deepEqual(ev.map(e => e.kind), ['signal']);                                    // the watch phase is over: only the BUY
+assert.equal(altEvents(d, { [ev[0].key]: 1 }, 0, tEnd, DAY1).length, 0);               // already sent
+assert.equal(altEvents(d, {}, tEnd, tEnd, DAY1).length, 0);                            // before the first run: never
+c = candles([...flat(2260, 120), ...line(2260, 2180, 30), ...flat(2180, 4)]);
+ev = altEvents(decideAlt(c, levels, cfg), {}, 0, c.at(-1).t + M5, DAY1);
+assert.deepEqual(ev.map(e => e.kind), ['watch']);
+c = candles(stopped);
+ev = altEvents(decideAlt(c, levels, cfg), {}, 0, c.at(-1).t + M5, DAY1);
+assert.deepEqual(ev.map(e => e.kind), ['signal', 'stopped']);
 
 console.log('alt: all checks passed');

@@ -50,7 +50,8 @@ the file layout. Tabs, in order:
   part of the Tactics rules, the owner said "I don't need crossing alert gamma,
   I will need just 6/6 alerts from tactics". Asked about the zone and dealer
   alerts: "keep those two on". So the phone gets: zone changes, ETH dealers
-  losing / no longer losing, and Tactics 6/6. "Test them now": the workflow has a
+  losing / no longer losing, Tactics 6/6, and (from 2 Nov 2026, his request) Alt
+  Tactics BUY / SELL / WATCH / target hit / stopped (see the Alt Tactics section). "Test them now": the workflow has a
   `test_alerts` input (Run workflow → choose `all` or `tactics`; `TEST_ALERTS` in
   the job) that sends [test] messages in their real format: zone and dealers once
   each, Tactics 3 times like the real one.
@@ -520,8 +521,19 @@ The owner's own method, built from the version that tested best
   He said **"yes switch to biggest level"**: `target: 'biggest'` in config; collect
   passes the levels with their open contracts; the backtest card shows 42 / 14% /
   +0.78R / worst run 18 and a "catch" box (two July 2025 trades made all of it).
-- No phone alert for Alt Tactics. Asked, the owner said "I did explain it to
-  you": he wants only zone, dealers and Tactics 6/6. Don't offer it again.
+- **Phone alert for Alt Tactics** (2 Nov 2026, he asked: "add to that NTFY alert,
+  which is gonna notify and inform me about our rules"; earlier he had said only
+  zone, dealers and Tactics 6/6, so it was never offered again). `jobs/monitor.mjs`
+  runs `collectAlt()` for `alertAssets: ['ETH']`; `altEvents()` in `model.js` turns
+  the setups into events, each pushed once (`state.alt.ETH.sent`, pruned after 10
+  days; `since` = first run, so nothing older is pushed; events older than 24 h are
+  skipped). BUY / SELL: priority 4, rings 3 times (`ALT_REPEATS`), entry, stop loss
+  (number + "2 points under the low N"), target, R; says "entered late" if the job
+  ran >30 min after the signal. WATCH (dip / spike waiting for the signal): once,
+  priority 3, low so far + stop so far. Target hit (prio 4) / stopped (prio 3):
+  once; after a buy target it reminds the sell rule, after a stop it names the next
+  level. `altMessage()` in the job. One-time "Alt Tactics alerts are on" message
+  (`welcomedAlt`). Workflow test choice `alt` sends the last signal as [test].
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
 ## Where we stopped (handover, 1 Nov 2026, end of a long session)

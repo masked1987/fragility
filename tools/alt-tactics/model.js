@@ -219,3 +219,22 @@ export function decideAlt(c5, levels, cfg) {
   return { action: action, open: open, waiting: waiting, setups: setups, ichimoku: now, spot: spot, below: below, above: above, sellReady: sellReady,
     locked: locked, stopped: stopped, nextBuy: nextBuy };
 }
+
+// Phone alert events for the job (asked 2 Nov 2026: "add the NTFY alert ... about our
+// rules"). From decideAlt()'s setups: 'watch' (a dip / spike waiting for the signal),
+// 'signal' (BUY / SELL), 'target' / 'stopped' (the trade ended). Each event has a key;
+// `sent` = { key: time } of keys already pushed. Only events at or after `since` (the
+// job's first run, so old ones are never pushed) and within the last `maxAgeMs`.
+export function altEvents(dec, sent, since, now, maxAgeMs) {
+  const out = [], fresh = function (t) { return t != null && t >= since && now - t <= maxAgeMs; };
+  dec.setups.forEach(function (s) {
+    const id = s.side + ':' + s.level + ':' + s.t0;
+    const add = function (kind, t) { const key = kind + ':' + id; if (!sent[key] && fresh(t)) out.push({ kind: kind, key: key, t: t, setup: s }); };
+    if (s.state === 'waiting' && !s.used && !s.noWin) add('watch', s.t0);
+    if (s.taken) {
+      add('signal', s.signal.t);
+      if (s.trade.result === 'target' || s.trade.result === 'stopped') add(s.trade.result, s.trade.at);
+    }
+  });
+  return out.sort(function (a, b) { return a.t - b.t; });
+}
