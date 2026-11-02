@@ -4,8 +4,8 @@
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793602588171,
-    "ETH": 1793602588171
+    "BTC": 1793630113858,
+    "ETH": 1793630113858
   },
   "welcomed": true,
   "dealers": {
@@ -23,7 +23,7 @@
   "welcomedMM": true,
   "tactics": {
     "ETH": {
-      "met": 4,
+      "met": 1,
       "action": "hold"
     }
   },
@@ -37,7 +37,7 @@
         2400,
         2500
       ],
-      "picked": 1793552015970,
+      "picked": 1793630113858,
       "method": "oi-top"
     }
   },
@@ -45,12 +45,28 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1793601000000
+    "ETH": 1793628900000
   },
   "lastClose": {
-    "ETH": 2282.28
+    "ETH": 2284.5
   },
   "quiet": {
-    "ETH": {}
-  }
+    "ETH": {
+      "2300": 1793630700000
+    }
+  },
+  "alt": {
+    "ETH": {
+      "since": 1793630113858,
+      "sent": {}
+    }
+  },
+  "mmStrat": {
+    "ETH": {
+      "since": 1793630113858,
+      "sent": {}
+    }
+  },
+  "welcomedMMS": true,
+  "welcomedAlt": true
 }
