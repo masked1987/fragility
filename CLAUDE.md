@@ -31,7 +31,12 @@ the file layout. Tabs, in order:
    price tends to stall / turn; pink = with the move, runs). "Don't take into account
    alt tactics or any other strategies": keep it fully separate from Alt Tactics,
    Tactics, Playbook and the Market Maker strategy; his long-term strategies stay
-   as they are. Wait for his rules before building anything for it.
+   as they are. "Don't build anything, I just want you to know the rules" (so far):
+   price touches a blue zone on the Daily view → wait for the 5-minute Ichimoku
+   Tenkan / Kijun cross → enter; stop at the low / high of the touch. Sides not
+   said yet. Take profit not decided ("we need to pick something optimal"). Past
+   daily-expiry gamma is only free for the 1st of each month (Tardis), so a real
+   test would have ~36 days. Build nothing until he asks.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
