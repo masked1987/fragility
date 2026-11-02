@@ -73,13 +73,66 @@ async function chainDay(D) {
   return [];
 }
 
+// 5-minute candles with volume, from 30 h before the day (warm-up for the 15-minute
+// GodMode) to 08:00 the day after.
 function candles(D) {
-  return cached('d5-' + D + '.json', async () => {
-    const a = D - 6 * H, b = D + DAY + 9 * H;
+  return cached('d5v-' + D + '.json', async () => {
+    const a = D - 30 * H, b = D + DAY + 9 * H;
     const j = await getJson(`https://www.deribit.com/api/v2/public/get_tradingview_chart_data?instrument_name=ETH-PERPETUAL&start_timestamp=${a}&end_timestamp=${b}&resolution=5`);
     const r = j.result;
-    return r.ticks.map((t, i) => ({ t, o: r.open[i], h: r.high[i], l: r.low[i], c: r.close[i] }));
+    return r.ticks.map((t, i) => ({ t, o: r.open[i], h: r.high[i], l: r.low[i], c: r.close[i], v: r.volume[i] }));
   });
+}
+
+// GodMode oscillator, rebuilt from the public Godmode 3.x formula (xSilas / LazyBear /
+// Ni6HTH4wK; "Godmode 3.1.4 SNOW_CITY SCALPER EDITION" uses 17, 6, 4 for its "very
+// sensitive caution dots"). The owner's own copy (black / yellow dots) was not available,
+// so this is an approximation:
+//   src = hlc3; n1 = 17 (channel), n2 = 6 (average), n3 = 4 (short)
+//   TCI   = ema((src − ema(src,n1)) / (0.025 · ema(|src − ema(src,n1)|, n1)), n2) + 50
+//   CSI   = (rsi(src,n3) + 50 · tsi(src,n1,n2) + 50) / 2
+//   MF    = money-flow RSI of volume·src on up vs down bars over n3
+//   Willy = 60 · (src − highest(src,n2)) / (highest − lowest) + 80
+//   line  = average of the four; signal = 6-bar average of the line
+//   caution dot: signal above 80 (top, ends a buy) or below 20 (bottom, ends a sell).
+const GM = { n1: 17, n2: 6, n3: 4, top: 80, bottom: 20 };
+function emaA(x, n) { const a = 2 / (n + 1), o = []; let e = NaN; x.forEach((v, i) => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
+function rmaA(x, n) { const a = 1 / n, o = []; let e = NaN; x.forEach(v => { if (isNaN(v)) { o.push(NaN); return; } e = isNaN(e) ? v : a * v + (1 - a) * e; o.push(e); }); return o; }
+function smaA(x, n) { return x.map((v, i) => { if (i < n - 1) return NaN; let s = 0; for (let k = i - n + 1; k <= i; k++) s += x[k]; return s / n; }); }
+function rsiA(x, n) {
+  const ch = x.map((v, i) => i ? v - x[i - 1] : NaN), up = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(d, 0)), n), dn = rmaA(ch.map(d => isNaN(d) ? NaN : Math.max(-d, 0)), n);
+  return up.map((u, i) => dn[i] === 0 ? 100 : u === 0 ? 0 : 100 - 100 / (1 + u / dn[i]));
+}
+function godmode(bars) {
+  const { n1, n2, n3 } = GM, src = bars.map(b => (b.h + b.l + b.c) / 3), ch = src.map((v, i) => i ? v - src[i - 1] : NaN);
+  const e = emaA(src, n1), dev = emaA(src.map((v, i) => Math.abs(v - e[i])), n1);
+  const tci = emaA(src.map((v, i) => (v - e[i]) / (0.025 * dev[i])), n2).map(v => v + 50);
+  const ds = emaA(emaA(ch, n2), n1), dsa = emaA(emaA(ch.map(Math.abs), n2), n1);
+  const rs = rsiA(src, n3), csi = rs.map((r, i) => (r + (ds[i] / dsa[i]) * 50 + 50) / 2);
+  const mf = src.map((v, i) => {
+    if (i < n3) return NaN; let u = 0, d = 0;
+    for (let k = i - n3 + 1; k <= i; k++) { if (ch[k] > 0) u += bars[k].v * src[k]; if (ch[k] < 0) d += bars[k].v * src[k]; }
+    return d === 0 ? 100 : 100 - 100 / (1 + u / d);
+  });
+  const willy = src.map((v, i) => {
+    if (i < n2 - 1) return NaN; let hh = -Infinity, ll = Infinity;
+    for (let k = i - n2 + 1; k <= i; k++) { hh = Math.max(hh, src[k]); ll = Math.min(ll, src[k]); }
+    return hh === ll ? 50 : 60 * (v - hh) / (hh - ll) + 80;
+  });
+  return smaA(src.map((v, i) => (tci[i] + csi[i] + mf[i] + willy[i]) / 4), 6);
+}
+// 15-minute bars from the 5-minute candles; returns { end time of each finished 15-min bar: signal }.
+const M15 = 15 * 6e4;
+function godmode15(c) {
+  const bars = [];
+  c.forEach(x => {
+    const s = Math.floor(x.t / M15) * M15, b = bars[bars.length - 1];
+    if (b && b.t === s) { b.h = Math.max(b.h, x.h); b.l = Math.min(b.l, x.l); b.c = x.c; b.v += x.v; b.n++; }
+    else bars.push({ t: s, h: x.h, l: x.l, c: x.c, v: x.v, n: 1 });
+  });
+  const full = bars.filter(b => b.n === 3), sig = godmode(full), out = {};
+  full.forEach((b, i) => { if (!isNaN(sig[i])) out[b.t + M15] = sig[i]; });
+  return out;
 }
 
 function gam(F, K, s, T) {
@@ -123,12 +176,13 @@ const TPS = {
   '2R': (e, buy, v, risk) => buy ? e + 2 * risk : e - 2 * risk,
   '3R': (e, buy, v, risk) => buy ? e + 3 * risk : e - 3 * risk,
   '4R': (e, buy, v, risk) => buy ? e + 4 * risk : e - 4 * risk,
+  'GodMode dot (15 min)': () => null,  // exit at the close of the first 15-min bar with a dot on the trade's side
   'no target (out at 08:00)': () => null,
 };
 
 // One Daily window for one take profit. One trade at a time: a trade that is still
 // open blocks new entries, so each take profit gets its own trade list.
-function windowTrades(c, chain, start, E, name) {
+function windowTrades(c, chain, start, E, name, gm) {
   const i0 = c.findIndex(x => x.t >= start), iEnd = c.findIndex(x => x.t + M5 > E);
   if (i0 < 27 || iEnd < 0) return [];
   const spot = c[i0 - 1].c, v = dailyView(chain, E, start, spot), TP = TPS[name];
@@ -154,6 +208,8 @@ function windowTrades(c, chain, start, E, name) {
       const y = c[j];
       if (buy ? y.l <= stop : y.h >= stop) { exit = stop; how = 'stop'; break; }
       if (tp != null && (buy ? y.h >= tp : y.l <= tp)) { exit = tp; how = 'target'; break; }
+      const g = name.startsWith('GodMode') ? gm[y.t + M5] : undefined;
+      if (g !== undefined && (buy ? g > GM.top : g < GM.bottom)) { exit = y.c; how = 'target'; break; }
     }
     if (exit == null) { j = iEnd; exit = c[iEnd].c; }
     const move = buy ? exit - entry : entry - exit;
@@ -174,7 +230,7 @@ async function pool(items, fn) {
 const data = await pool(days, async D => {
   const [chain, c] = await Promise.all([chainDay(D), candles(D)]);
   process.stderr.write('.');
-  return { D, chain, c };
+  return { D, chain, c, gm: godmode15(c) };
 });
 process.stderr.write('\n');
 
@@ -183,8 +239,8 @@ for (const name of names) {
   lists[name] = [];
   for (const d of data) {
     if (!d.c.length || !d.chain.length) continue;
-    lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, name));
-    lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, name));
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 20 * 6e4, d.D + 8 * H, name, d.gm));
+    lists[name].push(...windowTrades(d.c, d.chain, d.D + 8 * H, d.D + DAY + 8 * H, name, d.gm));
   }
 }
 
