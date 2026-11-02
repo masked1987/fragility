@@ -19,10 +19,11 @@ the file layout. Tabs, in order:
    9 columns the last ("later") adds up the rest. Saved per phone (`gd.exp`). The
    saved-snapshot fallback only has its 10 nearest columns (dates from the "Nd"
    labels). Checked against the old calculation: same numbers.
-   Then (same day) "add daily weekly and monthly expiry": a fifth tab **D+W+M**
-   between Monthly and All = those three expiries added together (a shared date
-   counts once, e.g. on Thursday daily = weekly); columns show the dates. The
-   four original tabs unchanged ("leave all logic").
+   Then (same day) a combined D+W+M tab; owner: "Not together, separately please,
+   up to choice", picked "Mix your own": now Daily / Weekly / Monthly each switch on
+   and off (any mix, each its own column, own underline); All = everything and
+   clears them; removing the last one goes back to All. `pick` = "all" or e.g.
+   "day+month" (`gd.exp`). A shared date (Thursday daily = weekly) shows once.
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
