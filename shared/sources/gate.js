@@ -52,7 +52,7 @@ export async function hourly(asset) {
 // Hourly closes for realized volatility (Deribit's price history blocks browsers).
 export async function hourlyCloses(asset, hours) {
   const k = await getJson(BASE + '/candlesticks?contract=' + asset + '_USDT&interval=1h&limit=' + Math.min(hours, 1000));
-  return k.map(function (c) { return { t: c.t * 1000, close: +c.c }; }).filter(function (c) { return c.close > 0; });
+  return k.map(function (c) { return { t: c.t * 1000, close: +c.c, high: +c.h, low: +c.l }; }).filter(function (c) { return c.close > 0; });
 }
 
 // Finished candles only (Gate's last one is still forming), oldest first.

@@ -1,0 +1,73 @@
+Market Maker entries backtest, ETH 2023-11-01 to 2026-11-02, hourly reading, Deribit 5-min exits, 0.1% costs, 3 days max hold
+Hours: dealers winning 57%, balanced 21%, losing 22%; typical day's implied move ±3.4%
+
+version                        trades hit  per-trade total  worst | first 2 years          | last year (unseen)    |
+Best of each family (picked on the first 2 years):
+fade k0.5 stop 1 tgt 0.5        845  61%  -0.09R  -80.06R run  7 | first 2y  -0.11R (589) | last year  -0.05R (256) | without best 2  -0.10R
+fadeAny k0.5 stop 1 tgt 0.5    1217  61%  -0.10R -119.31R run  7 | first 2y  -0.10R (840) | last year  -0.09R (377) | without best 2  -0.10R
+trend stop 1 tgt 0.5            297  60%  -0.12R  -35.38R run  7 | first 2y  -0.16R (210) | last year  -0.02R ( 87) | without best 2  -0.12R
+flip stop 0.5 tgt 2              38  34%  +0.65R  +24.83R run  6 | first 2y  +0.54R ( 25) | last year  +0.86R ( 13) | without best 2  +0.47R
+fear k1.5 stop 1 tgt 1          113  49%  -0.03R   -3.56R run  4 | first 2y  +0.06R ( 76) | last year  -0.22R ( 37) | without best 2  -0.05R
+
+Pick: flip stop 0.5 tgt 2
+  by year  2024: 15 +0.28R  2025: 15 +0.95R  2026: 8 +0.81R
+  results: target 13, stopped 25, time 0, open 0
+
+Trades of the pick:
+  2024-01-12T15:00 BUY   2708 stop  2663 target  2888  stopped -1.06R
+  2024-01-25T02:00 SELL  2214 stop  2241 target  2104  stopped -1.08R
+  2024-01-28T20:00 SELL  2254 stop  2281 target  2146  stopped -1.08R
+  2024-03-05T20:00 SELL  3379 stop  3447 target  3104  stopped -1.05R
+  2024-03-19T02:00 SELL  3393 stop  3460 target  3122  target  +3.95R
+  2024-04-13T21:00 SELL  2913 stop  2976 target  2662  stopped -1.05R
+  2024-05-04T11:00 BUY   3168 stop  3112 target  3393  stopped -1.06R
+  2024-05-20T20:00 BUY   3441 stop  3373 target  3713  target  +3.95R
+  2024-07-05T05:00 SELL  2866 stop  2919 target  2654  stopped -1.05R
+  2024-08-04T18:00 SELL  2697 stop  2749 target  2491  stopped -1.05R
+  2024-09-01T23:00 SELL  2405 stop  2446 target  2241  stopped -1.06R
+  2024-11-07T12:00 BUY   2794 stop  2749 target  2972  target  +3.94R
+  2024-11-09T01:00 BUY   2986 stop  2939 target  3175  target  +3.94R
+  2024-11-23T15:00 BUY   3480 stop  3413 target  3749  stopped -1.05R
+  2024-12-20T09:00 SELL  3287 stop  3351 target  3028  stopped -1.05R
+  2025-01-19T11:00 SELL  3172 stop  3233 target  2926  stopped -1.05R
+  2025-02-03T02:00 SELL  2492 stop  2543 target  2285  stopped -1.05R
+  2025-02-12T23:00 BUY   2747 stop  2697 target  2945  stopped -1.06R
+  2025-02-25T08:00 SELL  2368 stop  2411 target  2194  stopped -1.05R
+  2025-04-06T19:00 SELL  1616 stop  1651 target  1476  target  +3.95R
+  2025-05-09T08:00 BUY   2364 stop  2319 target  2544  stopped -1.05R
+  2025-05-18T18:00 BUY   2492 stop  2445 target  2678  stopped -1.05R
+  2025-06-23T18:00 BUY   2276 stop  2232 target  2451  target  +3.95R
+  2025-08-22T15:00 BUY   4616 stop  4534 target  4945  target  +3.94R
+  2025-10-10T22:00 SELL  3950 stop  4025 target  3649  target  +3.95R
+  2025-11-04T17:00 SELL  3428 stop  3493 target  3165  target  +3.95R
+  2025-11-17T04:00 SELL  3175 stop  3239 target  2922  target  +3.95R
+  2025-12-07T16:00 SELL  3027 stop  3088 target  2785  stopped -1.05R
+  2025-12-12T16:00 SELL  3071 stop  3127 target  2847  stopped -1.05R
+  2025-12-18T18:00 SELL  2846 stop  2897 target  2638  stopped -1.05R
+  2026-01-21T20:00 BUY   3053 stop  3009 target  3229  stopped -1.07R
+  2026-01-31T15:00 SELL  2535 stop  2579 target  2358  target  +3.94R
+  2026-02-28T14:00 SELL  1905 stop  1942 target  1758  stopped -1.05R
+  2026-06-03T23:00 SELL  1828 stop  1856 target  1712  target  +3.94R
+  2026-06-18T16:00 SELL  1679 stop  1704 target  1578  stopped -1.07R
+  2026-06-25T14:00 SELL  1535 stop  1559 target  1440  stopped -1.06R
+  2026-08-19T21:00 BUY   2218 stop  2189 target  2337  target  +3.93R
+  2026-09-15T20:00 SELL  2415 stop  2450 target  2273  stopped -1.07R
+
+Alt Tactics vs Market Maker flip in % (asked 2 Nov 2026: "which one is more consistently
+profitable? Give me pure % numbers stats"). Buys + sells together, 0.1% costs, Nov 2023 - Nov 2026.
+% = price move per trade (full position, no leverage); "1% risk" = account risking 1% per trade.
+                         Alt Tactics       MM flip
+  trades                 44                38
+  win rate               18%               34%
+  avg win / avg loss     +11.8% / -1.7%    +7.1% / -1.9%
+  avg per trade          +0.74%            +1.20%
+  compounded             +25.8%            +52.4%
+  max drawdown           30.7%             11.5%
+  worst losing run       16                6
+  best 2 = share profit  186%              36%
+  without best 2         -0.67%/trade      +0.81%/trade
+  profitable years       2/4 (50%)         3/3 (100%)
+  profitable quarters    4/13 (31%)        9/11 (82%)
+  profitable months      5/23 (22%)        11/23 (48%)
+  by year                2023 -1.6%, 2024 -19.9%, 2025 +46.5%, 2026 +7.6%   |   2024 +7.7%, 2025 +28.2%, 2026 +9.9%
+  1% risk: account       +36.5%, max drawdown 18.5%   |   +26.7%, max drawdown 6.1%

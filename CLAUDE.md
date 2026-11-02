@@ -14,7 +14,8 @@ the file layout. Tabs, in order:
 2. **Fragility**: 0–100 liquidation-cascade score, history chart, phone alerts.
 3. **Forced Flow**: estimated liquidation clusters + dealer gamma, with an
    automatic plain-English reading card.
-4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done).
+4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done),
+   plus the flip card (trade the turn to dealers losing; see the backtest section).
 5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
 6. **Tactics**: a separate intraday tactic, the GEX pivot + order-flow exhaustion
    setup from the owner's video. Keep it independent of the Playbook.
@@ -135,7 +136,7 @@ the file layout. Tabs, in order:
 - `test/*.mjs` hit live APIs: `node test/live.mjs`, `node test/flow.mjs`,
   `node test/mm.mjs`. Pure modules (`model.js`, `read.js`, `score.js`) run in Node.
   `node test/carry.mjs`, `node test/alerts.mjs`, `node test/plan.mjs` and
-  `node test/tactics.mjs`, `node test/alt.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
+  `node test/tactics.mjs`, `node test/alt.mjs`, `node test/flip.mjs` and `node test/importmap.mjs` are offline and must pass. `node test/playbook.mjs`
   and `node test/tactics-live.mjs` print the live tabs.
 - Deribit trade paging: page backwards from now (`sorting=desc`). Paging forward
   from a start time ran out of pages on BTC and silently dropped the newest trades.
@@ -206,6 +207,43 @@ How much dealers collect per day from time decay against what re-hedging costs.
   own the quarterlies. `readCarry()` then says so in words; keep that.
 
 The Market Maker plan is complete.
+
+### Market Maker entries backtest (asked 2 Nov 2026)
+"Choose the best entry for market maker model and do the backtest ... comparing to
+my strategy". `node test/mm-backtest.mjs 36 .bt-cache` (`ALL=1` prints every
+version), results `test/results/mm-backtest-2026-11-02.txt`. The tab's hourly
+reading over 3 years (DVOL vs 7-day realized, `dealerSide()`), sizes in the day's
+implied move, Deribit 5-min exits, 0.1% costs, 3 days max, picked on the first 2
+years, checked on the last year. Range fades when dealers win, breakouts when they
+lose, buying fear spikes: all lose or fade out (−0.05 to −0.37R; fear spike +0.37R
+first 2y, −0.35R last year). Owner then: "count buy and sells together. I'm not
+interested in separate" — about the **Market Maker** test (not Alt Tactics; I
+wrongly reran Alt and he corrected me: "I want you to test Market Maker"). So every
+family counts both sides, one line each (fear has a mirror sell: vol up + price up).
+Best of each, buys + sells: fade −0.09R (845 trades), fade in balanced too −0.10R,
+trend −0.12R, fear −0.03R (first 2y +0.06R, last year −0.22R). Only **"flip"**
+works: dealers just turned losing → trade the way of the last 24h, stop ½ day's
+move, target 2 day's moves: 38 trades, 34% hit, +0.65R (first 2y +0.54R, last year
++0.86R; 2024 +0.28 / 2025 +0.95 / 2026 +0.81R), worst run 6, without best 2 still
++0.47R (wins all ~+4R). Picked from 6 flip versions; trade-count floor lowered
+30 → 20 after seeing it, so not fully blind. Now on the tab (see "On the tab" below). Then "which one is more consistently profitable? Give me pure % numbers":
+table in the results file (price % per trade, buys + sells): flip +1.20%/trade vs
+Alt +0.74%, win rate 34% vs 18%, max drawdown 11.5% vs 30.7%, profitable quarters
+82% vs 31%; Alt's best 2 trades are 186% of its profit. Answer: flip is the more
+consistent; he wants % figures, not R.
+**On the tab** (asked "add the flip to the Market Maker tab", v=47): card right under
+the reading card. `tools/market-maker/flip.js` (pure: `readings()`, `flipSignal()`,
+`followFlip()`, `flipTrades()`, `flipState()`), used by both the tab (`collect.js`,
+Gate hourly candles, finished hours only; `gate.hourlyCloses` now also returns
+high/low) and `test/mm-backtest.mjs` (its "tab code" line must match the pick:
+38 / +0.65R). `cfg.flip` in `config.js`: stopMoves 0.5, targetMoves 2, maxHours 72,
+freshHours 2 (BUY / SELL badge that long, then OPEN), backtest numbers in % for the
+card. The first reading can't be a flip (no "before"). Card states: BUY / SELL (stop
+box with the number, entry, target, ends, size from the Plan tab account), OPEN,
+WAIT (no flip: gap now, which way it would trade, stop / target now, last flip in
+30 days; or dealers already losing: losing since, the flip only fires on the turn).
+`node test/flip.mjs` is offline and must pass. Not added to the phone alerts (the
+"dealers now losing" alert already rings at the same moment); offer it if he asks.
 
 ## Playbook tab
 
@@ -540,7 +578,7 @@ The owner's own method, built from the version that tested best
 
 The owner closed this conversation to start a new one. Pick up from here:
 
-- **State (2 Nov 2026), all live, v=43:** Alt
+- **State (2 Nov 2026), all live, v=47 (flip card on Market Maker added):** Alt
   Tactics = 5-min Ichimoku entry (he chose it over every Fibonacci / 4-candle
   version), target the biggest huge level, stop at the low (0.4% room removed
   2 Nov at his request), dips up to 2%,
