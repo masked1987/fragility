@@ -1,11 +1,11 @@
 {
   "zones": {
-    "BTC": "Calm",
+    "BTC": "Building",
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793663518748,
-    "ETH": 1793663518748
+    "BTC": 1793682933932,
+    "ETH": 1793682933932
   },
   "welcomed": true,
   "dealers": {
@@ -45,10 +45,10 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1793662200000
+    "ETH": 1793682000000
   },
   "lastClose": {
-    "ETH": 2252.26
+    "ETH": 2251.7
   },
   "quiet": {
     "ETH": {}
@@ -69,7 +69,7 @@
   "welcomedAlt": true,
   "trend": {
     "ETH": {
-      "at": 1793577600000,
+      "at": 1793664000000,
       "on": false
     }
   },
