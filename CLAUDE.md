@@ -91,8 +91,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
 4. **Market Maker**: are dealers paid for their risk (plan below, all 4 steps done),
    plus the flip card (trade the turn to dealers losing; see the backtest section).
 5. **Playbook**: picks a trading mode and shows the possible decisions with levels.
-6. **Tactics**: a separate intraday tactic, the GEX pivot + order-flow exhaustion
-   setup from the owner's video. Keep it independent of the Playbook.
+6. ~~Tactics~~ **removed from the site 2 Nov 2026** (owner: "yes remove tactics tab", after
+   asking whether anything used it: nothing did). Was the GEX pivot + order-flow setup from
+   his video. The code stays in `tools/tactics/` (still in the import-map list, since
+   `test/importmap.mjs` checks every file on disk) for `test/tactics*.mjs`; the job no
+   longer runs it and its 6/6 alert is gone. Tab list in `assets/app.js` is 7 again, phone
+   tab padding back to the 7-tab sizes. v=53. The Tactics section below is history.
 7. **Alt Tactics**: the owner's own method (dip through a huge gamma level, buy
    when buyers are back, stop at the low). Kept apart from Tactics (video rules).
 8. **Trend** (2 Nov 2026, "create separate tab with that strategy"): the 50-day
@@ -108,7 +112,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    counted a few outside the period). The tab's code on the test's Deribit closes gives
    +267.7% (first-day buy cost). `node test/trend.mjs` is offline and must pass.
    Eight tabs: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px) so all fit
-   next to the style dot. v=51.
+   next to the style dot. v=51. (Back to 7 tabs and the 7-tab sizes at v=53, when
+   Tactics was removed.)
    **Phone alert** (asked "with alerts when to enter, what's TP and stop loss"; he chose
    "keep it as tested": no fixed SL / TP): `jobs/monitor.mjs`, ETH (`alertAssets`),
    `trendEvents()` in model.js (crossings since `state.trend[asset].at`, none older than
@@ -121,6 +126,9 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    daily message, as [test]. Each state now carries `line` (for the next close). v=52.
    Test sent 2 Nov 2026 19:41 UTC (`test_alerts: trend`): owner "received all 3 alerts"
    (BUY ×3 rings, the daily stop line, "Trend alerts are on").
+   Long only: SELL = close the buy, never a short (long + short 50d was +364% but −22% in
+   2024 and a 58% drop; offered, not taken). Offered a filter against sideways losses
+   (average rising / close 2% above): owner "Nope stay as it is". Don't re-offer.
 
 ## How the owner works
 
@@ -146,7 +154,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
   also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
   no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
-  state still tracked, log lines still printed; their tabs unchanged). Workflow test
+  state still tracked, log lines still printed). Then the Tactics tab itself was removed
+  (site and job). Workflow test
   choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
   how the old alerts worked, if he wants one back.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
@@ -231,6 +240,38 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   To show a change before publishing: copy the site into `preview/` on
   `gh-pages` (and gamma-detrite `main`), point the preview's embed at
   `gamma-detrite/preview/`, bump its `?v=`; delete `preview/` when published.
+- Site protection (asked 2 Nov 2026 "can we protect it"): both repos and the site are
+  public. Offered: private repos (site needs GitHub Pro), password page (StatiCrypt-style,
+  code still public), Cloudflare Pages + Access (free, but may ask for a card; private repo
+  Actions = 2,000 min/month, so alerts every 30 min). Owner: can't pay a subscription,
+  "leave it as it is for now". Gave him a zip copy of both repos (all branches).
+  3 Nov 2026 he asked again: "make it private so nobody can use it". Built (v=54) for
+  **Cloudflare Pages + own password** (no Zero Trust, so no card): `functions/_middleware.js`
+  (Pages Functions; GitHub Pages ignores it) asks one password (`SITE_PASSWORD`, cookie
+  `fx_auth` = sha256 of it, 1 year, so once per phone), and serves the private files with a
+  read-only token (`GH_TOKEN`): `/gh/fragility/data/{log.csv,state.json}` and the whole
+  Gamma Detrite page at `/gamma-detrite/` (same site, so the iframe, look sync and its
+  `gamma-data.json` fallback keep working). `config.js` / `app.js` pick these paths when
+  the host isn't github.io. Job schedules slowed for private minutes (2,000/month, both
+  repos): monitor every 30 min, gamma refresh every 2 h. His steps: Cloudflare account →
+  Pages → connect GitHub → fragility, branch gh-pages, no build; add the two variables;
+  open the site, log in; then make both repos private (GitHub Pages then stops). Then set
+  `siteUrl` in `tools/fragility/config.js` to the new address (alert tap link).
+- Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
+  trades"): only **Trend** would be automatic, the rest he trades by hand; one IC Markets
+  **MT5** account, phone only (MT5 Android can't run EAs). Options given: (1) the alert
+  job places the trade via MetaApi (cloud MT5 link; free tier "for testing and personal
+  use", not guaranteed; needs his trading password; trades hours late with the job);
+  (2) Windows VPS ~$10–15/month + EA, set up via Remote Desktop app; (3) by hand from the
+  alert (~7 trades a year). TradingView can't take orders from outside. Suggested 1 if
+  MetaApi is still free, else 3, demo account first. Owner chose **3: "I will follow
+  alerts and execute manually"**. Nothing built; don't re-offer auto-trading unless he asks.
+  Explained: exit only on the SELL (daily close under the dashed 50-day line, closed by
+  hand), no SL order, buys only. Size: his MT5 account is 1:20; warned off 100% margin.
+  He settled on a Trend position worth **40% of the account, no leverage**. Real balance
+  is only **£5**; demo "I feel nothing", "every penny counts"; his broker allows micro
+  sizes, so ~£2 of ETH (≈0.001 ETH) per Trend buy. Told him to check ETHUSD minimum volume
+  and "Swap long" (overnight fee, not in the test); he says IC Markets' rules are good.
 - Declined for now: outside cron trigger for on-time alerts (GitHub's schedule
   runs late), expiry dates on Gamma Detrite columns, removing the gamma column
   from Forced Flow.
@@ -741,7 +782,23 @@ The owner's own method, built from the version that tested best
   the Alt test sent nothing.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
-## Where we stopped (handover, 1 Nov 2026, end of a long session)
+## Where we stopped (handover, 2 Nov 2026 evening)
+
+Owner: "for now done, we continue tomorrow". Everything below is live and published
+(fragility v=53, gamma-detrite main); nothing half-built. Ask what he wants next.
+- Gamma Detrite: expiry tabs All (first, opens on it) · Daily · Weekly · Monthly, the
+  last three mixable; his separate **daily approach** (blue zone touch + 5-min Tenkan /
+  Kijun cross, stop at the touch low / high, GodMode 15-min dot as TP; tested about
+  break-even, best stop 0.5% past the touch) is only written down, nothing built.
+- Tabs: Gamma, Score, Flow, Dealers, Plan, Alt, **Trend** (new, 50-day average, long only);
+  Tactics removed.
+- Phone alerts: only Market Maker strategy, Alt Tactics, Trend (ETH).
+- Outside strategies tested (trend / funding carry / option selling): trend held up.
+- Later the same evening: he'll trade **Trend by hand** from the alerts on his IC Markets
+  MT5 account (no auto-trading; 40% of a £5 balance, micro size, buys only, exit on the
+  SELL). Was OUT at the time (last SELL 9 Oct). "Done for now, we continue tomorrow".
+
+## Earlier handover (1 Nov 2026, end of a long session)
 
 The owner closed this conversation to start a new one. Pick up from here:
 
