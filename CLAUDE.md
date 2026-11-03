@@ -258,6 +258,11 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   (else every `data` push by the job is a build; free = 500 a month); add the two variables;
   open the site, log in; then make both repos private (GitHub Pages then stops). Then set
   `siteUrl` in `tools/fragility/config.js` to the new address (alert tap link).
+  Progress 3 Nov: Cloudflare account made, Pages project **fragility** → https://fragility.pages.dev
+  (branch gh-pages, deployed, answers "Locked: SITE_PASSWORD is not set"). He chose both repos in
+  the Cloudflare GitHub app (harmless). Still to do: GitHub token (fine-grained, Contents read-only,
+  both repos), the two secrets + retry deployment, preview branches None, check tabs, `siteUrl`,
+  then make both repos private. He said "I will set password later".
 - Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
   trades"): only **Trend** would be automatic, the rest he trades by hand; one IC Markets
   **MT5** account, phone only (MT5 Android can't run EAs). Options given: (1) the alert
