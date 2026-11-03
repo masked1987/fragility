@@ -1,11 +1,11 @@
 {
   "zones": {
-    "BTC": "Building",
+    "BTC": "Calm",
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793710402750,
-    "ETH": 1793710402750
+    "BTC": 1793743850569,
+    "ETH": 1793743850569
   },
   "welcomed": true,
   "dealers": {
@@ -45,10 +45,10 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1793709000000
+    "ETH": 1793742300000
   },
   "lastClose": {
-    "ETH": 2281.32
+    "ETH": 2293.4
   },
   "quiet": {
     "ETH": {}
