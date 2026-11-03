@@ -2,8 +2,10 @@ name: Fragility log and alerts
 
 on:
   schedule:
-    # Every 15 minutes, off the round minutes that GitHub delays most.
-    - cron: '7,22,37,52 * * * *'
+    # Every 30 minutes, off the round minutes that GitHub delays most. Private repos
+    # get 2,000 free job minutes a month (shared with gamma-detrite's refresh):
+    # 30-minute runs here (~1,440) + gamma every 2 hours (~360) stay inside it.
+    - cron: '7,37 * * * *'
   workflow_dispatch:
     inputs:
       test_alerts:

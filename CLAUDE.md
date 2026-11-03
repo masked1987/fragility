@@ -244,8 +244,19 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   public. Offered: private repos (site needs GitHub Pro), password page (StatiCrypt-style,
   code still public), Cloudflare Pages + Access (free, but may ask for a card; private repo
   Actions = 2,000 min/month, so alerts every 30 min). Owner: can't pay a subscription,
-  "leave it as it is for now". Gave him a zip copy of both repos (all branches). Don't
-  re-offer unless he asks.
+  "leave it as it is for now". Gave him a zip copy of both repos (all branches).
+  3 Nov 2026 he asked again: "make it private so nobody can use it". Built (v=54) for
+  **Cloudflare Pages + own password** (no Zero Trust, so no card): `functions/_middleware.js`
+  (Pages Functions; GitHub Pages ignores it) asks one password (`SITE_PASSWORD`, cookie
+  `fx_auth` = sha256 of it, 1 year, so once per phone), and serves the private files with a
+  read-only token (`GH_TOKEN`): `/gh/fragility/data/{log.csv,state.json}` and the whole
+  Gamma Detrite page at `/gamma-detrite/` (same site, so the iframe, look sync and its
+  `gamma-data.json` fallback keep working). `config.js` / `app.js` pick these paths when
+  the host isn't github.io. Job schedules slowed for private minutes (2,000/month, both
+  repos): monitor every 30 min, gamma refresh every 2 h. His steps: Cloudflare account →
+  Pages → connect GitHub → fragility, branch gh-pages, no build; add the two variables;
+  open the site, log in; then make both repos private (GitHub Pages then stops). Then set
+  `siteUrl` in `tools/fragility/config.js` to the new address (alert tap link).
 - Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
   trades"): only **Trend** would be automatic, the rest he trades by hand; one IC Markets
   **MT5** account, phone only (MT5 Android can't run EAs). Options given: (1) the alert

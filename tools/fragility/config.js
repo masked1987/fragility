@@ -4,12 +4,18 @@
 // the band score 0, and the score rises linearly to 100 at the "full" edges.
 // APR = annualised percent.
 
+// On the private host (Cloudflare) the job's files come through the site itself
+// (functions/_middleware.js reads the private repo); on GitHub Pages, straight
+// from GitHub. In Node (the job) there is no location, so the GitHub address.
+const PRIVATE = typeof location !== 'undefined' && !/github\.io$/.test(location.hostname);
+const DATA = PRIVATE ? '/gh/fragility/data/' : 'https://raw.githubusercontent.com/masked1987/fragility/data/';
+
 export const CONFIG = {
   assets: ['ETH', 'BTC'],              // first one opens by default
   refreshMinutes: 5,
   siteUrl: 'https://masked1987.github.io/fragility/',
   // Written by the scheduled job (jobs/monitor.mjs) to the `data` branch.
-  historyUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/log.csv',
+  historyUrl: DATA + 'log.csv',
 
   // Points out of 100. Missing inputs are dropped and the rest re-weighted.
   weights: { funding: 25, basis: 15, oiLevel: 15, oiChange: 15, gamma: 30 },
@@ -37,7 +43,7 @@ export const CONFIG = {
     alerts: false }, // owner: "I don't need crossing alert gamma" (only Tactics 6/6). Levels are still picked
                      // and tracked for the Playbook; true turns the break / reversal / spike pushes back on.
   // The job saves the picked levels here; the Playbook reads them.
-  stateUrl: 'https://raw.githubusercontent.com/masked1987/fragility/data/state.json',
+  stateUrl: DATA + 'state.json',
 
   funding: { fullLow: -15, calmLow: 0, calmHigh: 10, fullHigh: 35 },  // APR
   basis: { fullLow: -5, calmLow: 3, calmHigh: 10, fullHigh: 25, targetDays: 90, minDays: 7 }, // APR
