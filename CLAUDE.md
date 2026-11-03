@@ -254,7 +254,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `gamma-data.json` fallback keep working). `config.js` / `app.js` pick these paths when
   the host isn't github.io. Job schedules slowed for private minutes (2,000/month, both
   repos): monitor every 30 min, gamma refresh every 2 h. His steps: Cloudflare account →
-  Pages → connect GitHub → fragility, branch gh-pages, no build; add the two variables;
+  Pages → connect GitHub → fragility, branch gh-pages, no build, **preview branches: None**
+  (else every `data` push by the job is a build; free = 500 a month); add the two variables;
   open the site, log in; then make both repos private (GitHub Pages then stops). Then set
   `siteUrl` in `tools/fragility/config.js` to the new address (alert tap link).
 - Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
