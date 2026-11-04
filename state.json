@@ -4,12 +4,12 @@
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1793791720540,
-    "ETH": 1793791720540
+    "BTC": 1793818135493,
+    "ETH": 1793818135493
   },
   "welcomed": true,
   "dealers": {
-    "ETH": "win"
+    "ETH": "even"
   },
   "levels": {
     "ETH": {
@@ -42,13 +42,20 @@
     }
   },
   "breaks": {
-    "ETH": []
+    "ETH": [
+      {
+        "level": 2400,
+        "dir": "up",
+        "at": 1793805300000,
+        "extreme": 2449.74
+      }
+    ]
   },
   "lastCandle": {
-    "ETH": 1793790000000
+    "ETH": 1793817000000
   },
   "lastClose": {
-    "ETH": 2330.16
+    "ETH": 2420.96
   },
   "quiet": {
     "ETH": {}
