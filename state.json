@@ -1,11 +1,11 @@
 {
   "zones": {
     "BTC": "Building",
-    "ETH": "Calm"
+    "ETH": "Building"
   },
   "lastLog": {
-    "BTC": 1793931187279,
-    "ETH": 1793931187279
+    "BTC": 1793958338644,
+    "ETH": 1793958338644
   },
   "welcomed": true,
   "dealers": {
@@ -37,7 +37,7 @@
         2400,
         2500
       ],
-      "picked": 1793893493663,
+      "picked": 1793958338644,
       "method": "oi-top"
     }
   },
@@ -45,10 +45,10 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1793929500000
+    "ETH": 1793957400000
   },
   "lastClose": {
-    "ETH": 2240.12
+    "ETH": 2239.05
   },
   "quiet": {
     "ETH": {}
