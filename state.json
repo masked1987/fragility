@@ -4,8 +4,8 @@
     "ETH": "Building"
   },
   "lastLog": {
-    "BTC": 1793958338644,
-    "ETH": 1793958338644
+    "BTC": 1793985762890,
+    "ETH": 1793985762890
   },
   "welcomed": true,
   "dealers": {
@@ -45,10 +45,10 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1793957400000
+    "ETH": 1793984400000
   },
   "lastClose": {
-    "ETH": 2239.05
+    "ETH": 2232.4
   },
   "quiet": {
     "ETH": {}
