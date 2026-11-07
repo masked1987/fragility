@@ -44,8 +44,10 @@ const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 // remove video rules strategy": Fragility zone changes and "ETH dealers now losing / no longer
 // losing" are off (their state is still tracked, so turning one back on doesn't ring for old
 // news); Tactics 6/6 went with the Tactics tab (removed from the site and this job the same
-// evening). On: Market Maker strategy, Alt Tactics, Trend.
-const PHONE = { zone: false, dealers: false };
+// evening). 7 Nov 2026, owner: "remove number 2 alert" (= Alt Tactics): Alt events are still
+// followed and marked sent, but don't ring (turning it back on won't ring old news).
+// On: Market Maker strategy, Trend (+ Vanna & Charm in jobs/vanna-flow.mjs).
+const PHONE = { zone: false, dealers: false, alt: false };
 const COLUMNS = ['time', 'asset', 'price', 'score', 'zone', 'funding', 'basis', 'oi_level', 'oi_change', 'gamma', 'coverage'];
 
 const firstRun = !existsSync(STATE);
@@ -180,7 +182,7 @@ for (const asset of CONFIG.assets) {
       const d = await collectAlt(asset, ALT_CONFIG);
       const st = state.alt[asset] = state.alt[asset] || { since: now, sent: {} };
       const ev = altEvents(d.decision, st.sent, st.since, now, ALT_MAX_AGE);
-      for (const e of ev) { st.sent[e.key] = now; pushes.push(altMessage(d, e)); }
+      for (const e of ev) { st.sent[e.key] = now; if (PHONE.alt) pushes.push(altMessage(d, e)); }
       for (const k of Object.keys(st.sent)) if (now - st.sent[k] > 10 * 864e5) delete st.sent[k];
       const o = d.decision.open;
       console.log(`${asset} alt: ${d.decision.action}` + (o ? ` (${o.side} from ~${px(o.level)}, stop ${num(o.signal.stop)})` : '') + (ev.length ? ` -> ${ev.map(e => e.kind).join(', ')}` : ''));
@@ -238,7 +240,7 @@ if (TEST) {
     pushes.push({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY: ' + (mmsNow.flip.last ? 'the last Market Maker strategy signal' : 'no signal in the last 30 days, so this uses today\'s numbers') +
       ' in the format of a real one (rings ' + MMS_REPEATS + ' times).\n' + p.body });
   }
-  if (altNow && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
+  if (altNow && PHONE.alt && (TEST === 'all' || TEST === 'true' || TEST === 'alt')) {
     // The last Alt signal in the ~3.5 days the tab sees, else a sample at the nearest huge
     // level below with a made-up 1% dip (so the test always shows the real format).
     const last = altNow.decision.setups.filter(x => x.taken).pop(), s = last || altSample(altNow);
@@ -289,7 +291,7 @@ if (!state.welcomedMMS && process.env.NTFY_TOPIC && mmsNow) {
 }
 
 // And the Alt Tactics alerts: one message saying what will come, with where things stand.
-if (!state.welcomedAlt && process.env.NTFY_TOPIC && altNow) {
+if (PHONE.alt && !state.welcomedAlt && process.env.NTFY_TOPIC && altNow) {
   state.welcomedAlt = true;
   const o = altNow.decision.open, w = altNow.decision.waiting;
   const nowLine = o ? `Now: ${o.side === 'buy' ? 'BUY' : 'SELL'} from ~${px(o.level)} running, entry ${num(o.signal.entry)}, stop loss ${num(o.signal.stop)}, target ~${px(o.signal.target)}.`

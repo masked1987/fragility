@@ -196,6 +196,10 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   (site and job). Workflow test
   choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
   how the old alerts worked, if he wants one back.
+- **Alt Tactics alerts OFF** (7 Nov 2026, owner: "remove number 2 alert", confirmed = Alt
+  Tactics): `PHONE.alt = false` in `jobs/monitor.mjs`; events still followed and marked sent
+  (no backlog if turned back on), no welcome, left out of test `all`. Alerts that ring now:
+  Market Maker strategy, Trend, Vanna & Charm (ETH). The Alt tab itself stays.
 - **Rings: every alert rings 2 times** (7 Nov 2026, owner: "I need all alerts only 2 times
   thats it"): `RINGS = 2` in `jobs/monitor.mjs` (BUY / SELL, WATCH, TP / SL hit, closed
   after 3 days, any priority 3+ push) and `jobs/vanna-flow.mjs` (label change; the first
