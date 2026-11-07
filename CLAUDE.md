@@ -130,6 +130,25 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    2024 and a 58% drop; offered, not taken). Offered a filter against sideways losses
    (average rising / close 2% above): owner "Nope stay as it is". Don't re-offer.
 
+9. **Vanna & Charm** (7 Nov 2026, short "Vanna"): ETH 24-hour Vanna + Charm flow. The owner
+   built it first in a ChatGPT site ("Crypto Gamma" / eth-gamma-observatory on chatgpt.site,
+   behind a ChatGPT sign-in, so it can't be fetched from here) and committed its rules and
+   alert to this repo himself (`shared/vanna-flow/core.mjs`, `jobs/vanna-flow.mjs`,
+   `test/vanna-flow.mjs`, commits by "Detrite"). Asked "copy everything ... make it public
+   since we need alerts": the reading now lives on our public site, `tools/vanna/`
+   (`collectFlow()` in collect.js is shared by the tab and the job, so they agree), alert
+   tap link = `#vanna`. Rules (keep identical to his dashboard): Deribit options, all
+   expiries, dealers long calls / short puts; hedge flow over 24h = −Charm − Vanna × IV move
+   for IV −3 / flat / +3; Bullish / Bearish if all three agree and the flat total is over
+   0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
+   GitHub and browsers get Bitget + Gate); strength weak < 0.1%, moderate ≤ 0.3%, strong,
+   one step up if dealers are net short gamma. Phone alert rings once (priority 3) when the
+   label changes; state `vanna-flow.json` on `data`. Workflow test choice `vanna`. Eight tabs
+   again: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px). v=55.
+   Also back to public: both repos were public all along (the Cloudflare lock was never
+   finished), so the alert job runs every 15 min again and Gamma Detrite refreshes every
+   15 min. `functions/_middleware.js` stays (harmless on GitHub Pages).
+
 ## How the owner works
 
 - Trades **ETHUSD only**. ETH is always the first coin and the default on every tab.
@@ -150,8 +169,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `index.html` from a file list: a NEW .js file must be added to that list
   (`node test/importmap.mjs` fails otherwise). Without it, a phone once mixed a
   new view.js with an old cached `shared/head.js` and four tabs went blank.
-- **Phone alerts now (2 Nov 2026, evening): only the 3 trade strategies, ETH:
-  Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
+- **Phone alerts now: the 3 trade strategies, ETH: Market Maker strategy, Alt Tactics,
+  Trend (2 Nov 2026), plus ETH Vanna & Charm label changes (7 Nov 2026).** Owner: "remove condition market alerts,
   also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
   no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
   state still tracked, log lines still printed). Then the Tactics tab itself was removed
@@ -254,9 +273,15 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `gamma-data.json` fallback keep working). `config.js` / `app.js` pick these paths when
   the host isn't github.io. Job schedules slowed for private minutes (2,000/month, both
   repos): monitor every 30 min, gamma refresh every 2 h. His steps: Cloudflare account →
-  Pages → connect GitHub → fragility, branch gh-pages, no build; add the two variables;
+  Pages → connect GitHub → fragility, branch gh-pages, no build, **preview branches: None**
+  (else every `data` push by the job is a build; free = 500 a month); add the two variables;
   open the site, log in; then make both repos private (GitHub Pages then stops). Then set
   `siteUrl` in `tools/fragility/config.js` to the new address (alert tap link).
+  Progress 3 Nov: Cloudflare account made, Pages project **fragility** → https://fragility.pages.dev
+  (branch gh-pages, deployed, answers "Locked: SITE_PASSWORD is not set"). He chose both repos in
+  the Cloudflare GitHub app (harmless). Still to do: GitHub token (fine-grained, Contents read-only,
+  both repos), the two secrets + retry deployment, preview branches None, check tabs, `siteUrl`,
+  then make both repos private. He said "I will set password later".
 - Auto-trading (asked 2 Nov 2026 "connect you to TradingView or IC Markets ... place
   trades"): only **Trend** would be automatic, the rest he trades by hand; one IC Markets
   **MT5** account, phone only (MT5 Android can't run EAs). Options given: (1) the alert

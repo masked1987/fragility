@@ -7,12 +7,12 @@ import { join } from 'path';
 function walk(dir) {
   return readdirSync(dir).flatMap(function (n) {
     const p = join(dir, n);
-    return statSync(p).isDirectory() ? walk(p) : (p.endsWith('.js') ? [p] : []);
+    return statSync(p).isDirectory() ? walk(p) : (/\.m?js$/.test(p) ? [p] : []);
   });
 }
 const onDisk = walk('tools').concat(walk('shared')).filter(function (p) { return !p.endsWith('/view.js'); }).sort();
 const html = readFileSync('index.html', 'utf8');
-const listed = [...html.matchAll(/^\s+'((?:tools|shared)\/[^']+\.js)',$/gm)].map(function (m) { return m[1]; }).sort();
+const listed = [...html.matchAll(/^\s+'((?:tools|shared)\/[^']+\.m?js)',$/gm)].map(function (m) { return m[1]; }).sort();
 const missing = onDisk.filter(function (p) { return !listed.includes(p); });
 const extra = listed.filter(function (p) { return !onDisk.includes(p); });
 const v1 = /assets\/style\.css\?v=(\d+)/.exec(html)[1], v2 = /assets\/app\.js\?v=(\d+)/.exec(html)[1];

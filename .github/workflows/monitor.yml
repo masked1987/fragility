@@ -1,17 +1,24 @@
 name: Fragility log and alerts
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'jobs/vanna-flow.mjs'
+      - 'shared/vanna-flow/**'
+      - 'tools/vanna/**'
+      - 'test/vanna-flow.mjs'
+      - '.github/workflows/monitor.yml'
   schedule:
-    # Every 30 minutes, off the round minutes that GitHub delays most. Private repos
-    # get 2,000 free job minutes a month (shared with gamma-detrite's refresh):
-    # 30-minute runs here (~1,440) + gamma every 2 hours (~360) stay inside it.
-    - cron: '7,37 * * * *'
+    # Every 15 minutes, off the round minutes that GitHub delays most (public repo:
+    # job minutes are free).
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend; check = is the ntfy topic OK and what does ntfy hold'
+        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend, vanna; check = is the ntfy topic OK and what does ntfy hold'
         type: choice
-        options: ['no', 'all', 'mm', 'alt', 'trend', 'check']
+        options: ['no', 'all', 'mm', 'alt', 'trend', 'vanna', 'check']
         default: 'no'
 
 permissions:
@@ -43,13 +50,44 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: node jobs/ntfy-check.mjs
 
+      - name: Verify ETH flow alert rules
+        id: vanna_rules
+        run: node test/vanna-flow.mjs
+
       - name: Score, alert, log
+        if: github.event_name != 'push' && inputs.test_alerts != 'vanna'
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           TEST_ALERTS: ${{ inputs.test_alerts }}
         run: node jobs/monitor.mjs store
 
+      - name: ETH 24-hour Vanna and Charm changes
+        if: ${{ !cancelled() && steps.vanna_rules.outcome == 'success' && inputs.test_alerts != 'vanna' }}
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node jobs/vanna-flow.mjs store
+
+      - name: Send ETH flow test notification
+        if: inputs.test_alerts == 'vanna'
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          node --input-type=module <<'JS'
+          import {collectReading, notification, publish} from './jobs/vanna-flow.mjs';
+          const reading = await collectReading();
+          if (!reading) throw Error('No fresh ETH flow reading; test was not sent');
+          const message = notification({reading}, reading);
+          message.title = '[test] ETH 24h flow alert';
+          message.tags = 'test_tube';
+          message.body = 'TEST ONLY: delivery check, not a market-change signal.\n' +
+            'Current ETH Vanna + Charm context: ' + reading.label + '.\n' +
+            message.body.split('\n').slice(1).join('\n');
+          const receipt = await publish(message, process.env.NTFY_TOPIC);
+          console.log('ETH flow test accepted by ntfy; receipt ' + receipt.id + '; current context ' + reading.label + '; alert baseline unchanged');
+          JS
+
       - name: Save log
+        if: ${{ !cancelled() }}
         working-directory: store
         run: |
           git config user.name "fragility-bot"
@@ -57,3 +95,4 @@ jobs:
           git add -A
           git diff --cached --quiet || git commit -q -m "log $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -q origin HEAD:data
+
