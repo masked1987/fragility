@@ -3,7 +3,7 @@
 // test/levels-once.py, huge levels 70%, 5-minute Ichimoku score, once per level).
 export const ALT_CONFIG = {
   assets: ['ETH', 'BTC'],  // first one opens by default
-  alertAssets: ['ETH'],    // phone alerts (jobs/monitor.mjs), ETH only like Tactics
+  alertAssets: ['ETH'],    // followed by jobs/monitor.mjs, ETH only; phone alerts OFF since 7 Nov 2026 (PHONE.alt)
   refreshSeconds: 60,
 
   // Huge levels: open contracts per strike (calls + puts, options expiring after minDays),

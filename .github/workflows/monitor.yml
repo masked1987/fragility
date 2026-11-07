@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend, Vanna & Charm), or one: mm, alt, trend, vanna; check = is the ntfy topic OK and what does ntfy hold'
+        description: 'Send [test] phone alerts: all (Market Maker strategy, Trend, Vanna & Charm), or one: mm, trend, vanna (alt: off); check = is the ntfy topic OK and what does ntfy hold'
         type: choice
         options: ['no', 'all', 'mm', 'alt', 'trend', 'vanna', 'check']
         default: 'no'
