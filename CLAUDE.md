@@ -162,7 +162,15 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    came before real turns"): each new reading appends one row to `vanna-log.csv` on the `data` branch
    (`appendLog()` / `logLine()` in `jobs/vanna-flow.mjs`: time, spot, label, strength, % of turnover,
    flow + label for IV -3 / flat / +3, sources, series). Nothing rings for it. After a few weeks: check
-   whether label changes came before turns (offer it; he asked how to spot sudden reversals). Rules: hedge flow over 24h = -Charm - Vanna x IV move for
+   whether label changes came before turns (offer it; he asked how to spot sudden reversals).
+   **Label history chart** (7 Nov 2026, asked "historical chart where everything is visible when vanna
+   and charm did change for bullish or bearish"): gamma-detrite `vhHtml()` / `vhLoad()`, under the
+   24-hour context card on the Vanna & Charm view (ETH only): Bitstamp ETH/USD price line, Bullish /
+   Bearish bands (Neutral uncoloured, a gap over 3 h = unknown), ▲ / ▼ / ○ at each change, 1D / 3D /
+   7D / 30D / All (15-min / 1h / 4h candles), and a table of changes with the move 4 h / 24 h later
+   (blue = price went the label's way). Reads the log from raw.githubusercontent (fallback
+   `/gh/fragility/data/vanna-log.csv`, allowed in `functions/_middleware.js`). History only from
+   7 Nov 2026 10:16 UTC; earlier readings can't be rebuilt (no free past open interest). v=60. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
    IV -3 / flat / +3; Bullish / Bearish only if all three agree and the flat total is over
    0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
    GitHub gets Bitget + Gate, his phone Binance + Bybit); strength weak < 0.1%, moderate

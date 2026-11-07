@@ -13,7 +13,7 @@ const OWNER = 'masked1987';
 
 // Path on this site → private repo file. Only these are served.
 const ROUTES = [
-  { prefix: '/gh/fragility/data/', repo: 'fragility', ref: 'data', only: ['log.csv', 'state.json'] },
+  { prefix: '/gh/fragility/data/', repo: 'fragility', ref: 'data', only: ['log.csv', 'state.json', 'vanna-log.csv'] },
   { prefix: '/gamma-detrite/', repo: 'gamma-detrite', ref: 'main' },
 ];
 
