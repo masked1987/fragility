@@ -4,29 +4,29 @@
     "version": 1,
     "asset": "ETH",
     "selection": "all",
-    "snapshotAt": 1794043998819,
-    "observedAt": 1794043999880,
+    "snapshotAt": 1794044974259,
+    "observedAt": 1794044975189,
     "label": "Neutral",
     "robust": false,
-    "spot": 2243.21,
-    "series": 610,
+    "spot": 2243.24,
+    "series": 612,
     "expiryCount": 12,
-    "pct": 0.23029597001833774,
+    "pct": 0.2311312798947029,
     "strength": "Neutral",
     "rows": [
       {
         "iv": -3,
-        "total": 30410290.940628983,
+        "total": 30469751.726333145,
         "label": "Bullish"
       },
       {
         "iv": 0,
-        "total": 10690077.404716054,
+        "total": 10740770.81758644,
         "label": "Bullish"
       },
       {
         "iv": 3,
-        "total": -9030136.131196873,
+        "total": -8988210.091160264,
         "label": "Bearish"
       }
     ],
@@ -34,7 +34,7 @@
       "Bitget",
       "Gate"
     ],
-    "turnover": 4641886440.246799,
+    "turnover": 4647043369.6727,
     "fallback": true
   },
   "lastNotification": null
