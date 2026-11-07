@@ -145,8 +145,8 @@ it into the job.
 
 The existing phone workflow also checks the Crypto Gamma **ETH 24-hour flow context**,
 using **all expiries**, at its existing `7,22,37,52 * * * *` schedule (every 15 minutes).
-The same reading is shown on the site's **Vanna & Charm** tab (`tools/vanna/`, shared
-`collectFlow()`), and the alert's tap link opens that tab.
+The same reading is the **Vanna & Charm** view on the Gamma tab (Gamma Detrite page, same
+rules in its `vanna-charm.js` / `vc-flow.js`), and the alert's tap link opens the Gamma tab.
 GitHub scheduling is best effort, so a brief change between checks can be missed.
 It works with the website closed and uses the same `NTFY_TOPIC` repository secret.
 

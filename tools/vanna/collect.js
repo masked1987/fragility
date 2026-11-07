@@ -1,6 +1,6 @@
-// ETH 24-hour Vanna + Charm reading. Browser-safe (no Node imports): the tab and the
-// phone alert (jobs/vanna-flow.mjs) both call collectFlow(), so they always agree on
-// the numbers, apart from which exchanges answer (see sources in the reading).
+// ETH 24-hour Vanna + Charm reading for the phone alert (jobs/vanna-flow.mjs). Same rules
+// as Gamma Detrite's Vanna & Charm view (its vanna-charm.js / vc-flow.js are copies of
+// shared/vanna-flow/core.mjs; CRYPTO_GAMMA_CHECKOUT=<folder> node test/vanna-flow.mjs checks).
 // Deribit: ETH index + every ETH option (OI, mark IV, forward). Turnover: the first
 // two of Binance, Bybit, Bitget, Gate, Deribit that answer (Binance / Bybit are blocked
 // on GitHub's servers and in some regions, so the alert usually uses Bitget + Gate).

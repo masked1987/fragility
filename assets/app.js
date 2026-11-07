@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=56';
+const V = '?v=57';
 // Private host (Cloudflare): Gamma Detrite is served from this site at /gamma-detrite/.
 const GAMMA = /github\.io$/.test(location.hostname) ? 'https://masked1987.github.io/gamma-detrite/' : '/gamma-detrite/';
 const TOOLS = [
@@ -13,7 +13,6 @@ const TOOLS = [
   { id: 'play', title: 'Playbook', short: 'Plan', load: function () { return import('../tools/playbook/view.js' + V); } },
   { id: 'alt', title: 'Alt Tactics', short: 'Alt', load: function () { return import('../tools/alt-tactics/view.js' + V); } },
   { id: 'trend', title: 'Trend', short: 'Trend', load: function () { return import('../tools/trend/view.js' + V); } },
-  { id: 'vanna', title: 'Vanna & Charm', short: 'Vanna', load: function () { return import('../tools/vanna/view.js' + V); } },
 ];
 
 const tabsEl = document.getElementById('tabs');

@@ -130,30 +130,39 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    2024 and a 58% drop; offered, not taken). Offered a filter against sideways losses
    (average rising / close 2% above): owner "Nope stay as it is". Don't re-offer.
 
-9. **Vanna & Charm** (7 Nov 2026, short "Vanna"): ETH 24-hour Vanna + Charm flow. The owner
-   built it first in a ChatGPT site ("Crypto Gamma" / eth-gamma-observatory on chatgpt.site,
-   behind a ChatGPT sign-in, so it can't be fetched from here) and committed its rules and
-   alert to this repo himself (`shared/vanna-flow/core.mjs`, `jobs/vanna-flow.mjs`,
-   `test/vanna-flow.mjs`, commits by "Detrite"). Asked "copy everything ... make it public
-   since we need alerts": the reading now lives on our public site, `tools/vanna/`
-   (`collectFlow()` in collect.js is shared by the tab and the job, so they agree), alert
-   tap link = `#vanna`. Rules (keep identical to his dashboard): Deribit options, all
-   expiries, dealers long calls / short puts; hedge flow over 24h = −Charm − Vanna × IV move
-   for IV −3 / flat / +3; Bullish / Bearish if all three agree and the flat total is over
+9. **Vanna & Charm** (7 Nov 2026): ETH 24-hour Vanna + Charm flow, now a **view on the Gamma
+   tab** (Gamma Detrite), copied from the owner's ChatGPT copy of this site ("Crypto Gamma",
+   eth-gamma-observatory on chatgpt.site, behind a ChatGPT login; he sent a screen recording,
+   frames read with ffmpeg). That copy = our site + two Gamma page views; the other tabs were
+   the same. Built in gamma-detrite `index.html`: the Near / Wide switch is now a 2x2 view
+   switch (`range` = near / wide / full / vc, saved as `gd.range`): **All expiries** (`viewFull()`:
+   every strike x every chosen expiry, an HTML table scrolling inside its box with sticky
+   strike column / date row) and **Vanna & Charm** (`drawVC()`): fetched time, meta line,
+   position assumption, 24-hour flow context card (label + pill IV-dependent / strength),
+   IV -3 / flat / +3 switch and three bar panels per strike (Vanna flow, Charm one day, Gamma
+   of the chosen expiries; nearest 11 or all strikes; tap a bar -> strike box), "What if
+   volatility changes?" table, "How strong is the context?" tiles (flow / turnover, gamma-
+   adjusted, DVOL last closed hour + 24h change, turnover), Retry data feeds, exchange status,
+   notes (4h DVOL, near-expiry concentration), and folds: recent DVOL move repeated, rules,
+   detailed exposures + exact Black-Scholes repricing one day ahead. Follows the expiry tabs.
+   Rules live in gamma-detrite `vanna-charm.js` (GreekAnalytics) and `vc-flow.js` (FlowContext),
+   built as copies of `shared/vanna-flow/core.mjs`; `CRYPTO_GAMMA_CHECKOUT=/home/user node
+   test/vanna-flow.mjs` (folder holding the gamma-detrite clone) checks they match (225
+   scenarios). Its gamma flip is the page's own (nearest sign change, ~2,251 on 7 Nov); the
+   ChatGPT copy showed 2,211.85 (different method), told the owner.
+   Phone alert (his own commits, "Detrite"): `jobs/vanna-flow.mjs` + `tools/vanna/collect.js`
+   (`collectFlow()`, browser-safe), rings once (priority 3) when the All-expiries label
+   changes Bullish / Bearish / Neutral; state `vanna-flow.json` on `data`; tap opens `#gamma`;
+   workflow test choice `vanna`. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
+   IV -3 / flat / +3; Bullish / Bearish only if all three agree and the flat total is over
    0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
-   GitHub and browsers get Bitget + Gate); strength weak < 0.1%, moderate ≤ 0.3%, strong,
-   one step up if dealers are net short gamma. Phone alert rings once (priority 3) when the
-   label changes; state `vanna-flow.json` on `data`. Workflow test choice `vanna`. Eight tabs
-   again: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px). v=55.
-   Also back to public: both repos were public all along (the Cloudflare lock was never
-   finished), so the alert job runs every 15 min again and Gamma Detrite refreshes every
-   15 min. `functions/_middleware.js` stays (harmless on GitHub Pages).
-   Then "copy whatever you find new, if problems copy whole website": the ChatGPT copy's other
-   files (its `gamma-detrite/vanna-charm.js`, `vc-flow.js`, named in the parity test) never
-   reached GitHub (checked every branch), so only what its committed code shows was added:
-   expiry choice on the Vanna tab like the Gamma page (All first and default = the alert;
-   Daily / Weekly / Monthly mixable; `forPick()` re-runs `prepare` + `bias` on the chosen
-   expiries). v=56. Asked him to have ChatGPT push its changes or send a zip for the rest.
+   GitHub gets Bitget + Gate, his phone Binance + Bybit); strength weak < 0.1%, moderate
+   <= 0.3%, strong, one step up if net gamma is negative.
+   History: first built as its own "Vanna" tab (v=55/56, with expiry choice), removed at v=57
+   once the recording showed it belongs on the Gamma page (7 tabs again, 7-tab padding).
+   Also: both repos were public all along (the Cloudflare lock was never finished), so the
+   alert job runs every 15 min again and Gamma Detrite refreshes every 15 min.
+   `functions/_middleware.js` stays (harmless on GitHub Pages).
 
 ## How the owner works
 

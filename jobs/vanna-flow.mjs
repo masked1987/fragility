@@ -3,9 +3,9 @@ import {readFileSync, writeFileSync, renameSync, existsSync} from 'node:fs';
 import {join, resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {fresh} from '../shared/vanna-flow/core.mjs';
-// The reading itself is shared with the site's Vanna tab, so card and alert agree.
+// The reading itself (tools/vanna/collect.js) uses the same rules as Gamma Detrite's Vanna & Charm view.
 import {collectReading, LABELS} from '../tools/vanna/collect.js';
-const SITE='https://masked1987.github.io/fragility/#vanna';
+const SITE='https://masked1987.github.io/fragility/#gamma'; // Gamma tab: Vanna & Charm view
 
 export {collectReading};
 function money(n){return (n<0?'-':n>0?'+':'')+'$'+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0});}
