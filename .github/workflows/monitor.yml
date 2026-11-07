@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend, vanna; check = is the ntfy topic OK and what does ntfy hold'
+        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend, Vanna & Charm), or one: mm, alt, trend, vanna; check = is the ntfy topic OK and what does ntfy hold'
         type: choice
         options: ['no', 'all', 'mm', 'alt', 'trend', 'vanna', 'check']
         default: 'no'
@@ -68,21 +68,22 @@ jobs:
         run: node jobs/vanna-flow.mjs store
 
       - name: Send ETH flow test notification
-        if: inputs.test_alerts == 'vanna'
+        if: inputs.test_alerts == 'vanna' || inputs.test_alerts == 'all'
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
           node --input-type=module <<'JS'
-          import {collectReading, notification, publish} from './jobs/vanna-flow.mjs';
+          import {collectReading, notification, publish, RINGS} from './jobs/vanna-flow.mjs';
           const reading = await collectReading();
           if (!reading) throw Error('No fresh ETH flow reading; test was not sent');
           const message = notification({reading}, reading);
           message.title = '[test] ETH 24h flow alert';
           message.tags = 'test_tube';
-          message.body = 'TEST ONLY: delivery check, not a market-change signal.\n' +
+          message.body = 'TEST ONLY: delivery check, not a market-change signal. A real change rings ' + RINGS + ' times, a minute apart.\n' +
             'Current ETH Vanna + Charm context: ' + reading.label + '.\n' +
             message.body.split('\n').slice(1).join('\n');
-          const receipt = await publish(message, process.env.NTFY_TOPIC);
+          const receipt = await publish({...message, title: message.title + ' [1/' + RINGS + ']'}, process.env.NTFY_TOPIC);
+          for (let k = 1; k < RINGS; k++) await publish({...message, title: message.title + ' [' + (k + 1) + '/' + RINGS + ']'}, process.env.NTFY_TOPIC, fetch, Math.floor(Date.now() / 1000) + 60 * k);
           console.log('ETH flow test accepted by ntfy; receipt ' + receipt.id + '; current context ' + reading.label + '; alert baseline unchanged');
           JS
 

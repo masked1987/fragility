@@ -220,7 +220,7 @@ for (const asset of CONFIG.assets) {
 
 // Test run: the real format of each alert that is on, marked [test], sent once each.
 if (TEST) {
-  const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: 1 });
+  const mark = (p, note) => ({ ...p, title: '[test] ' + p.title, body: 'TEST ONLY, nothing changed. ' + note + '\nA real alert looks like this:\n' + p.body, repeats: RINGS });
   if (PHONE.zone && (TEST === 'all' || TEST === 'true') && testNow.zone) {
     const { asset, r } = testNow.zone, zone = state.zones[asset];
     const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
