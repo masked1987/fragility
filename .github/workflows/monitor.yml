@@ -16,9 +16,9 @@ on:
   workflow_dispatch:
     inputs:
       test_alerts:
-        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend; check = is the ntfy topic OK and what does ntfy hold'
+        description: 'Send [test] phone alerts: all (Market Maker strategy, Alt, Trend), or one: mm, alt, trend, vanna; check = is the ntfy topic OK and what does ntfy hold'
         type: choice
-        options: ['no', 'all', 'mm', 'alt', 'trend', 'check']
+        options: ['no', 'all', 'mm', 'alt', 'trend', 'vanna', 'check']
         default: 'no'
 
 permissions:
@@ -55,17 +55,36 @@ jobs:
         run: node test/vanna-flow.mjs
 
       - name: Score, alert, log
-        if: github.event_name != 'push'
+        if: github.event_name != 'push' && inputs.test_alerts != 'vanna'
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           TEST_ALERTS: ${{ inputs.test_alerts }}
         run: node jobs/monitor.mjs store
 
       - name: ETH 24-hour Vanna and Charm changes
-        if: ${{ !cancelled() && steps.vanna_rules.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.vanna_rules.outcome == 'success' && inputs.test_alerts != 'vanna' }}
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: node jobs/vanna-flow.mjs store
+
+      - name: Send ETH flow test notification
+        if: inputs.test_alerts == 'vanna'
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          node --input-type=module <<'JS'
+          import {collectReading, notification, publish} from './jobs/vanna-flow.mjs';
+          const reading = await collectReading();
+          if (!reading) throw Error('No fresh ETH flow reading; test was not sent');
+          const message = notification({reading}, reading);
+          message.title = '[test] ETH 24h flow alert';
+          message.tags = 'test_tube';
+          message.body = 'TEST ONLY: delivery check, not a market-change signal.\n' +
+            'Current ETH Vanna + Charm context: ' + reading.label + '.\n' +
+            message.body.split('\n').slice(1).join('\n');
+          const receipt = await publish(message, process.env.NTFY_TOPIC);
+          console.log('ETH flow test accepted by ntfy; receipt ' + receipt.id + '; current context ' + reading.label + '; alert baseline unchanged');
+          JS
 
       - name: Save log
         if: ${{ !cancelled() }}
@@ -76,3 +95,4 @@ jobs:
           git add -A
           git diff --cached --quiet || git commit -q -m "log $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -q origin HEAD:data
+
