@@ -148,6 +148,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    Also back to public: both repos were public all along (the Cloudflare lock was never
    finished), so the alert job runs every 15 min again and Gamma Detrite refreshes every
    15 min. `functions/_middleware.js` stays (harmless on GitHub Pages).
+   Then "copy whatever you find new, if problems copy whole website": the ChatGPT copy's other
+   files (its `gamma-detrite/vanna-charm.js`, `vc-flow.js`, named in the parity test) never
+   reached GitHub (checked every branch), so only what its committed code shows was added:
+   expiry choice on the Vanna tab like the Gamma page (All first and default = the alert;
+   Daily / Weekly / Monthly mixable; `forPick()` re-runs `prepare` + `bias` on the chosen
+   expiries). v=56. Asked him to have ChatGPT push its changes or send a zip for the rest.
 
 ## How the owner works
 

@@ -5,6 +5,7 @@
 // alert job runs (jobs/vanna-flow.mjs).
 import { VANNA_CONFIG as CFG } from './config.js';
 import { collectFlow } from './collect.js';
+import { prepare, bias } from '../../shared/vanna-flow/core.mjs';
 import { CONFIG as FRAG } from '../fragility/config.js';
 import { headHtml, moreHtml } from '../../shared/head.js';
 
@@ -28,19 +29,65 @@ function ago(t) {
   return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 48 * 60 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago';
 }
 function expDay(t) { return new Date(t).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: '2-digit' }); }
+// Expiry choice, same as the Gamma Detrite page: All (first, the alert's view) or any mix of
+// Daily (the next expiry), Weekly (nearest Friday), Monthly (nearest last Friday of a month).
+const ONE = ['day', 'week', 'month'], PNAME = { day: 'Daily', week: 'Weekly', month: 'Monthly', all: 'All' };
+function isFri(e) { return new Date(e).getUTCDay() === 5; }
+function isMonthly(e) { return isFri(e) && new Date(e + 7 * 864e5).getUTCMonth() !== new Date(e).getUTCMonth(); }
+function chooseOne(exps, q) {
+  for (const e of exps) if (q === 'day' || (q === 'week' && isFri(e)) || (q === 'month' && isMonthly(e))) return [e];
+  return [];
+}
+function choose(exps, on) {
+  if (!on.length) return exps.slice();
+  return [].concat.apply([], on.map(function (q) { return chooseOne(exps, q); }))
+    .filter(function (e, i, a) { return a.indexOf(e) === i; }).sort(function (a, b) { return a - b; });
+}
+function dname(e) { return new Date(e).toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' }); }
+// The reading for the chosen expiries, in the same shape as collectFlow() gives for All.
+function forPick(d, on) {
+  if (!on.length) return d;
+  const exps = choose(d.raw.exps, on), book = prepare(d.raw, exps);
+  if (!book) return { ok: false, why: 'no usable options in the chosen expiries' };
+  const set = new Set(exps);
+  const netGamma = Object.keys(d.raw.cell).reduce(function (s, k) { return set.has(+k.split('|')[1]) ? s + d.raw.cell[k] : s; }, 0) / 1e6;
+  const result = bias(book.total.vanna, book.total.charm, d.basket.volume, netGamma, false);
+  const r = Object.assign({}, d.reading, {
+    label: result.label, robust: result.robust, pct: result.pct, series: book.records.length, expiryCount: book.expiries.length,
+    strength: result.label === 'Neutral' || result.label === 'Unavailable' ? 'Neutral' : ['Weak', 'Moderate', 'Strong'][result.adjusted],
+    rows: result.rows.map(function (x) { return { iv: x.iv, total: x.total, label: x.label }; }),
+  });
+  return Object.assign({}, d, { reading: r, result: result, book: book, netGamma: netGamma, pick: exps });
+}
+
 function tone(label) { return label === 'Bullish' ? 'win' : label === 'Bearish' ? 'lose' : 'even'; }
 
 export function mount(el) {
-  let data = null, alertState = null, loading = false;
+  let data = null, alertState = null, loading = false, on = [];   // [] = All (always opens on All)
 
   el.innerHTML =
-    '<div class="row between">' +
-      '<div class="seg"><button type="button" class="on">ETH</button></div>' +
-      '<button class="btn" id="vf-refresh" type="button">Refresh</button>' +
-    '</div>' +
+    '<div class="seg vf-exp" id="vf-exp"></div>' +
+    '<div class="row between"><span class="small muted">ETH · Deribit options</span><button class="btn" id="vf-refresh" type="button">Refresh</button></div>' +
     '<div id="vf-body"><section class="card"><p class="muted">Loading…</p></section></div>';
   const bodyEl = el.querySelector('#vf-body'), refreshBtn = el.querySelector('#vf-refresh');
   refreshBtn.addEventListener('click', refresh);
+  const expEl = el.querySelector('#vf-exp');
+  expEl.addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-q]');
+    if (!b) return;
+    const q = b.getAttribute('data-q');
+    if (q === 'all') on = [];
+    else on = on.indexOf(q) >= 0 ? on.filter(function (x) { return x !== q; }) : ONE.filter(function (x) { return x === q || on.indexOf(x) >= 0; });
+    render();
+  });
+  function tabsHtml() {
+    const exps = data && data.ok ? data.raw.exps : [];
+    return ['all'].concat(ONE).map(function (q) {
+      const act = q === 'all' ? !on.length : on.indexOf(q) >= 0, e = q === 'all' ? null : chooseOne(exps, q)[0];
+      return '<button type="button" data-q="' + q + '" class="' + (act ? 'on' : '') + '" aria-pressed="' + act + '">' + PNAME[q] +
+        (e ? '<small class="vf-d">' + dname(e) + '</small>' : q === 'all' && exps.length ? '<small class="vf-d">' + exps.length + ' dates</small>' : '') + '</button>';
+    }).join('');
+  }
 
   async function refresh() {
     if (loading) return;
@@ -60,14 +107,16 @@ export function mount(el) {
 
   function render() {
     if (!data) return;
-    if (!data.ok) {
+    expEl.innerHTML = tabsHtml();
+    const d = data.ok ? forPick(data, on) : data;
+    if (!d.ok) {
       bodyEl.innerHTML = '<section class="card verdict even"><div class="label">ETH · 24h flow</div>' +
-        headHtml('No reading: ' + data.why) +
+        headHtml('No reading: ' + d.why) +
         '<p class="verdict-action"><b>What it means:</b> nothing to read right now. It tries again in ' + Math.round(CFG.refreshSeconds / 60) + ' minutes, or tap Refresh.</p></section>' +
         alertHtml(null) + howHtml();
       return;
     }
-    bodyEl.innerHTML = readingHtml(data) + scenariosHtml(data) + alertHtml(data) + expiriesHtml(data) + howHtml();
+    bodyEl.innerHTML = readingHtml(d) + scenariosHtml(d) + alertHtml(data) + expiriesHtml(d) + howHtml();
   }
 
   function readingHtml(d) {
@@ -93,16 +142,17 @@ export function mount(el) {
       'Steady implied vol: dealers ' + flowWord(flat.total) + ' of ETH in 24h = ' + r.pct.toFixed(3) + '% of the day\'s ETH perpetual trading (' + usd(r.turnover) + ', ' + r.sources.join(' + ') + ').',
       'Time passing (Charm) alone: ' + flowWord(charmFlow) + ' a day. Each 1 point rise in implied vol (Vanna): ' + flowWord(vannaFlow) + '.',
       'Implied vol −3 / flat / +3 points: ' + r.rows.map(function (x) { return x.label; }).join(' / ') + (r.robust ? ' (all agree).' : ' (they disagree, so Neutral).'),
-      'Dealer gamma across all expiries: ' + (d.netGamma >= 0 ? 'long' : 'short') + ' ' + usd(Math.abs(d.netGamma) * 1e6) + ' per 1% move' +
+      'Dealer gamma across ' + (d.pick ? 'these expiries' : 'all expiries') + ': ' + (d.netGamma >= 0 ? 'long' : 'short') + ' ' + usd(Math.abs(d.netGamma) * 1e6) + ' per 1% move' +
         (d.netGamma < 0 ? ' (short gamma makes a clear lean one step stronger).' : '.'),
       'Spot ' + px(r.spot) + ' (Deribit index); ' + r.series + ' options over ' + r.expiryCount + ' expiries.' + (r.fallback ? ' Turnover from the backup exchanges (Binance / Bybit did not answer).' : ''),
     ];
     return '<section class="card verdict ' + tone(r.label) + '">' +
-      '<div class="label">ETH · 24h flow (Vanna + Charm)</div>' +
+      '<div class="label">ETH · 24h flow (Vanna + Charm) · ' + esc(d.pick ? d.pick.map(dname).join(' + ') : 'all expiries') + '</div>' +
       headHtml(head) +
       '<p class="verdict-action"><b>What it means:</b> ' + esc(meaning) + '</p>' +
       moreHtml('<ul class="verdict-lines small">' + lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>', lines.length) +
-      '<p class="muted small">Deribit options, all expiries; dealers assumed long calls, short puts. Updated ' + ago(d.fetched) + '. Context, not a trade signal.</p>' +
+      '<p class="muted small">Deribit options, ' + (d.pick ? 'only the chosen expir' + (d.pick.length > 1 ? 'ies' : 'y') + ' (the phone alert uses All)' : 'all expiries') +
+        '; dealers assumed long calls, short puts. Updated ' + ago(d.fetched) + '. Context, not a trade signal.</p>' +
     '</section>';
   }
 
@@ -161,6 +211,7 @@ export function mount(el) {
       '<li>Dealers hedge their options in ETH. When those Greeks shift their delta, they buy or sell ETH to stay flat. That buying or selling is the "flow".</li>' +
       '<li>Dealers are assumed long calls and short puts (same as every tab). Real dealer positions are not public, so this is a scenario, not their actual book.</li>' +
       '<li>The flow is compared with one day of ETH perpetual trading on two exchanges, so a small number is called Neutral.</li>' +
+      '<li>All = every expiry added up (what the phone alert uses). Daily / Weekly / Monthly switch on and off like on the Gamma page: the next expiry, the nearest Friday, the nearest last Friday of a month.</li>' +
       '<li>Same rules as your ChatGPT dashboard it came from, and the same code as the phone alert.</li>' +
       '</ul></section>';
   }
