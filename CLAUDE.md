@@ -196,6 +196,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   (site and job). Workflow test
   choices: all (= mm, alt, trend), mm, alt, trend, check. The history below describes
   how the old alerts worked, if he wants one back.
+- **Rings: every alert rings 2 times** (7 Nov 2026, owner: "I need all alerts only 2 times
+  thats it"): `RINGS = 2` in `jobs/monitor.mjs` (BUY / SELL, WATCH, TP / SL hit, closed
+  after 3 days, any priority 3+ push) and `jobs/vanna-flow.mjs` (label change; the first
+  ring must be acknowledged, the second is sent with ntfy `At` +60 s). Titles end [1/2],
+  [2/2]. Only Trend's quiet daily stop line (priority 2) comes once. Older "3 times" / "once"
+  notes below are history.
 - Phone alerts go through ntfy (topic in the `NTFY_TOPIC` repo secret; never
   write the topic name into the repo). Zone changes ring 3 times, a minute apart;
   so does "ETH dealers now losing". "No longer losing" rings once. "Tactics 6/6

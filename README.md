@@ -141,6 +141,10 @@ When the token expires the calls fail with `401`; generate a new one and paste
 it into the job.
 
 
+**Rings (7 Nov 2026):** every alert that rings now rings **2 times**, a minute apart
+(`RINGS` in `jobs/monitor.mjs` and `jobs/vanna-flow.mjs`); only quiet notes (Trend's daily
+stop line) come once. Older "3 times" / "once" wording above is history.
+
 ## ETH 24-hour Vanna + Charm change alerts — 6 November 2026
 
 The existing phone workflow also checks the Crypto Gamma **ETH 24-hour flow context**,
