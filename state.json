@@ -4,8 +4,8 @@
     "ETH": "Calm"
   },
   "lastLog": {
-    "BTC": 1794003541006,
-    "ETH": 1794003541006
+    "BTC": 1794017885212,
+    "ETH": 1794017885212
   },
   "welcomed": true,
   "dealers": {
@@ -45,10 +45,10 @@
     "ETH": []
   },
   "lastCandle": {
-    "ETH": 1794002400000
+    "ETH": 1794016800000
   },
   "lastClose": {
-    "ETH": 2239.37
+    "ETH": 2248.3
   },
   "quiet": {
     "ETH": {}
@@ -74,7 +74,7 @@
   "welcomedAlt": true,
   "trend": {
     "ETH": {
-      "at": 1793923200000,
+      "at": 1794009600000,
       "on": false
     }
   },
