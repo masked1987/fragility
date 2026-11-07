@@ -49,7 +49,7 @@ export async function collectFlow(fetcher, clock) {
     rows: result.rows.map(function (r) { return { iv: r.iv, total: r.total, label: r.label }; }),
     sources: basket.used.map(function (r) { return r.venue; }), turnover: basket.volume, fallback: basket.fallback,
   };
-  return { ok: true, reading: reading, result: result, book: book, basket: basket, netGamma: netGamma };
+  return { ok: true, reading: reading, result: result, book: book, basket: basket, netGamma: netGamma, raw: raw };
 }
 
 // What the alert job stores and compares (null when there is no valid reading).
