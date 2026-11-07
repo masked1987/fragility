@@ -4,29 +4,29 @@
     "version": 1,
     "asset": "ETH",
     "selection": "all",
-    "snapshotAt": 1794047600117,
-    "observedAt": 1794047601107,
+    "snapshotAt": 1794063364476,
+    "observedAt": 1794063364989,
     "label": "Neutral",
     "robust": false,
-    "spot": 2241.42,
-    "series": 613,
+    "spot": 2243.41,
+    "series": 621,
     "expiryCount": 12,
-    "pct": 0.25859829960039105,
+    "pct": 0.42904873999723553,
     "strength": "Neutral",
     "rows": [
       {
         "iv": -3,
-        "total": 31705096.62684429,
+        "total": 32992172.754111648,
         "label": "Bullish"
       },
       {
         "iv": 0,
-        "total": 11913155.663416099,
+        "total": 13250283.930147227,
         "label": "Bullish"
       },
       {
         "iv": 3,
-        "total": -7878785.300012093,
+        "total": -6491604.893817194,
         "label": "Bearish"
       }
     ],
@@ -34,26 +34,26 @@
       "Bitget",
       "Gate"
     ],
-    "turnover": 4606819024.6515,
+    "turnover": 3088293402.3375998,
     "fallback": true,
     "day": {
       "expiry": 1794124800000,
       "label": "Bullish",
-      "pct": 0.051704622692936644,
+      "pct": 0.09869489194267297,
       "rows": [
         {
           "iv": -3,
-          "total": 2679049.8386653727,
+          "total": 3326597.725921509,
           "label": "Bullish"
         },
         {
           "iv": 0,
-          "total": 2381938.3948424817,
+          "total": 3047987.836309793,
           "label": "Bullish"
         },
         {
           "iv": 3,
-          "total": 2084826.951019591,
+          "total": 2769377.946698077,
           "label": "Bullish"
         }
       ]
@@ -61,21 +61,21 @@
     "week": {
       "expiry": 1794556800000,
       "label": "Bullish",
-      "pct": 0.07745876153991085,
+      "pct": 0.12097286425238704,
       "rows": [
         {
           "iv": -3,
-          "total": 5653487.156227939,
+          "total": 5781714.217254146,
           "label": "Bullish"
         },
         {
           "iv": 0,
-          "total": 3568384.9628800526,
+          "total": 3735996.98532529,
           "label": "Bullish"
         },
         {
           "iv": 3,
-          "total": 1483282.769532167,
+          "total": 1690279.7533964338,
           "label": "Bullish"
         }
       ]
@@ -83,21 +83,21 @@
     "month": {
       "expiry": 1795766400000,
       "label": "Neutral",
-      "pct": 0.02686030819541611,
+      "pct": 0.041012921371290104,
       "rows": [
         {
           "iv": -3,
-          "total": 3725487.375017973,
+          "total": 3761454.175034414,
           "label": "Bullish"
         },
         {
           "iv": 0,
-          "total": 1237405.7880264553,
+          "total": 1266599.3448154598,
           "label": "Bullish"
         },
         {
           "iv": 3,
-          "total": -1250675.7989650625,
+          "total": -1228255.4854034942,
           "label": "Bearish"
         }
       ]
