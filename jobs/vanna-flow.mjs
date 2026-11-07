@@ -2,40 +2,12 @@
 import {readFileSync, writeFileSync, renameSync, existsSync} from 'node:fs';
 import {join, resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {venues, fresh, feedUrls, volumeRecord, volumeSelection, bias, prepare, parse} from '../shared/vanna-flow/core.mjs';
-const LABELS=['Bullish','Bearish','Neutral'];
-const SITE='https://eth-gamma-observatory-cezary.masked1987.chatgpt.site/#gamma';
+import {fresh} from '../shared/vanna-flow/core.mjs';
+// The reading itself is shared with the site's Vanna tab, so card and alert agree.
+import {collectReading, LABELS} from '../tools/vanna/collect.js';
+const SITE='https://masked1987.github.io/fragility/#vanna';
 
-async function json(url,fetcher){
-  const r=await fetcher(url,{cache:'no-store',signal:AbortSignal.timeout(15000)});
-  if(!r.ok)throw Error(`HTTP ${r.status}`);
-  const j=await r.json();if(j.error)throw Error('Exchange error');return j;
-}
-export async function collectReading(fetcher=fetch,clock=Date.now){
-  const started=clock(),base='https://www.deribit.com/api/v2/public/';
-  const responses=await Promise.allSettled([
-    json(base+'get_index_price?index_name=eth_usd',fetcher),
-    json(base+'get_book_summary_by_currency?currency=ETH&kind=option',fetcher),
-    ...feedUrls('ETH').map(url=>json(url,fetcher))
-  ]);
-  const now=clock();
-  if(!fresh(started,now)||responses[0].status!=='fulfilled'||responses[1].status!=='fulfilled')return null;
-  const index=responses[0].value,chain=responses[1].value;
-  for(const j of [index,chain])if(j.usOut!=null&&!fresh(Number(j.usOut)/1000,now))return null;
-  const spot=index.result?.index_price;
-  if(!Number.isFinite(spot)||spot<=0||!Array.isArray(chain.result)||!chain.result.length)return null;
-  const raw=parse(chain.result,spot,started),book=prepare(raw,raw.exps);if(!book)return null;
-  const records={};venues.forEach((v,i)=>{const r=responses[i+2];if(r.status==='fulfilled'){const value=volumeRecord(v,r.value,'ETH',now);if(value)records[v]=value;}});
-  const basket=volumeSelection({asset:'ETH',records},now);if(!basket.complete)return null;
-  const netGamma=Object.values(raw.cell).reduce((s,g)=>s+g,0)/1e6;
-  const result=bias(book.total.vanna,book.total.charm,basket.volume,netGamma,false);
-  if(!LABELS.includes(result.label)||!Number.isFinite(result.pct)||!result.rows.every(r=>Number.isFinite(r.total)))return null;
-  return {version:1,asset:'ETH',selection:'all',snapshotAt:started,observedAt:now,label:result.label,
-    robust:result.robust,spot,series:book.records.length,expiryCount:book.expiries.length,
-    pct:result.pct,strength:result.label==='Neutral'?'Neutral':['Weak','Moderate','Strong'][result.adjusted],
-    rows:result.rows.map(({iv,total,label})=>({iv,total,label})),
-    sources:basket.used.map(r=>r.venue),turnover:basket.volume,fallback:basket.fallback};
-}
+export {collectReading};
 function money(n){return (n<0?'-':n>0?'+':'')+'$'+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0});}
 export function notification(previous,reading){
   const old=previous.reading,time=new Date(reading.observedAt).toLocaleString('en-GB',{timeZone:'Europe/London',dateStyle:'medium',timeStyle:'short'});

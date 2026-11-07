@@ -130,6 +130,25 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    2024 and a 58% drop; offered, not taken). Offered a filter against sideways losses
    (average rising / close 2% above): owner "Nope stay as it is". Don't re-offer.
 
+9. **Vanna & Charm** (7 Nov 2026, short "Vanna"): ETH 24-hour Vanna + Charm flow. The owner
+   built it first in a ChatGPT site ("Crypto Gamma" / eth-gamma-observatory on chatgpt.site,
+   behind a ChatGPT sign-in, so it can't be fetched from here) and committed its rules and
+   alert to this repo himself (`shared/vanna-flow/core.mjs`, `jobs/vanna-flow.mjs`,
+   `test/vanna-flow.mjs`, commits by "Detrite"). Asked "copy everything ... make it public
+   since we need alerts": the reading now lives on our public site, `tools/vanna/`
+   (`collectFlow()` in collect.js is shared by the tab and the job, so they agree), alert
+   tap link = `#vanna`. Rules (keep identical to his dashboard): Deribit options, all
+   expiries, dealers long calls / short puts; hedge flow over 24h = −Charm − Vanna × IV move
+   for IV −3 / flat / +3; Bullish / Bearish if all three agree and the flat total is over
+   0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
+   GitHub and browsers get Bitget + Gate); strength weak < 0.1%, moderate ≤ 0.3%, strong,
+   one step up if dealers are net short gamma. Phone alert rings once (priority 3) when the
+   label changes; state `vanna-flow.json` on `data`. Workflow test choice `vanna`. Eight tabs
+   again: phone padding 2.5px / 13.5px (1.5px / 12.5px under 380px). v=55.
+   Also back to public: both repos were public all along (the Cloudflare lock was never
+   finished), so the alert job runs every 15 min again and Gamma Detrite refreshes every
+   15 min. `functions/_middleware.js` stays (harmless on GitHub Pages).
+
 ## How the owner works
 
 - Trades **ETHUSD only**. ETH is always the first coin and the default on every tab.
@@ -150,8 +169,8 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
   `index.html` from a file list: a NEW .js file must be added to that list
   (`node test/importmap.mjs` fails otherwise). Without it, a phone once mixed a
   new view.js with an old cached `shared/head.js` and four tabs went blank.
-- **Phone alerts now (2 Nov 2026, evening): only the 3 trade strategies, ETH:
-  Market Maker strategy, Alt Tactics, Trend.** Owner: "remove condition market alerts,
+- **Phone alerts now: the 3 trade strategies, ETH: Market Maker strategy, Alt Tactics,
+  Trend (2 Nov 2026), plus ETH Vanna & Charm label changes (7 Nov 2026).** Owner: "remove condition market alerts,
   also remove video rules strategy": Fragility zone changes, "ETH dealers now losing /
   no longer losing" and Tactics 6/6 no longer ring (`PHONE` flags in `jobs/monitor.mjs`;
   state still tracked, log lines still printed). Then the Tactics tab itself was removed
