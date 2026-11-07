@@ -139,3 +139,36 @@ extra runs are harmless (one runs at a time, the log is still hourly).
 
 When the token expires the calls fail with `401`; generate a new one and paste
 it into the job.
+
+
+## ETH 24-hour Vanna + Charm change alerts — 6 November 2026
+
+The existing phone workflow also checks the Crypto Gamma **ETH 24-hour flow context**,
+using **all expiries**, at its existing `7,37 * * * *` schedule (every 30 minutes).
+GitHub scheduling is best effort, so a brief change between checks can be missed.
+It works with the website closed and uses the same `NTFY_TOPIC` repository secret.
+
+One notification is sent when the main label changes between Bullish, Bearish and
+Neutral. A first valid reading establishes a quiet baseline. A change in numbers or
+strength alone does not notify. Unavailable, stale or incomplete data does not replace
+the baseline or trigger an alert. Failed ntfy delivery retains the previous label for
+retry on the next run; successful delivery is acknowledged before state is advanced.
+The workflow serializes writes to the `data` branch; state is `vanna-flow.json`.
+As with other polling alerts, delivery may duplicate after an ambiguous network timeout
+or a failure to persist state after sending; there is no exactly-once guarantee.
+
+The model matches the private dashboard's 6 November flow rules: Vanna and Charm
+computed from Deribit inverse options, long-call/short-put dealer assumption,
+IV -3/flat/+3 scenarios, Neutral when the scenarios disagree, and the same 0.01%
+turnover neutral band. The volume collector prefers Binance + Bybit, then Bitget,
+Gate and Deribit. Two fresh venues are required. Notifications name the sources and
+warn if the selected basket changed. A browser in another region may select different
+volume feeds, which can change a threshold-based label. These are research scenarios,
+not observed dealer inventory or trade instructions.
+
+`node test/vanna-flow.mjs` verifies the alert state machine and feed handling.
+`CRYPTO_GAMMA_CHECKOUT=/path/to/site node test/vanna-flow.mjs` also checks parity with
+the dashboard's calculation modules. `node jobs/vanna-flow.mjs store --dry-run` reads
+live data without writing state or sending a notification. Pushes changing these alert
+files validate and initialize this alert only; the other strategy jobs retain their
+normal scheduled/manual behavior. No synthetic market-change message is sent on setup.
