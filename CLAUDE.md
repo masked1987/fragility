@@ -859,7 +859,20 @@ The owner's own method, built from the version that tested best
   the Alt test sent nothing.
 - Seven tabs: phone tab padding tightened (4px, 3px under 380px) so all fit.
 
-## Where we stopped (handover, 2 Nov 2026 evening)
+## Where we stopped (handover, 7 Nov 2026)
+
+Owner: "No thank you" (done for the day). All live: fragility v=62, gamma-detrite main.
+- Vanna & Charm: every reading saved (`vanna-log.csv`, All + Daily + Weekly + Monthly), history chart
+  with All / Daily / Weekly / Monthly tabs on the Gamma page. Collecting data; after ~1 week say how
+  many changes are saved, after a few weeks compare the four (and looser rules) in %, first half to
+  pick, second half to check. Remind him the table's 4h / 24h columns matter more than how arrows look.
+- Asked "chances with gamma levels % wise": answered from the old results (huge levels 18% win, best 2
+  trades = all profit; daily blue zones about break-even; Market Maker strategy and Trend held up).
+- His open trade (MT5 screenshot): ETHUSD buy 0.04 at 2,221.85 on 30 Oct, SL 2,169, no TP (aims ~2,500),
+  swap about £0.03 a night; balance £5.02. Told him the SL would cost ~£1.85 (~a third of the account);
+  he said "I am ok with all above". Don't raise the size again.
+
+## Earlier handover (2 Nov 2026 evening)
 
 Owner: "for now done, we continue tomorrow". Everything below is live and published
 (fragility v=53, gamma-detrite main); nothing half-built. Ask what he wants next.
