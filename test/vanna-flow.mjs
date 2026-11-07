@@ -42,7 +42,7 @@ next=await advance(prior,at(7000,'Bearish'),send,now+7000+601000);assert.equal(n
 next=await advance(prior,at(7000,'Bearish'),async()=>{throw Error('timeout')},now+7000);assert.equal(next.state,prior,'do not consume failed notification');
 next=await advance(prior,at(8000,'Bearish'),send,now+8000);assert.equal(next.action,'notified');
 assert.equal((await advance(next.state,at(8000,'Bearish'),send,now+9000)).action,'already checked');
-const changed=notification(prior,at(9000,'Bearish',{sources:['Gate','Deribit']}));assert.match(changed.body,/Sources changed/);assert.match(changed.body,/All expiries/);assert.match(changed.click,/masked1987\.github\.io\/fragility\/#vanna/);
+const changed=notification(prior,at(9000,'Bearish',{sources:['Gate','Deribit']}));assert.match(changed.body,/Sources changed/);assert.match(changed.body,/All expiries/);assert.match(changed.click,/masked1987\.github\.io\/fragility\/#gamma/);
 let requests=[];const mock=async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({event:'message',id:'test-delivery'})}};
 assert.deepEqual(await publish(sent[0],'test-only-topic',mock),{id:'test-delivery'});assert.equal(requests.length,1);assert.equal(requests[0].options.method,'POST');assert.equal(requests[0].options.body,sent[0].body);
 await assert.rejects(publish(sent[0],'',mock));
