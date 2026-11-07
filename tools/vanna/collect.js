@@ -14,6 +14,23 @@ async function json(url, fetcher) {
   const j = await r.json(); if (j.error) throw Error('Exchange error'); return j;
 }
 
+// Background readings for single expiries (7 Nov 2026, owner said yes to saving Daily and Weekly
+// next to All, to compare versions later). Same picking as Gamma Detrite's expiry tabs: Daily = the
+// very next expiry, Weekly = the nearest Friday. Same turnover, same rules; never used for alerts.
+const isFri = function (e) { return new Date(e).getUTCDay() === 5; };
+export function pickExpiry(exps, which) {
+  for (const e of exps) if (which === 'day' || (which === 'week' && isFri(e))) return e;
+  return null;
+}
+export function singleExpiry(raw, which, volume) {
+  const e = pickExpiry(raw.exps, which); if (e == null) return null;
+  const book = prepare(raw, [e]); if (!book) return null;
+  let g = 0; for (const k of Object.keys(raw.cell)) if (+k.split('|')[1] === e) g += raw.cell[k];
+  const r = bias(book.total.vanna, book.total.charm, volume, g / 1e6, false);
+  if (!LABELS.includes(r.label) || !r.rows.every(function (x) { return Number.isFinite(x.total); })) return null;
+  return { expiry: e, label: r.label, pct: r.pct, rows: r.rows.map(function (x) { return { iv: x.iv, total: x.total, label: x.label }; }) };
+}
+
 // { ok: true, reading, book, basket, netGamma } or { ok: false, why }.
 export async function collectFlow(fetcher, clock) {
   fetcher = fetcher || function (u, o) { return fetch(u, o); };
@@ -48,6 +65,7 @@ export async function collectFlow(fetcher, clock) {
     pct: result.pct, strength: result.label === 'Neutral' ? 'Neutral' : ['Weak', 'Moderate', 'Strong'][result.adjusted],
     rows: result.rows.map(function (r) { return { iv: r.iv, total: r.total, label: r.label }; }),
     sources: basket.used.map(function (r) { return r.venue; }), turnover: basket.volume, fallback: basket.fallback,
+    day: singleExpiry(raw, 'day', basket.volume), week: singleExpiry(raw, 'week', basket.volume),
   };
   return { ok: true, reading: reading, result: result, book: book, basket: basket, netGamma: netGamma, raw: raw };
 }

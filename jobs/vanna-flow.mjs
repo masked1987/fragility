@@ -36,14 +36,21 @@ export async function advance(previous,reading,send,now=Date.now()){
 }
 // 7 Nov 2026, owner said yes to "save every reading", to check later whether label changes came
 // before real turns: one CSV row per new reading, in the same store folder (data branch).
-export const LOG_HEADER='time_utc,spot,label,strength,pct_turnover,flow_iv_minus3,flow_flat,flow_iv_plus3,label_iv_minus3,label_flat,label_iv_plus3,sources,series';
+export const LOG_HEADER='time_utc,spot,label,strength,pct_turnover,flow_iv_minus3,flow_flat,flow_iv_plus3,label_iv_minus3,label_flat,label_iv_plus3,sources,series'+
+  // Daily (next expiry) and Weekly (nearest Friday) alone, background only (added 7 Nov 2026)
+  ['day','week'].map(function(w){return [w+'_expiry',w+'_label',w+'_pct',w+'_flow_iv_minus3',w+'_flow_flat',w+'_flow_iv_plus3'].join(',')}).map(function(x){return ','+x}).join('');
 export function logLine(r){
   const [down,flat,up]=r.rows,usd=n=>Math.round(n);
   return [new Date(r.observedAt).toISOString().slice(0,16)+'Z',r.spot.toFixed(2),r.label,r.strength,r.pct.toFixed(4),
-    usd(down.total),usd(flat.total),usd(up.total),down.label,flat.label,up.label,r.sources.join('+')+(r.fallback?' (backup)':''),r.series].join(',');
+    usd(down.total),usd(flat.total),usd(up.total),down.label,flat.label,up.label,r.sources.join('+')+(r.fallback?' (backup)':''),r.series]
+    .concat(...['day','week'].map(function(w){const x=r[w];return x?[new Date(x.expiry).toISOString().slice(0,10),x.label,x.pct==null?'':x.pct.toFixed(4)].concat(x.rows.map(function(q){return usd(q.total)})):['','','','','','']})).join(',');
 }
 export function appendLog(path,reading){
   if(!existsSync(path))writeFileSync(path,LOG_HEADER+'\n');
+  else{ // columns added since the file was started: new header, older rows padded with empty fields
+    const lines=readFileSync(path,'utf8').trim().split('\n'),n=LOG_HEADER.split(',').length;
+    if(lines[0]!==LOG_HEADER)writeFileSync(path,[LOG_HEADER].concat(lines.slice(1).map(function(l){const k=l.split(',').length;return k<n?l+','.repeat(n-k):l})).join('\n')+'\n');
+  }
   appendFileSync(path,logLine(reading)+'\n');
 }
 // 7 Nov 2026, owner: "I need all alerts only 2 times": a label change rings RINGS times, a minute apart.

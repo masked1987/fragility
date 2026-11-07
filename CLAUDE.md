@@ -170,7 +170,13 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    7D / 30D / All (15-min / 1h / 4h candles), and a table of changes with the move 4 h / 24 h later
    (blue = price went the label's way). Reads the log from raw.githubusercontent (fallback
    `/gh/fragility/data/vanna-log.csv`, allowed in `functions/_middleware.js`). History only from
-   7 Nov 2026 10:16 UTC; earlier readings can't be rebuilt (no free past open interest). v=60. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
+   7 Nov 2026 10:16 UTC; earlier readings can't be rebuilt (no free past open interest). v=60.
+   **Daily / Weekly saved too** (7 Nov 2026, owner said yes): every log row also holds the reading for
+   the next expiry alone (`day_*`) and the nearest Friday alone (`week_*`): expiry, label, % of
+   turnover, flow for IV -3 / flat / +3 (`singleExpiry()` in `tools/vanna/collect.js`, same picking as
+   the page's expiry tabs). Background only: alert, chart and page unchanged. Plan: in a few weeks
+   compare All vs Daily vs Weekly, and looser rules (flat case only, other neutral band) from the same
+   log; pick on the first half, check on the second. Ask before changing the live rules. v=61. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
    IV -3 / flat / +3; Bullish / Bearish only if all three agree and the flat total is over
    0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
    GitHub gets Bitget + Gate, his phone Binance + Bybit); strength weak < 0.1%, moderate
