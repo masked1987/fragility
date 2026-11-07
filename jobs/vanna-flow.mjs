@@ -34,10 +34,13 @@ export async function advance(previous,reading,send,now=Date.now()){
   }
   return {state:{version:1,reading,lastNotification:receipt?{id:receipt.id,from:old.label,to:reading.label,at:reading.observedAt}:previous?.lastNotification||null},action};
 }
-export async function publish(message,topic,fetcher=fetch){
+// 7 Nov 2026, owner: "I need all alerts only 2 times": a label change rings RINGS times, a minute apart.
+export const RINGS=2;
+export async function publish(message,topic,fetcher=fetch,at){
   if(!topic||!topic.trim())throw Error('NTFY_TOPIC is not configured');
-  const r=await fetcher('https://ntfy.sh/'+encodeURIComponent(topic),{method:'POST',signal:AbortSignal.timeout(15000),body:message.body,
-    headers:{Title:message.title,Priority:String(message.priority),Tags:message.tags,Click:message.click}});
+  const headers={Title:message.title,Priority:String(message.priority),Tags:message.tags,Click:message.click};
+  if(at)headers.At=String(at); // ntfy holds it and delivers at this time (unix seconds)
+  const r=await fetcher('https://ntfy.sh/'+encodeURIComponent(topic),{method:'POST',signal:AbortSignal.timeout(15000),body:message.body,headers});
   if(!r.ok)throw Error(`ntfy HTTP ${r.status}`);
   const ack=await r.json();if(ack.event!=='message'||typeof ack.id!=='string'||!ack.id)throw Error('ntfy did not acknowledge message');
   return {id:ack.id}; // Never persist the topic, which also authorizes subscriptions.
@@ -48,7 +51,16 @@ async function main(){
   const previous=existsSync(path)?JSON.parse(readFileSync(path,'utf8')):null;
   const reading=await collectReading();
   if(dry){console.log(JSON.stringify({dryRun:true,reading}));return;}
-  const result=await advance(previous,reading,m=>publish(m,process.env.NTFY_TOPIC));
+  // First ring must be acknowledged (else the label is retried next run); later rings are best effort.
+  const ring=async m=>{
+    const receipt=await publish({...m,title:`${m.title} [1/${RINGS}]`},process.env.NTFY_TOPIC);
+    for(let k=1;k<RINGS;k++){
+      try{await publish({...m,title:`${m.title} [${k+1}/${RINGS}]`},process.env.NTFY_TOPIC,fetch,Math.floor(Date.now()/1000)+60*k);}
+      catch(e){console.error(`ring ${k+1} not sent: ${e.message}`);}
+    }
+    return receipt;
+  };
+  const result=await advance(previous,reading,ring);
   if(result.state&&result.state!==previous){const temporary=path+'.tmp';writeFileSync(temporary,JSON.stringify(result.state,null,2)+'\n');renameSync(temporary,path);}
   console.log(`ETH 24h flow: ${reading?.label||'unavailable'}; ${result.action}`+(reading?`; ${reading.sources.join(' + ')}; ${reading.series} series`:''));
   if(result.action.startsWith('delivery failed'))throw Error('ntfy delivery failed; previous label retained for retry');

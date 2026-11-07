@@ -2,7 +2,7 @@
 // outside-strategies test (test/outside-strategies.mjs, asked 2 Nov 2026).
 export const TREND_CONFIG = {
   assets: ['ETH', 'BTC'],   // first one opens by default
-  alertAssets: ['ETH'],     // phone alerts (jobs/monitor.mjs): BUY / SELL ring 3 times, a quiet daily line while IN
+  alertAssets: ['ETH'],     // phone alerts (jobs/monitor.mjs): BUY / SELL ring 2 times, a quiet daily line while IN
   alertMaxHours: 72,        // crossings older than this are not pushed (the job can run hours late)
   days: 50,                 // the average: last 50 daily closes (00:00 UTC)
   costSide: 0.0005,         // 0.05% a side, as in the test

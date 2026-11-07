@@ -30,12 +30,15 @@ const DIR = process.argv[2] || 'store';
 const STATE = join(DIR, 'state.json');
 const LOG = join(DIR, 'log.csv');
 const LOG_EVERY_MS = 55 * 60e3; // the job runs every 15 min; log about hourly
-const ZONE_REPEATS = 3;           // a zone change rings this many times...
+// 7 Nov 2026, owner: "I need all alerts only 2 times". Every alert that rings (priority 3+)
+// rings RINGS times, a minute apart; quiet priority-2 notes (Trend's daily stop line) stay single.
+const RINGS = 2;
+const ZONE_REPEATS = RINGS;       // a zone change rings this many times...
 const REPEAT_GAP_S = 60;          // ...this many seconds apart, then stops
-const ALT_REPEATS = 3;            // Alt Tactics BUY / SELL rings like Tactics 6/6
+const ALT_REPEATS = RINGS;            // Alt Tactics BUY / SELL rings like Tactics 6/6
 const ALT_MAX_AGE = 24 * 36e5;    // Alt events older than this are not pushed (the job can run hours late)
-const MMS_REPEATS = 3;            // Market Maker strategy BUY / SELL rings like the other trade alerts
-const TREND_REPEATS = 3;          // Trend BUY / SELL (daily close crosses the 50-day average) rings like the other trade alerts
+const MMS_REPEATS = RINGS;            // Market Maker strategy BUY / SELL rings like the other trade alerts
+const TREND_REPEATS = RINGS;          // Trend BUY / SELL (daily close crosses the 50-day average) rings like the other trade alerts
 const SIDE_WORDS = { win: 'winning', even: 'balanced', lose: 'losing' };
 // Which alerts may ring the phone. 2 Nov 2026, owner: "remove condition market alerts, also
 // remove video rules strategy": Fragility zone changes and "ETH dealers now losing / no longer
@@ -153,7 +156,7 @@ for (const asset of CONFIG.assets) {
       if (PHONE.dealers && prevSide && prevSide !== side && (side === 'lose' || prevSide === 'lose')) pushes.push(dealerMessage(asset, prevSide, side, mm, zone, r));
       // Market Maker strategy (asked 2 Nov 2026 "create alert for market maker strategy,
       // but also add stop loss and TP"): the same flipState() as the tab's card. BUY / SELL
-      // rings 3 times with entry, SL and TP; TP hit, SL hit and closed after 3 days once.
+      // rings 2 times with entry, SL and TP; TP hit, SL hit and closed after 3 days too.
       if (mm.flip) {
         const st = state.mmStrat[asset] = state.mmStrat[asset] || { since: now, sent: {} };
         const ev = mmEvents(mm.flip, st.sent, st.since, now, ALT_MAX_AGE);
@@ -170,7 +173,7 @@ for (const asset of CONFIG.assets) {
   }
 
   // Alt Tactics (asked 2 Nov 2026, "add the NTFY alert ... about our rules"): the same
-  // decideAlt() as the tab. BUY / SELL rings 3 times; WATCH, target hit and stopped once.
+  // decideAlt() as the tab. BUY / SELL, WATCH, target hit and stopped each ring 2 times.
   // Each event is pushed once (state.alt[asset].sent); nothing from before the first run.
   if (ALT_CONFIG.alertAssets.includes(asset)) {
     try {
@@ -188,7 +191,7 @@ for (const asset of CONFIG.assets) {
   }
 
   // Trend (asked 2 Nov 2026: "alerts when to enter, what's TP and stop loss", kept as
-  // tested): BUY / SELL when the daily close crosses the 50-day average (rings 3 times);
+  // tested): BUY / SELL when the daily close crosses the 50-day average (rings 2 times);
   // while IN, one quiet message per daily close with tonight's line (the moving stop).
   // Same model as the tab. Nothing from before the first run (that run only saves the state).
   if (TREND_CONFIG.alertAssets.includes(asset)) {
@@ -221,12 +224,12 @@ if (TEST) {
   if (PHONE.zone && (TEST === 'all' || TEST === 'true') && testNow.zone) {
     const { asset, r } = testNow.zone, zone = state.zones[asset];
     const i = CONFIG.zones.findIndex(z => z.name === zone), to = CONFIG.zones[i < CONFIG.zones.length - 1 ? i + 1 : i - 1].name;
-    pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 3 times, a minute apart.`));
+    pushes.push(mark(zoneMessage(asset, zone, to, r), `${asset} Fragility is ${r.score.toFixed(0)} ${zone}. Real zone changes ring 2 times, a minute apart.`));
   }
   if (PHONE.dealers && (TEST === 'all' || TEST === 'true') && testNow.mm) {
     const { asset, side, mm, zone, r } = testNow.mm;
     pushes.push(mark(dealerMessage(asset, side === 'lose' ? 'even' : side, 'lose', mm, zone, r),
-      `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" rings 3 times; "no longer losing" rings once.`));
+      `${asset} dealers are ${SIDE_WORDS[side]} now. "Now losing" and "no longer losing" ring 2 times.`));
   }
   if (mmsNow && (TEST === 'all' || TEST === 'true' || TEST === 'mm')) {
     // The last signal in the 30 days the tab sees, else one built from today's numbers.
@@ -395,7 +398,7 @@ function dealerMessage(asset, from, to, mm, zone, r) {
       (to === 'lose' ? read.action + '\n' : '') + `Fragility: ${r.score.toFixed(0)} ${zone}.`,
     priority: to === 'lose' ? 4 : 3,
     tags: to === 'lose' ? 'warning' : 'white_check_mark',
-    repeats: to === 'lose' ? ZONE_REPEATS : 1,
+    repeats: RINGS,
     click: '#mm',
   };
 }
@@ -530,7 +533,7 @@ function num(x) { return x.toLocaleString('en-US', { minimumFractionDigits: 1, m
 async function send(p) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) { console.log('NTFY_TOPIC not set, not sending:', p.title, '| ' + p.body.replace(/\n/g, ' | ')); return; }
-  const n = p.repeats || 1;
+  const n = p.repeats || (p.priority >= 3 ? RINGS : 1);
   const now = Math.floor(Date.now() / 1000);
   for (let k = 0; k < n; k++) {
     const title = n > 1 ? `${p.title} [${k + 1}/${n}]` : p.title;
