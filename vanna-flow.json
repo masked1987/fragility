@@ -4,38 +4,82 @@
     "version": 1,
     "asset": "ETH",
     "selection": "all",
-    "snapshotAt": 1794046568893,
-    "observedAt": 1794046570125,
+    "snapshotAt": 1794047458650,
+    "observedAt": 1794047459635,
     "label": "Neutral",
     "robust": false,
-    "spot": 2245.59,
-    "series": 612,
+    "spot": 2239.96,
+    "series": 613,
     "expiryCount": 12,
-    "pct": 0.17858114902082403,
+    "pct": 0.25748504341548906,
     "strength": "Neutral",
     "rows": [
       {
         "iv": -3,
-        "total": 31439287.875462607,
+        "total": 31607599.190730013,
         "label": "Bullish"
       },
       {
         "iv": 0,
-        "total": 11605736.931823274,
+        "total": 11851150.077879608,
         "label": "Bullish"
       },
       {
         "iv": 3,
-        "total": -8227814.01181606,
+        "total": -7905299.034970798,
         "label": "Bearish"
       }
     ],
     "sources": [
-      "Binance",
-      "Bybit"
+      "Bitget",
+      "Gate"
     ],
-    "turnover": 6498858919.5772,
-    "fallback": false
+    "turnover": 4602655719.6008,
+    "fallback": true,
+    "day": {
+      "expiry": 1794124800000,
+      "label": "Bullish",
+      "pct": 0.05101736691698986,
+      "rows": [
+        {
+          "iv": -3,
+          "total": 2642562.7804255793,
+          "label": "Bullish"
+        },
+        {
+          "iv": 0,
+          "total": 2348153.75639456,
+          "label": "Bullish"
+        },
+        {
+          "iv": 3,
+          "total": 2053744.7323635407,
+          "label": "Bullish"
+        }
+      ]
+    },
+    "week": {
+      "expiry": 1794556800000,
+      "label": "Bullish",
+      "pct": 0.07736255073082285,
+      "rows": [
+        {
+          "iv": -3,
+          "total": 5641510.0302291475,
+          "label": "Bullish"
+        },
+        {
+          "iv": 0,
+          "total": 3560731.866041288,
+          "label": "Bullish"
+        },
+        {
+          "iv": 3,
+          "total": 1479953.7018534276,
+          "label": "Bullish"
+        }
+      ]
+    }
   },
   "lastNotification": null
 }

@@ -1,2 +1,3 @@
-time_utc,spot,label,strength,pct_turnover,flow_iv_minus3,flow_flat,flow_iv_plus3,label_iv_minus3,label_flat,label_iv_plus3,sources,series
-2026-11-07T10:16Z,2245.59,Neutral,Neutral,0.1786,31439288,11605737,-8227814,Bullish,Bullish,Bearish,Binance+Bybit,612
+time_utc,spot,label,strength,pct_turnover,flow_iv_minus3,flow_flat,flow_iv_plus3,label_iv_minus3,label_flat,label_iv_plus3,sources,series,day_expiry,day_label,day_pct,day_flow_iv_minus3,day_flow_flat,day_flow_iv_plus3,week_expiry,week_label,week_pct,week_flow_iv_minus3,week_flow_flat,week_flow_iv_plus3
+2026-11-07T10:16Z,2245.59,Neutral,Neutral,0.1786,31439288,11605737,-8227814,Bullish,Bullish,Bearish,Binance+Bybit,612,,,,,,,,,,,,
+2026-11-07T10:30Z,2239.96,Neutral,Neutral,0.2575,31607599,11851150,-7905299,Bullish,Bullish,Bearish,Bitget+Gate (backup),613,2026-11-08,Bullish,0.0510,2642563,2348154,2053745,2026-11-13,Bullish,0.0774,5641510,3560732,1479954
