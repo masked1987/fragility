@@ -17,9 +17,11 @@ async function json(url, fetcher) {
 // Background readings for single expiries (7 Nov 2026, owner said yes to saving Daily and Weekly
 // next to All, to compare versions later). Same picking as Gamma Detrite's expiry tabs: Daily = the
 // very next expiry, Weekly = the nearest Friday. Same turnover, same rules; never used for alerts.
+// Monthly = the nearest last Friday of a month (added 7 Nov 2026 with the chart's Monthly tab).
 const isFri = function (e) { return new Date(e).getUTCDay() === 5; };
+const isMonthly = function (e) { return isFri(e) && new Date(e + 7 * 864e5).getUTCMonth() !== new Date(e).getUTCMonth(); };
 export function pickExpiry(exps, which) {
-  for (const e of exps) if (which === 'day' || (which === 'week' && isFri(e))) return e;
+  for (const e of exps) if (which === 'day' || (which === 'week' && isFri(e)) || (which === 'month' && isMonthly(e))) return e;
   return null;
 }
 export function singleExpiry(raw, which, volume) {
@@ -65,7 +67,7 @@ export async function collectFlow(fetcher, clock) {
     pct: result.pct, strength: result.label === 'Neutral' ? 'Neutral' : ['Weak', 'Moderate', 'Strong'][result.adjusted],
     rows: result.rows.map(function (r) { return { iv: r.iv, total: r.total, label: r.label }; }),
     sources: basket.used.map(function (r) { return r.venue; }), turnover: basket.volume, fallback: basket.fallback,
-    day: singleExpiry(raw, 'day', basket.volume), week: singleExpiry(raw, 'week', basket.volume),
+    day: singleExpiry(raw, 'day', basket.volume), week: singleExpiry(raw, 'week', basket.volume), month: singleExpiry(raw, 'month', basket.volume),
   };
   return { ok: true, reading: reading, result: result, book: book, basket: basket, netGamma: netGamma, raw: raw };
 }

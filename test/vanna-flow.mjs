@@ -47,7 +47,7 @@ let requests=[];const mock=async(url,options)=>{requests.push({url,options});ret
 assert.deepEqual(await publish(sent[0],'test-only-topic',mock),{id:'test-delivery'});assert.equal(requests.length,1);assert.equal(requests[0].options.method,'POST');assert.equal(requests[0].options.body,sent[0].body);
 requests=[];await publish(sent[0],'test-only-topic',mock,1794000060);assert.equal(requests[0].options.headers.At,'1794000060','second ring is scheduled with ntfy At');
 assert.ok(reading.day,'daily reading saved');assert.ok(['Bullish','Bearish','Neutral'].includes(reading.day.label));
-{const line=logLine(at(9000,'Bearish',{sources:['Gate','Deribit'],day:null,week:null}));assert.equal(line.split(',').length,LOG_HEADER.split(',').length,'row without day/week still matches');}
+{const line=logLine(at(9000,'Bearish',{sources:['Gate','Deribit'],day:null,week:null,month:null}));assert.equal(line.split(',').length,LOG_HEADER.split(',').length,'row without day/week still matches');}
 {const line=logLine(at(9000,'Bearish',{sources:['Gate','Deribit']}));assert.equal(line.split(',').length,LOG_HEADER.split(',').length,'log row matches header');assert.match(line,/^\d{4}-\d\d-\d\dT\d\d:\d\dZ,/);}
 await assert.rejects(publish(sent[0],'',mock));
 await assert.rejects(publish(sent[0],'test-only-topic',async()=>({ok:false,status:500})));

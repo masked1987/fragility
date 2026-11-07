@@ -176,7 +176,11 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    turnover, flow for IV -3 / flat / +3 (`singleExpiry()` in `tools/vanna/collect.js`, same picking as
    the page's expiry tabs). Background only: alert, chart and page unchanged. Plan: in a few weeks
    compare All vs Daily vs Weekly, and looser rules (flat case only, other neutral band) from the same
-   log; pick on the first half, check on the second. Ask before changing the live rules. v=61. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
+   log; pick on the first half, check on the second. Ask before changing the live rules. v=61.
+   Then (same day) Monthly (`month_*`, nearest last Friday of a month) saved too, and the history chart
+   got its own tabs **All / Daily / Weekly / Monthly** (owner: "make daily tab weekly and monthly
+   separately", "in Vanna and charm"): `vhK`, `vhView()` in gamma-detrite; independent of the page's
+   expiry tabs; only All rings the phone; the table marks "(new expiry)" when the expiry rolled. v=62. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
    IV -3 / flat / +3; Bullish / Bearish only if all three agree and the flat total is over
    0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
    GitHub gets Bitget + Gate, his phone Binance + Bybit); strength weak < 0.1%, moderate

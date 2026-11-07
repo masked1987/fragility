@@ -2,7 +2,7 @@
 // Add a tool by adding a line here; routing is by URL hash (#fragility).
 // Tools are mounted on first visit and then kept alive, so switching is instant.
 // Bump V (and the ?v= in index.html) on each update so phones skip stale copies.
-const V = '?v=61';
+const V = '?v=62';
 // Private host (Cloudflare): Gamma Detrite is served from this site at /gamma-detrite/.
 const GAMMA = /github\.io$/.test(location.hostname) ? 'https://masked1987.github.io/gamma-detrite/' : '/gamma-detrite/';
 const TOOLS = [
