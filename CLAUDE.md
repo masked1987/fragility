@@ -157,7 +157,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    Phone alert (his own commits, "Detrite"): `jobs/vanna-flow.mjs` + `tools/vanna/collect.js`
    (`collectFlow()`, browser-safe), rings once (priority 3) when the All-expiries label
    changes Bullish / Bearish / Neutral; state `vanna-flow.json` on `data`; tap opens `#gamma`;
-   workflow test choice `vanna`. Rules: hedge flow over 24h = -Charm - Vanna x IV move for
+   workflow test choice `vanna`.
+   **Reading log** (7 Nov 2026, owner said yes to "save every reading ... check whether label changes
+   came before real turns"): each new reading appends one row to `vanna-log.csv` on the `data` branch
+   (`appendLog()` / `logLine()` in `jobs/vanna-flow.mjs`: time, spot, label, strength, % of turnover,
+   flow + label for IV -3 / flat / +3, sources, series). Nothing rings for it. After a few weeks: check
+   whether label changes came before turns (offer it; he asked how to spot sudden reversals). Rules: hedge flow over 24h = -Charm - Vanna x IV move for
    IV -3 / flat / +3; Bullish / Bearish only if all three agree and the flat total is over
    0.01% of 24h turnover (first two of Binance, Bybit, Bitget, Gate, Deribit that answer;
    GitHub gets Bitget + Gate, his phone Binance + Bybit); strength weak < 0.1%, moderate

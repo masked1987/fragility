@@ -1,5 +1,5 @@
 // Runs inside the existing serialized alert workflow. NTFY_TOPIC remains a repository secret.
-import {readFileSync, writeFileSync, renameSync, existsSync} from 'node:fs';
+import {readFileSync, writeFileSync, renameSync, existsSync, appendFileSync} from 'node:fs';
 import {join, resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {fresh} from '../shared/vanna-flow/core.mjs';
@@ -34,6 +34,18 @@ export async function advance(previous,reading,send,now=Date.now()){
   }
   return {state:{version:1,reading,lastNotification:receipt?{id:receipt.id,from:old.label,to:reading.label,at:reading.observedAt}:previous?.lastNotification||null},action};
 }
+// 7 Nov 2026, owner said yes to "save every reading", to check later whether label changes came
+// before real turns: one CSV row per new reading, in the same store folder (data branch).
+export const LOG_HEADER='time_utc,spot,label,strength,pct_turnover,flow_iv_minus3,flow_flat,flow_iv_plus3,label_iv_minus3,label_flat,label_iv_plus3,sources,series';
+export function logLine(r){
+  const [down,flat,up]=r.rows,usd=n=>Math.round(n);
+  return [new Date(r.observedAt).toISOString().slice(0,16)+'Z',r.spot.toFixed(2),r.label,r.strength,r.pct.toFixed(4),
+    usd(down.total),usd(flat.total),usd(up.total),down.label,flat.label,up.label,r.sources.join('+')+(r.fallback?' (backup)':''),r.series].join(',');
+}
+export function appendLog(path,reading){
+  if(!existsSync(path))writeFileSync(path,LOG_HEADER+'\n');
+  appendFileSync(path,logLine(reading)+'\n');
+}
 // 7 Nov 2026, owner: "I need all alerts only 2 times": a label change rings RINGS times, a minute apart.
 export const RINGS=2;
 export async function publish(message,topic,fetcher=fetch,at){
@@ -61,6 +73,7 @@ async function main(){
     return receipt;
   };
   const result=await advance(previous,reading,ring);
+  if(!['unavailable','already checked'].includes(result.action)&&!result.action.startsWith('delivery failed'))appendLog(join(dir,'vanna-log.csv'),reading);
   if(result.state&&result.state!==previous){const temporary=path+'.tmp';writeFileSync(temporary,JSON.stringify(result.state,null,2)+'\n');renameSync(temporary,path);}
   console.log(`ETH 24h flow: ${reading?.label||'unavailable'}; ${result.action}`+(reading?`; ${reading.sources.join(' + ')}; ${reading.series} series`:''));
   if(result.action.startsWith('delivery failed'))throw Error('ntfy delivery failed; previous label retained for retry');
