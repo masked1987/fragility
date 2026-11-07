@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {bias,parse,prepare,volumeRecord,volumeSelection} from '../shared/vanna-flow/core.mjs';
-import {advance,collectReading,notification,publish} from '../jobs/vanna-flow.mjs';
+import {advance,collectReading,notification,publish,logLine,LOG_HEADER} from '../jobs/vanna-flow.mjs';
 const now=Date.UTC(2026,10,6,19,30);
 assert.deepEqual(bias(6.33e6,-10.63e6,10e9,-1,false).rows.map(r=>Math.round(r.total/10000)/100),[29.62,10.63,-8.36]);
 assert.equal(bias(6.33e6,-10.63e6,10e9,-1,false).label,'Neutral');
@@ -46,6 +46,7 @@ const changed=notification(prior,at(9000,'Bearish',{sources:['Gate','Deribit']})
 let requests=[];const mock=async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({event:'message',id:'test-delivery'})}};
 assert.deepEqual(await publish(sent[0],'test-only-topic',mock),{id:'test-delivery'});assert.equal(requests.length,1);assert.equal(requests[0].options.method,'POST');assert.equal(requests[0].options.body,sent[0].body);
 requests=[];await publish(sent[0],'test-only-topic',mock,1794000060);assert.equal(requests[0].options.headers.At,'1794000060','second ring is scheduled with ntfy At');
+{const line=logLine(at(9000,'Bearish',{sources:['Gate','Deribit']}));assert.equal(line.split(',').length,LOG_HEADER.split(',').length,'log row matches header');assert.match(line,/^\d{4}-\d\d-\d\dT\d\d:\d\dZ,/);}
 await assert.rejects(publish(sent[0],'',mock));
 await assert.rejects(publish(sent[0],'test-only-topic',async()=>({ok:false,status:500})));
 await assert.rejects(publish(sent[0],'test-only-topic',async()=>({ok:true,json:async()=>({event:'error'})})));
