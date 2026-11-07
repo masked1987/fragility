@@ -148,8 +148,12 @@ full position, compounded, 0.05% a side. Buy and hold ETH +24% (max drop 68%).
    Rules live in gamma-detrite `vanna-charm.js` (GreekAnalytics) and `vc-flow.js` (FlowContext),
    built as copies of `shared/vanna-flow/core.mjs`; `CRYPTO_GAMMA_CHECKOUT=/home/user node
    test/vanna-flow.mjs` (folder holding the gamma-detrite clone) checks they match (225
-   scenarios). Its gamma flip is the page's own (nearest sign change, ~2,251 on 7 Nov); the
-   ChatGPT copy showed 2,211.85 (different method), told the owner.
+   scenarios). Gamma flip (owner: "find out yourself"): the ChatGPT copy uses the zero-gamma
+   level (move the price, recalculate every option's gamma, where the total crosses zero),
+   the same method as our Flow / Plan tabs (`gammaFlip()` in shared/gamma.js). The Gamma page
+   now uses it too (`zeroFlip()`: chosen expiries, +-15%, halving to the cent) for the heat map
+   line, Key readings and the Vanna & Charm charts; the old nearest-strike sign change is only
+   the saved-snapshot fallback. 7 Nov: page 2,214.99, Flow tab 2,214.78, ChatGPT 2,211.85 at 09:22.
    Phone alert (his own commits, "Detrite"): `jobs/vanna-flow.mjs` + `tools/vanna/collect.js`
    (`collectFlow()`, browser-safe), rings once (priority 3) when the All-expiries label
    changes Bullish / Bearish / Neutral; state `vanna-flow.json` on `data`; tap opens `#gamma`;
